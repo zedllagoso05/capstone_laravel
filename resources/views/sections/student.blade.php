@@ -302,6 +302,19 @@
                 border-top: 1px solid rgba(214, 177, 92, 0.3);
                 box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
                 padding-bottom: env(safe-area-inset-bottom, 0px);
+                overflow-x: auto;
+                white-space: nowrap;
+                -webkit-overflow-scrolling: touch;
+                -ms-overflow-style: none;  /* IE and Edge */
+                scrollbar-width: none;  /* Firefox */
+            }
+            .mobile-bottom-nav::-webkit-scrollbar {
+                display: none; /* Safari and Chrome */
+            }
+            .mobile-nav-link {
+                transition: color 0.2s;
+                flex-shrink: 0;
+                min-width: 60px;
             }
             main {
                 padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
@@ -1110,7 +1123,7 @@
                     </p>
                 </div>
             </div>
-            <form action="{{ route('logout') }}" method="POST">
+            <form id="logout-form" action="{{ route('logout') }}" method="POST">
                 @csrf
                 <button type="submit" class="flex items-center space-x-2 text-sm text-[rgba(255,255,255,0.5)] hover:text-[#f0e0b0] transition">
                     <i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Sign Out</span>
@@ -1129,6 +1142,9 @@
         </a>
         <a href="#" data-section="certificates" class="mobile-nav-link flex flex-col items-center text-[rgba(255,255,255,0.55)] text-xs py-1">
             <i class="fa-regular fa-file-lines text-lg"></i><span class="text-[10px] mt-1">Docs</span>
+        </a>
+        <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="mobile-nav-link flex flex-col items-center text-red-400 hover:text-red-300 text-xs py-1">
+            <i class="fas fa-sign-out-alt text-lg"></i><span class="text-[10px] mt-1">Sign Out</span>
         </a>
     </div>
 

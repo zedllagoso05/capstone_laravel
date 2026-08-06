@@ -15,8 +15,9 @@ class SectionSeeder extends Seeder
         $sections = ['East', 'West', 'North', 'South', 'SouthEast', 'SouthWest', 'NorthEast', 'NorthWest'];
 
         foreach ($sections as $name) {
-            Section::create([
+            Section::firstOrCreate([
                 'section_name' => $name,
+            ], [
                 'user_id'      => null,          // no teacher assigned yet
             ]);
         }

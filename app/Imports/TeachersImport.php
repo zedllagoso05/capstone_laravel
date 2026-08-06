@@ -33,8 +33,8 @@ class TeachersImport implements ToModel, WithHeadingRow, WithValidation, SkipsOn
             'teacher_first_name'  => $row['teacher_first_name'],
             'teacher_middle_name' => $row['teacher_middle_name'] ?? null,
             'teacher_last_name'   => $row['teacher_last_name'],
-            'teacher_email'       => $row['teacher_email'],
-            'contact_number'      => $row['contact_number'] ?? '',
+            'teacher_email'       => $row['teacher_email'] ?? null,
+            'contact_number'      => $row['contact_number'] ?? null,
         ]);
     }
 
@@ -44,7 +44,7 @@ class TeachersImport implements ToModel, WithHeadingRow, WithValidation, SkipsOn
             'teacher_id'    => 'required|string|unique:teachers,user_id',
             'teacher_first_name' => 'required|string',
             'teacher_last_name'  => 'required|string',
-            'teacher_email' => 'required|email|unique:teachers,teacher_email',
+            'teacher_email' => 'nullable|email|unique:teachers,teacher_email',
         ];
     }
 }

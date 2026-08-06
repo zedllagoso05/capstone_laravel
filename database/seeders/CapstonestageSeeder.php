@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+
 class CapstonestageSeeder extends Seeder
 {
     /**
@@ -12,10 +12,11 @@ class CapstonestageSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('capstone_stages')->insert([
-            ['stage_title' => 'Capstone 1'],
-            ['stage_title' => 'Capstone 2'],
-        ]);
-        //
+        if (DB::table('capstone_stages')->count() === 0) {
+            DB::table('capstone_stages')->insert([
+                ['id' => 1, 'stage_title' => 'Capstone 1'],
+                ['id' => 2, 'stage_title' => 'Capstone 2'],
+            ]);
+        }
     }
 }

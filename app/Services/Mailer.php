@@ -10,6 +10,12 @@ class Mailer
 {
     public static function send(string $toEmail, string $toName, string $subject, string $bodyHtml): bool
     {
+        // Support Laravel's 'log' mailer driver for local development/testing without real SMTP config
+        if (env('MAIL_MAILER') === 'log') {
+            Log::info("Email sent to [{$toEmail}] (Name: {$toName})\nSubject: {$subject}\nBody:\n" . strip_tags($bodyHtml) . "\nHTML Body:\n{$bodyHtml}");
+            return true;
+        }
+
         $mail = new PHPMailer(true);
         try {
             $mail->isSMTP();

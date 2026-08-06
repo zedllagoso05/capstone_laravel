@@ -466,9 +466,19 @@
             backdrop-filter: blur(12px);
             border-top: 1px solid rgba(214, 177, 92, 0.3);
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        .mobile-bottom-nav::-webkit-scrollbar {
+            display: none; /* Safari and Chrome */
         }
         .mobile-nav-link {
             transition: color 0.2s;
+            flex-shrink: 0;
+            min-width: 60px;
         }
 
         /* ── STAGE TABS ── */
@@ -652,7 +662,7 @@
                     <p class="text-[11px]" style="color:rgba(255,255,255,0.5);">System Administrator</p>
                 </div>
             </div>
-            <form action="{{ route('logout') }}" method="POST">
+            <form id="logout-form" action="{{ route('logout') }}" method="POST">
                 @csrf
                 <button type="submit" class="flex items-center space-x-2 text-sm text-[rgba(255,255,255,0.5)] hover:text-[#f0e0b0] transition">
                     <i class="fa-solid fa-arrow-right-from-bracket"></i><span>Sign Out</span>
@@ -678,11 +688,14 @@
         <a href="#" data-section="progress" class="mobile-nav-link flex flex-col items-center text-[rgba(255,255,255,0.55)] text-xs py-1">
             <i class="fas fa-chart-line text-lg"></i><span class="text-[10px] mt-1">Progress</span>
         </a>
-        <a href="#" data-section="evaluation" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
-                    <i class="fas fa-chart-line w-4"></i><span>Evaluation Room</span>
-                </a>
+        <a href="#" data-section="evaluation" class="mobile-nav-link flex flex-col items-center text-[rgba(255,255,255,0.55)] text-xs py-1">
+            <i class="fas fa-door-open text-lg"></i><span class="text-[10px] mt-1">Rooms</span>
+        </a>
         <a href="#" data-section="profile" class="mobile-nav-link flex flex-col items-center text-[rgba(255,255,255,0.55)] text-xs py-1">
             <i class="fas fa-user text-lg"></i><span class="text-[10px] mt-1">Profile</span>
+        </a>
+        <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="mobile-nav-link flex flex-col items-center text-red-400 hover:text-red-300 text-xs py-1">
+            <i class="fas fa-sign-out-alt text-lg"></i><span class="text-[10px] mt-1">Sign Out</span>
         </a>
     </div>
 
@@ -1183,13 +1196,23 @@
                         <div class="bg-[#faf8f4] border border-[#e2dacf] rounded-xl p-5 hover:border-[#d6b15c] transition cursor-pointer group" onclick="openEditRoomModal({{ $room->id }})">
                             <div class="flex justify-between items-start">
                                 <h4 class="font-semibold text-sm text-[#0a1428]">{{ $room->room_name }}</h4>
-                                <button onclick="event.stopPropagation(); deleteRoom({{ $room->id }})" class="text-[#5b6375] hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fas fa-trash text-xs"></i></button>
+                                <button onclick="event.stopPropagation(); openDeleteRoomModal({{ $room->id }}, '{{ addslashes($room->room_name) }}')" class="text-[#5b6375] hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fas fa-trash text-xs"></i></button>
                             </div>
                             <div class="flex items-center gap-2 mt-2" onclick="event.stopPropagation();">
                                 <span class="badge badge-amber font-mono tracking-wider">{{ $room->join_code }}</span>
                                 <button onclick="event.stopPropagation(); regenerateRoomCode({{ $room->id }}, this)" class="text-[#5b6375] hover:text-[#0a1428] text-xs" title="Regenerate code">
                                     <i class="fas fa-rotate"></i>
                                 </button>
+                            </div>
+                            <div class="mt-2.5 text-xs text-[#5b6375] space-y-1">
+                                <div class="flex items-center gap-1.5">
+                                    <i class="fa-solid fa-flag text-[#d6b15c] text-[10px]"></i>
+                                    <span>Milestone: <strong class="text-[#171e2c] font-medium">{{ $room->requiredMilestone->milestone_title ?? 'None' }}</strong></span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <i class="fa-solid fa-circle-play text-[#d6b15c] text-[10px]"></i>
+                                    <span>Activity: <strong class="text-[#171e2c] font-medium">{{ $room->activity_name ?? 'N/A' }}</strong></span>
+                                </div>
                             </div>
                             <div class="flex flex-wrap gap-1 mt-3">
                                 @forelse($room->panelists as $p)
@@ -1504,6 +1527,34 @@
         </div>
     </div>
 
+    <!-- DELETE EVALUATION ROOM MODAL -->
+    <div id="delete_room_modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-accent"></div>
+            <div class="flex justify-between items-center mb-4">
+                <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">Confirm Deletion</h2>
+                <button type="button" onclick="closeModal('delete_room_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
+            </div>
+            <form action="{{ route('admin.delete_room') }}" method="POST" class="space-y-3">
+                @csrf
+                @if ($errors->any() && old('confirm_delete_room'))
+                <div class="bg-red-50 border border-red-300 text-red-700 p-3 rounded-lg text-sm"><ul class="list-disc list-inside">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
+                @endif
+                <input type="hidden" name="confirm_delete_room" value="1">
+                <input type="hidden" name="room_id" id="delete_room_id">
+                <p class="text-sm text-[#5b6375]">You are about to permanently delete <strong id="delete_room_name" class="text-[#171e2c]"></strong>. This cannot be undone.</p>
+                <div>
+                    <label class="form-label">Confirm Your Admin Password</label>
+                    <div class="relative">
+                        <input type="password" name="admin_password" id="delete_room_admin_password" class="form-input pr-10" placeholder="Enter your password" required>
+                        <button type="button" class="password-toggle absolute right-3 top-1/2 -translate-y-1/2 text-[#5b6375] hover:text-[#0a1428]" onclick="toggleVisibility('delete_room_admin_password', this)"><i class="fa-regular fa-eye"></i></button>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-3"><button type="button" onclick="closeModal('delete_room_modal')" class="btn-ghost">Cancel</button><button type="submit" class="btn-primary" style="background:#a12b2b;"><i class="fas fa-trash mr-1"></i> Delete Room</button></div>
+            </form>
+        </div>
+    </div>
+
     <!-- REGISTER STUDENT MODAL -->
     <div id="student_modal" class="modal-overlay">
         <div class="modal-box">
@@ -1752,14 +1803,28 @@
             <div>
                 <label class="form-label">Number of Rooms to Create</label>
                 <input type="number" name="room_count" class="form-input" min="1" value="1" required>
-                <p class="text-xs text-[#9a9385] mt-1">All groups in the system will be divided evenly among the newly created rooms/classrooms.</p>
+                <p class="text-xs text-[#9a9385] mt-1">All qualified groups in the system will be divided evenly among the newly created rooms/classrooms.</p>
             </div>
             <div>
-                <label class="form-label">Panelists <span class="text-[#9a9385] font-normal normal-case">(Optional, can assign later)</span></label>
-                <select name="panelists[]" class="form-select" multiple style="height:120px;">
-                    @foreach($allTeachers as $teacher)
-                    <option value="{{ $teacher->id }}">{{ $teacher->teacher_first_name }} {{ $teacher->teacher_last_name }}</option>
+                <label class="form-label">Capstone Stage <span class="text-red-500">*</span></label>
+                <select id="create_room_capstone_stage" class="form-select" onchange="filterMilestonesByStage(this.value)" required>
+                    <option value="" disabled selected>Select Capstone Stage</option>
+                    @foreach($capstoneStages as $stage)
+                    <option value="{{ $stage->id }}">{{ $stage->stage_title }}</option>
                     @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="form-label">Required Milestone <span class="text-red-500">*</span></label>
+                <select id="create_room_required_milestone" name="required_milestone_id" class="form-select" required disabled>
+                    <option value="" disabled selected>Please select Capstone Stage first</option>
+                </select>
+                <p class="text-xs text-[#9a9385] mt-1">Only groups/students who have completed this milestone will be added to the room.</p>
+            </div>
+            <div>
+                <label class="form-label">Participate Activity (Milestone) <span class="text-red-500">*</span></label>
+                <select id="create_room_participate_activity" name="activity_name" class="form-select" required disabled>
+                    <option value="" disabled selected>Please select Capstone Stage first</option>
                 </select>
             </div>
             <div class="flex justify-end gap-2 pt-3">
@@ -1779,9 +1844,9 @@
         </div>
         <div class="space-y-4">
             <div>
-                <label class="form-label">Add Panelist</label>
-                <div class="flex gap-2">
-                    <select id="edit_room_teacher_select" class="form-select flex-1">
+                <label class="form-label">Add Panelist <span class="text-[#9a9385] font-normal normal-case">(Ctrl to select multiple)</span></label>
+                <div class="flex gap-2 items-start">
+                    <select id="edit_room_teacher_select" class="form-select flex-1" multiple style="height:120px;">
                         @foreach($allTeachers as $teacher)
                         <option value="{{ $teacher->id }}">{{ $teacher->teacher_first_name }} {{ $teacher->teacher_last_name }}</option>
                         @endforeach
@@ -2388,52 +2453,98 @@ function removePanelistFromRoom(teacherId, row) {
 
 document.getElementById('edit_room_add_btn').addEventListener('click', () => {
     const select = document.getElementById('edit_room_teacher_select');
-    const teacherId = select.value;
-    if (!teacherId) return;
+    const selectedOptions = Array.from(select.selectedOptions);
 
-    fetch(`/admin/evaluation-rooms/${currentEditRoomId}/panelists`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify({ teacher_id: teacherId })
-    })
-    .then(async r => {
-        const data = await r.json();
-        if (data.error) {
-            showToast(data.error, true);
-            return;
-        }
-        const container = document.getElementById('edit_room_panelists_container');
-        const emptyMsg = container.querySelector('p');
-        if (emptyMsg) emptyMsg.remove();
-        const row = document.createElement('div');
-        row.className = 'flex items-center gap-2 p-2 bg-[#faf8f4] rounded border border-[#e2dacf]';
-        row.innerHTML = `<span class="flex-1 text-sm">${data.panelist.name}</span>
-            <button type="button" class="text-[#5b6375] hover:text-red-500 transition remove-panelist-btn"><i class="fas fa-times"></i></button>`;
-        row.querySelector('.remove-panelist-btn').addEventListener('click', () => removePanelistFromRoom(data.panelist.id, row));
-        container.appendChild(row);
-    })
-    .catch(() => showToast('Failed to add panelist.', true));
+    if (selectedOptions.length === 0) {
+        showToast('Please select at least one teacher.', true);
+        return;
+    }
+
+    selectedOptions.forEach(option => {
+        const teacherId = option.value;
+        if (!teacherId) return;
+
+        fetch(`/admin/evaluation-rooms/${currentEditRoomId}/panelists`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ teacher_id: teacherId })
+        })
+        .then(async r => {
+            const data = await r.json();
+            if (data.error) {
+                showToast(data.error, true);
+                return;
+            }
+            const container = document.getElementById('edit_room_panelists_container');
+            
+            // Avoid duplicate visual rows if already in DOM
+            if (container.innerHTML.includes(`removePanelistFromRoom(${data.panelist.id}`)) {
+                return;
+            }
+
+            const emptyMsg = container.querySelector('p');
+            if (emptyMsg) emptyMsg.remove();
+
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-2 p-2 bg-[#faf8f4] rounded border border-[#e2dacf]';
+            row.innerHTML = `<span class="flex-1 text-sm">${data.panelist.name}</span>
+                <button type="button" class="text-[#5b6375] hover:text-red-500 transition remove-panelist-btn"><i class="fas fa-times"></i></button>`;
+            row.querySelector('.remove-panelist-btn').addEventListener('click', () => removePanelistFromRoom(data.panelist.id, row));
+            container.appendChild(row);
+        })
+        .catch(() => showToast('Failed to add panelist.', true));
+    });
+
+    select.selectedIndex = -1;
 });
 
-function deleteRoom(roomId) {
-    if (!confirm('Delete this evaluation room?')) return;
-    fetch(`/admin/evaluation-rooms/${roomId}`, {
-        method: 'DELETE',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-            'Accept': 'application/json'
-        }
-    })
-    .then(r => r.json())
-    .then(data => { if (data.success) window.location.reload(); })
-    .catch(() => showToast('Failed to delete room.', true));
+function openDeleteRoomModal(roomId, roomName) {
+    document.getElementById('delete_room_id').value = roomId;
+    document.getElementById('delete_room_name').textContent = roomName;
+    openModal('delete_room_modal');
 }
        // ---- CHANGE ADVISER MODAL ----
 const groupsDataJs = @json($groupsData);
+const milestonesDataJs = @json($milestones);
+
+function filterMilestonesByStage(stageId) {
+    const requiredSelect = document.getElementById('create_room_required_milestone');
+    const activitySelect = document.getElementById('create_room_participate_activity');
+
+    const filteredMilestones = milestonesDataJs.filter(m => String(m.capstone_stage_id) === String(stageId));
+
+    requiredSelect.innerHTML = '';
+    activitySelect.innerHTML = '';
+
+    if (filteredMilestones.length === 0) {
+        requiredSelect.innerHTML = '<option value="" disabled selected>No milestones for this stage</option>';
+        requiredSelect.disabled = true;
+        activitySelect.innerHTML = '<option value="" disabled selected>No milestones for this stage</option>';
+        activitySelect.disabled = true;
+    } else {
+        requiredSelect.innerHTML = '<option value="" disabled selected>Select Required Milestone</option>';
+        activitySelect.innerHTML = '<option value="" disabled selected>Select Participate Activity</option>';
+
+        filteredMilestones.forEach(m => {
+            const optRequired = document.createElement('option');
+            optRequired.value = m.id;
+            optRequired.textContent = m.milestone_title;
+            requiredSelect.appendChild(optRequired);
+
+            const optActivity = document.createElement('option');
+            optActivity.value = m.milestone_title;
+            optActivity.textContent = m.milestone_title;
+            activitySelect.appendChild(optActivity);
+        });
+
+        requiredSelect.disabled = false;
+        activitySelect.disabled = false;
+    }
+}
 
 function resetAssignModal() {
     const sectionSel = document.getElementById('ca_section_select');

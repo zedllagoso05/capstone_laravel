@@ -19,7 +19,10 @@ Route::get('/', function () {
         };
     }
     return view('home', ['greetings' => 'Hello, welcome to the home page!']);
-});
+})->name('login');
+
+// Redirect any GET requests to /login back to the main home page
+Route::redirect('/login', '/');
 
 /*
 |--------------------------------------------------------------------------
@@ -104,10 +107,13 @@ Route::middleware('auth')->group(function () {
 
         // Evaluation rooms
         Route::post('/evaluation-rooms',        [user_controller::class, 'createRoom'])->name('admin.create_room');
+        Route::get('/evaluation-rooms', function () {
+            return redirect()->route('admin.page');
+        });
         Route::get('/get-room/{room}',          [user_controller::class, 'getRoom'])->name('admin.get_room');
         Route::post('/evaluation-rooms/{room}/panelists', [user_controller::class, 'addPanelist'])->name('admin.add_panelist');
         Route::delete('/evaluation-rooms/{room}/panelists/{teacher}', [user_controller::class, 'removePanelist'])->name('admin.remove_panelist');
-        Route::delete('/evaluation-rooms/{room}', [user_controller::class, 'deleteRoom'])->name('admin.delete_room');
+        Route::post('/delete_room', [user_controller::class, 'deleteRoom'])->name('admin.delete_room');
         Route::post('/evaluation-rooms/{roomId}/regenerate-code', [user_controller::class, 'regenerateRoomCode'])->name('admin.regenerate_room_code');
 
         // Admin profile

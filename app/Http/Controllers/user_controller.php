@@ -303,7 +303,7 @@ class user_controller extends Controller
         $totalStudents = $allStudents->count();
 
         // evaluationroom
-        $evaluationRooms = EvaluationRoom::with(['panelists', 'groups'])->latest()->get();
+        $evaluationRooms = EvaluationRoom::with(['panelists', 'groups', 'requiredMilestone'])->latest()->get();
 
         // ── Section Progress ──
         $sectionProgress = [];
@@ -1861,10 +1861,24 @@ public function joinRoomWithCode(Request $request)
         return response()->json(['success' => true]);
     }
 
-    public function deleteRoom($roomId)
+    public function deleteRoom(Request $request)
     {
-        EvaluationRoom::findOrFail($roomId)->delete();
-        return back()->with('success', 'Evaluation room deleted.');
+        $validated = $request->validate([
+            'room_id'        => 'required|integer|exists:evaluation_rooms,id',
+            'admin_password' => 'required|string',
+        ]);
+
+        $adminUser = Auth::user();
+
+        if (!Hash::check($validated['admin_password'], $adminUser->password)) {
+            return back()
+                ->withErrors(['admin_password' => 'Incorrect password. Evaluation room was not deleted.'])
+                ->withInput();
+        }
+
+        EvaluationRoom::findOrFail($validated['room_id'])->delete();
+
+        return back()->with('success', 'Evaluation room deleted successfully.');
     }
     public function getMilestone($id)
 {
@@ -2034,16 +2048,24 @@ public function showCertificate($groupId, $certificateId)
         public function createRoom(Request $request)
 {
     $validated = $request->validate([
-        'room_count' => 'required|integer|min:1',
-        'panelists'  => 'nullable|array',
-        'panelists.*' => 'exists:teachers,id',
+        'room_count'            => 'required|integer|min:1',
+        'required_milestone_id' => 'required|exists:milestones,id',
+        'activity_name'         => 'required|string|max:255',
+        'panelists'             => 'nullable|array',
+        'panelists.*'           => 'exists:teachers,id',
     ]);
 
     $panelists = $validated['panelists'] ?? [];
 
     DB::transaction(function () use ($validated, $panelists) {
-        // Get all groups without a room
-        $groups = Group::whereNull('room_id')->get();
+        $requiredMilestoneId = $validated['required_milestone_id'];
+
+        // Get all groups without a room that have completed the required milestone
+        $groups = Group::whereNull('room_id')
+            ->whereHas('groupMilestones', function ($query) use ($requiredMilestoneId) {
+                $query->where('milestone_id', $requiredMilestoneId)
+                      ->where('status', 'completed');
+            })->get();
 
         // Divide groups evenly
         $roomCount = $validated['room_count'];
@@ -2051,19 +2073,31 @@ public function showCertificate($groupId, $certificateId)
         $rooms = [];
 
         for ($i = 1; $i <= $roomCount; $i++) {
+            $baseName = 'Room ' . $i . ' - ' . now()->format('Y-m-d');
+            $roomName = $baseName;
+            $counter = 1;
+            while (EvaluationRoom::where('room_name', $roomName)->exists()) {
+                $roomName = $baseName . ' (' . $counter . ')';
+                $counter++;
+            }
+
             $room = EvaluationRoom::create([
-                'room_name' => 'Room ' . $i . ' - ' . now()->format('Y-m-d'),
-                'join_code' => EvaluationRoom::generateUniqueCode(),
+                'room_name'             => $roomName,
+                'join_code'             => EvaluationRoom::generateUniqueCode(),
+                'required_milestone_id' => $requiredMilestoneId,
+                'activity_name'         => $validated['activity_name'],
             ]);
             $rooms[] = $room;
         }
 
-        // Distribute groups round-robin
-        $groups->each(function ($group, $index) use ($rooms) {
-            $room = $rooms[$index % count($rooms)];
-            $group->room_id = $room->id;
-            $group->save();
-        });
+        // Distribute groups round-robin (only if any groups were found)
+        if ($groups->isNotEmpty()) {
+            $groups->each(function ($group, $index) use ($rooms) {
+                $room = $rooms[$index % count($rooms)];
+                $group->room_id = $room->id;
+                $group->save();
+            });
+        }
 
         // Distribute panelists round-robin (each panelist in exactly one room)
         foreach ($panelists as $i => $teacherId) {
@@ -2076,12 +2110,14 @@ public function showCertificate($groupId, $certificateId)
 }
        public function getRoom($roomId)
 {
-    $room = EvaluationRoom::with(['panelists', 'groups'])->findOrFail($roomId);
+    $room = EvaluationRoom::with(['panelists', 'groups', 'requiredMilestone'])->findOrFail($roomId);
     return response()->json([
-        'id'        => $room->id,
-        'room_name' => $room->room_name,
-        'join_code' => $room->join_code,
-        'panelists' => $room->panelists->map(fn($p) => [
+        'id'                 => $room->id,
+        'room_name'          => $room->room_name,
+        'join_code'          => $room->join_code,
+        'required_milestone' => $room->requiredMilestone ? $room->requiredMilestone->milestone_title : 'None',
+        'activity_name'      => $room->activity_name ?? 'N/A',
+        'panelists'          => $room->panelists->map(fn($p) => [
             'id'   => $p->id,
             'name' => $p->teacher_first_name . ' ' . $p->teacher_last_name,
         ]),

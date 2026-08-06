@@ -7,7 +7,7 @@ use Illuminate\Support\Str;
 
 class EvaluationRoom extends Model
 {
-    protected $fillable = ['room_name', 'join_code'];
+    protected $fillable = ['room_name', 'join_code', 'required_milestone_id', 'activity_name'];
 
     protected static function booted()
     {
@@ -25,6 +25,11 @@ class EvaluationRoom extends Model
         } while (self::where('join_code', $code)->exists());
 
         return $code;
+    }
+
+    public function requiredMilestone()
+    {
+        return $this->belongsTo(Milestone::class, 'required_milestone_id');
     }
 
     public function panelists()
