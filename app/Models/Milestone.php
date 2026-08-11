@@ -12,4 +12,9 @@ class Milestone extends Model
 {
     return $this->hasMany(Rubric::class);
 }
+
+    public function capstoneStage()
+    {
+        return $this->belongsTo(CapstoneStages::class, 'capstone_stage_id');
+    }
 }

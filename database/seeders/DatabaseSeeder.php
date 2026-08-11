@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
   $this->call(AdminSeeder::class);
   $this->call(SectionSeeder::class);
   $this->call(MilestoneSeeder::class);
+  $this->call(RubricSeeder::class);
   $this->call(CertificateSeeder::class);
   $this->call(CapstonestageSeeder::class);
   $this->call(UserSeeder::class);

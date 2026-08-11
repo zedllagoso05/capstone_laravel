@@ -264,8 +264,13 @@
 
             <div class="card-heading">
                 <h2>{{ $greetings }}</h2>
-                <p>Sign in or create an account to continue.</p>
-                <p class="sub">Welcome, {{ $user->name }} ({{ $user->user_id }})!</p>
+                @if(!is_null($user->password))
+                    <p>Sign in to your account to continue.</p>
+                    <p class="sub">Welcome back, {{ $user->name }} ({{ $user->user_id }})!</p>
+                @else
+                    <p>Create your account to continue.</p>
+                    <p class="sub">Welcome! Please register your account for ID: {{ $user->user_id }}</p>
+                @endif
                 <form action="{{ route('destroy.session') }}" method="POST">
                     @csrf
                     <button type="submit" class="btn-logout">
@@ -277,91 +282,87 @@
                 </form>
             </div>
 
-            {{-- Tab buttons --}}
-            <div class="tab-switch">
-                <button class="tab-btn active" data-tab="login">Sign In</button>
-                <button class="tab-btn"         data-tab="register">Register</button>
-            </div>
+            @if(!is_null($user->password))
+                {{-- ── SIGN IN ── --}}
+                <div class="tab-pane active" id="tab-login">
+                    <form action="/login" method="POST">
+                        @csrf   
 
-            {{-- ── SIGN IN ── --}}
-            <div class="tab-pane active" id="tab-login">
-                <form action="/login" method="POST">
-                    @csrf   
-
-                    <div class="form-group">
-                        <label for="logname">Username</label>
-                        <input
-                            type="text"
-                            id="logname"
-                            name="logname"
-                            placeholder="Enter your name"
-                            autocomplete="username"
-                        >
-                        @error('id')
-                        <p class="error">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div class="form-group">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-                            <label for="logpassword" style="margin-bottom: 0;">Password</label>
-                            <a href="/forgot-password" style="font-size: 0.68rem; color: #b88d3a; font-weight: 500; text-decoration: none;" class="hover:underline">Forgot Password?</a>
-                        </div>
-                        <div class="password-input-wrapper">
+                        <div class="form-group">
+                            <label for="logname">Username</label>
                             <input
-                                type="password"
-                                id="logpassword"
-                                name="logpassword"
-                                placeholder="••••••••"
-                                autocomplete="current-password"
+                                type="text"
+                                id="logname"
+                                name="logname"
+                                placeholder="Enter your name"
+                                autocomplete="username"
                             >
-                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('logpassword', this)">
-                                <i class="fas fa-eye"></i>
-                            </button>
+                            @error('id')
+                            <p class="error">{{ $message }}</p>
+                            @enderror
                         </div>
-                    </div>
 
-                    <button type="submit" class="btn-submit">Sign In</button>
-                </form>
-            </div>
+                        <div class="form-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                                <label for="logpassword" style="margin-bottom: 0;">Password</label>
+                                <a href="/forgot-password" style="font-size: 0.68rem; color: #b88d3a; font-weight: 500; text-decoration: none;" class="hover:underline">Forgot Password?</a>
+                            </div>
+                            <div class="password-input-wrapper">
+                                <input
+                                    type="password"
+                                    id="logpassword"
+                                    name="logpassword"
+                                    placeholder="••••••••"
+                                    autocomplete="current-password"
+                                >
+                                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('logpassword', this)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
 
-           {{-- ── REGISTER ── --}}
-<div class="tab-pane" id="tab-register">
-    <form action="/register" method="POST">
-        @csrf
+                        <button type="submit" class="btn-submit">Sign In</button>
+                    </form>
+                </div>
+            @else
+                {{-- ── REGISTER ── --}}
+                <div class="tab-pane active" id="tab-register">
+                    <form action="/register" method="POST">
+                        @csrf
 
-        <div class="form-group">
-            <label for="reg-name">Username</label>
-            <input type="text" id="reg-name" name="name" placeholder="Your Username" autocomplete="name" required>
-            @error('name')
-            <p class="error">{{ $message }}</p>
-            @enderror
-        </div>
+                        <div class="form-group">
+                            <label for="reg-name">Username</label>
+                            <input type="text" id="reg-name" name="name" placeholder="Your Username" autocomplete="name" required>
+                            @error('name')
+                            <p class="error">{{ $message }}</p>
+                            @enderror
+                        </div>
 
-        <div class="form-group">
-            <label for="reg-email">Email Address</label>
-            <input type="email" id="reg-email" name="email" placeholder="you@email.com" autocomplete="email" required>
-            @error('email')
-            <p class="error">{{ $message }}</p>
-            @enderror
-        </div>
+                        <div class="form-group">
+                            <label for="reg-email">Email Address</label>
+                            <input type="email" id="reg-email" name="email" placeholder="you@email.com" autocomplete="email" required>
+                            @error('email')
+                            <p class="error">{{ $message }}</p>
+                            @enderror
+                        </div>
 
-        <div class="form-group">
-            <label for="reg-password">Password</label>
-            <div class="password-input-wrapper">
-                <input type="password" id="reg-password" name="password" placeholder="Create a password" autocomplete="new-password" required>
-                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('reg-password', this)">
-                    <i class="fas fa-eye"></i>
-                </button>
-            </div>
-            @error('password')
-            <p class="error">{{ $message }}</p>
-            @enderror
-        </div>
+                        <div class="form-group">
+                            <label for="reg-password">Password</label>
+                            <div class="password-input-wrapper">
+                                <input type="password" id="reg-password" name="password" placeholder="Create a password" autocomplete="new-password" required>
+                                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('reg-password', this)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            @error('password')
+                            <p class="error">{{ $message }}</p>
+                            @enderror
+                        </div>
 
-        <button type="submit" class="btn-submit">Create Account</button>
-    </form>
-</div>
+                        <button type="submit" class="btn-submit">Create Account</button>
+                    </form>
+                </div>
+            @endif
 
         </div>
     </div>
@@ -371,7 +372,7 @@
          <div class="card-body">
                      <div class="card-heading">
                         <h2>WELCOME TO CAPSTONE TRACKER</h2>
-                <p>Please input Your Student ID</p>
+                <p>Please input Your School ID</p>
             </div>
                     <div class="tab-pane active" id="tab-login">
                 <form action="/id" method="POST">

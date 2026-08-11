@@ -16,6 +16,11 @@ class Student extends Model
         'contact_number',
         'course',
         'section',
+        'is_archived',
+    ];
+
+    protected $casts = [
+        'is_archived' => 'boolean',
     ];
 
     public function user()

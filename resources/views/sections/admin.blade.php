@@ -111,6 +111,7 @@
             box-shadow: var(--shadow-md);
             transition: var(--transition);
             overflow: hidden;
+            cursor: pointer;
         }
         .stat-card:hover {
             transform: translateY(-4px);
@@ -649,6 +650,9 @@
                 <a href="#" data-section="profile" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
                     <i class="fas fa-user w-4"></i><span>Profile</span>
                 </a>
+                <a href="#" data-section="capstone" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
+                    <i class="fas fa-user w-4"></i><span>Capstones</span>
+        </a>
             </nav>
         </div>
         <div class="p-4 border-t border-[rgba(214,177,92,0.15)]">
@@ -694,6 +698,9 @@
         <a href="#" data-section="profile" class="mobile-nav-link flex flex-col items-center text-[rgba(255,255,255,0.55)] text-xs py-1">
             <i class="fas fa-user text-lg"></i><span class="text-[10px] mt-1">Profile</span>
         </a>
+        <a href="#" data-section="capstone" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
+                    <i class="fas fa-user w-4"></i><span>Capstones</span>
+        </a>
         <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="mobile-nav-link flex flex-col items-center text-red-400 hover:text-red-300 text-xs py-1">
             <i class="fas fa-sign-out-alt text-lg"></i><span class="text-[10px] mt-1">Sign Out</span>
         </a>
@@ -710,28 +717,28 @@
                 <p class="text-[#5b6375] mt-2 text-sm">Overview of your capstone tracking system</p>
             </div>
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <div class="stat-card p-4 md:p-5 flex justify-between items-center">
+                <div class="stat-card p-4 md:p-5 flex justify-between items-center" onclick="openDashboardDetailModal('students')">
                     <div>
                         <p class="text-[#5b6375] text-xs font-medium">Total Students</p>
                         <p class="text-2xl md:text-3xl font-bold mt-1 text-[#0a1428]" style="font-family:'Cormorant Garamond',serif;">{{ $totalStudents ?? 0 }}</p>
                     </div>
                     <div class="icon-circle"><i class="fas fa-users text-lg"></i></div>
                 </div>
-                <div class="stat-card p-4 md:p-5 flex justify-between items-center">
+                <div class="stat-card p-4 md:p-5 flex justify-between items-center" onclick="openDashboardDetailModal('groups')">
                     <div>
                         <p class="text-[#5b6375] text-xs font-medium">Capstone Groups</p>
                         <p class="text-2xl md:text-3xl font-bold mt-1 text-[#0a1428]" style="font-family:'Cormorant Garamond',serif;">{{ $totalGroups ?? 0 }}</p>
                     </div>
                     <div class="icon-circle"><i class="fas fa-layer-group text-lg"></i></div>
                 </div>
-                <div class="stat-card p-4 md:p-5 flex justify-between items-center">
+                <div class="stat-card p-4 md:p-5 flex justify-between items-center" onclick="openDashboardDetailModal('teachers')">
                     <div>
                         <p class="text-[#5b6375] text-xs font-medium">Teachers</p>
                         <p class="text-2xl md:text-3xl font-bold mt-1 text-[#0a1428]" style="font-family:'Cormorant Garamond',serif;">{{ $totalTeachers ?? 0 }}</p>
                     </div>
                     <div class="icon-circle"><i class="fas fa-chalkboard-teacher text-lg"></i></div>
                 </div>
-                <div class="stat-card p-4 md:p-5 flex justify-between items-center">
+                <div class="stat-card p-4 md:p-5 flex justify-between items-center" onclick="openDashboardDetailModal('sections')">
                     <div>
                         <p class="text-[#5b6375] text-xs font-medium">Sections</p>
                         <p class="text-2xl md:text-3xl font-bold mt-1 text-[#0a1428]" style="font-family:'Cormorant Garamond',serif;">{{ $totalSections ?? 0 }}</p>
@@ -746,10 +753,6 @@
                         <div class="flex justify-between items-center mb-6">
                             <h3>Capstone Completion Progress</h3>
                             <i class="fas fa-arrow-up-right-from-square text-[#b8b0a0] cursor-pointer hover:text-[#0a1428] transition text-sm"></i>
-                        </div>
-                        <div class="flex gap-1.5 bg-[#f5f1e8] p-1 rounded-full mb-5">
-                            <button type="button" class="stage-tab-btn text-xs font-medium py-1.5 px-4 rounded-full transition-smooth active" data-stage="1">Capstone 1</button>
-                            <button type="button" class="stage-tab-btn text-xs font-medium py-1.5 px-4 rounded-full transition-smooth" data-stage="2">Capstone 2</button>
                         </div>
                         <div class="space-y-4">
                             @forelse($milestoneCompletion ?? [] as $m)
@@ -817,6 +820,7 @@
                     <div class="flex justify-between items-center mb-5 flex-wrap gap-3">
                         <h3>All Teachers</h3>
                         <div class="flex gap-2">
+                        <button onclick="openModal('assign_section_modal')" class="btn-primary text-sm"><i class="fas fa-plus mr-1"></i> Assign a section</button>
                         <button onclick="resetAssignModal(); openModal('assign_modal')" class="btn-outline text-sm"><i class="fas fa-link mr-1"></i> Change Adviser</button>
                         <button onclick="openModal('import_teacher_modal')" class="btn-outline text-sm"><i class="fas fa-file-import mr-1"></i> Import Excel</button>
                         <button onclick="openModal('teacher_modal')" class="btn-primary text-sm"><i class="fas fa-plus mr-1"></i> Add Teacher</button>
@@ -824,7 +828,7 @@
                     </div>
                     <div class="overflow-x-auto">
                         <table>
-                            <thead><tr><th>Teacher</th><th>Email</th><th>Assigned Groups</th><th class="pr-2">Actions</th></tr></thead>
+                            <thead><tr><th>Teacher</th><th>Email</th><th>Assigned Groups</th><th>Assigned Sections</th><th class="pr-2">Actions</th></tr></thead>
                             <tbody>
                                 @forelse($allTeachers ?? [] as $teacher)
                                 <tr>
@@ -844,6 +848,15 @@
                                             <span class="badge badge-navy">{{ $group->group_name }}</span>
                                             @empty
                                             <span class="badge badge-muted">No Group</span>
+                                            @endforelse
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="flex flex-wrap gap-1">
+                                            @forelse($teacher->sections as $section)
+                                            <span class="badge badge-navy">{{ $section->section_name }}</span>
+                                            @empty
+                                            <span class="badge badge-muted">No Section Assigned</span>
                                             @endforelse
                                         </div>
                                     </td>
@@ -892,7 +905,25 @@
             </div>
             <div class="overflow-x-auto">
                 <table>
-                    <thead><tr><th>Student</th><th>ID</th><th>Course</th><th>Section</th><th>Group</th><th class="pr-2">Actions</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>ID</th>
+                            <th>Course</th>
+                            <th>
+                                <select id="admin-student-section-filter" class="form-select text-xs py-1 px-2 border border-[#e2dacf] rounded-lg bg-[#faf8f4] font-semibold" style="color: var(--navy); max-width: 140px;">
+                                    <option value="All">All Section</option>
+                                    @forelse ($allSections as $section)
+                                        <option value="{{ $section->section_name }}">{{ $section->section_name }}</option>
+                                    @empty
+                                        <option disabled>No section available</option>
+                                    @endforelse
+                                </select>
+                            </th>
+                            <th>Group</th>
+                            <th class="pr-2">Actions</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         @forelse($allStudents ?? [] as $student)
                         <tr>
@@ -975,8 +1006,7 @@
 
     <!-- Action buttons (no filter here) -->
     <div class="flex flex-wrap items-center justify-end gap-3 mb-5">
-        <button onclick="openModal('milestone_modal')" class="btn-outline text-sm"><i class="fas fa-plus mr-1"></i> Add Milestone</button>
-        <button onclick="openModal('rubrics_modal')" class="btn-primary text-sm"><i class="fas fa-plus mr-1"></i> Create Rubric</button>
+        <button onclick="openModal('milestone_modal')" class="btn-primary text-sm"><i class="fas fa-plus mr-1"></i> Add Milestone</button>
     </div>
 
     <!-- Milestones Section -->
@@ -988,7 +1018,7 @@
                     <h3>All Milestones</h3>
                     <!-- Filter dropdown -->
                     <select id="milestone-stage-filter" class="form-select w-36 py-1.5 text-sm">
-                        <option value="all">All Stages</option>
+                        <option disabled selected>Select Stage</option>
                         <option value="1">Capstone 1</option>
                         <option value="2">Capstone 2</option>
                     </select>
@@ -1152,10 +1182,6 @@
                     <div class="p-6">
                         <div class="flex justify-between items-center mb-2 pb-4 border-b border-[#f0ece4]">
                             <div><h3>Milestone Completion</h3><p class="text-xs text-[#9a9385] mt-0.5">Progress across capstone stages</p></div>
-                            <div class="flex gap-1.5 bg-[#f5f1e8] p-1 rounded-full">
-                                <button type="button" class="stage-tab-btn text-xs font-medium py-1.5 px-4 rounded-full transition-smooth active" data-stage="1">Capstone 1</button>
-                                <button type="button" class="stage-tab-btn text-xs font-medium py-1.5 px-4 rounded-full transition-smooth" data-stage="2">Capstone 2</button>
-                            </div>
                         </div>
                         <div class="space-y-4 mt-5">
                             @forelse($milestoneCompletion ?? [] as $m)
@@ -1346,6 +1372,151 @@
             </div>
         </div>
 
+        <!-- ==================== CAPSTONES MANAGEMENT ==================== -->
+        <div id="capstone-section" class="section-container hidden section-card max-w-7xl mx-auto">
+            <div class="mb-8">
+                <h1>Capstone 1 & 2 Management</h1>
+                <div class="gold-accent-line"></div>
+                <p class="text-[#5b6375] mt-2 text-sm">Configure active Capstone stages, enable/disable stages individually, or archive past group records by year</p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Column 1: Config -->
+                <div class="content-card">
+                    <div class="card-accent"></div>
+                    <div class="p-6">
+                        <h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-[#0a1428]" style="font-family:'Cormorant Garamond',serif; font-size:1.3rem;">
+                            <i class="fa-solid fa-sliders text-[#d6b15c]"></i> Active Stages Configuration
+                        </h3>
+                        <p class="text-xs text-[#5b6375] mb-6">Enabling/disabling a stage will automatically hide or show its corresponding milestones, rubrics, and progress stats across all dashboards.</p>
+                        
+                        <div class="space-y-4">
+                            @foreach($capstoneStages as $stage)
+                            <div class="flex items-center justify-between p-4 bg-[#faf8f4] border border-[#e2dacf] rounded-xl hover:border-[#d6b15c] transition">
+                                <div>
+                                    <h4 class="font-bold text-[#0a1428]">{{ $stage->stage_title }}</h4>
+                                    <p class="text-xs text-[#5b6375] mt-0.5">
+                                        Status: 
+                                        @if($stage->is_enabled)
+                                            <span class="text-green-600 font-semibold uppercase tracking-wider text-[10px]">Active / Enabled</span>
+                                        @else
+                                            <span class="text-red-500 font-semibold uppercase tracking-wider text-[10px]">Disabled</span>
+                                        @endif
+                                    </p>
+                                </div>
+                                <form action="{{ route('admin.toggle_capstone_stage') }}" method="POST">
+                                    @csrf
+                                    <input type="hidden" name="stage_id" value="{{ $stage->id }}">
+                                    <button type="submit" class="px-4 py-2 text-xs font-semibold rounded-lg transition {{ $stage->is_enabled ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-green-600 hover:bg-green-700 text-white' }}">
+                                        {{ $stage->is_enabled ? 'Disable' : 'Enable' }}
+                                    </button>
+                                </form>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column 2: Archive -->
+                <div class="content-card">
+                    <div class="card-accent"></div>
+                    <div class="p-6">
+                        <h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-[#0a1428]" style="font-family:'Cormorant Garamond',serif; font-size:1.3rem;">
+                            <i class="fa-solid fa-box-archive text-[#d6b15c]"></i> Archive Records by Year
+                        </h3>
+                        <p class="text-xs text-[#5b6375] mb-6">Archive the entire chosen active Capstone Stage and its groups for a specific year, and create a brand new active stage duplicating the same milestone templates.</p>
+                        
+                        <form action="{{ route('admin.archive_capstone_by_year') }}" method="POST" class="space-y-4">
+                            @csrf
+                            <div>
+                                <label class="form-label text-xs font-semibold uppercase text-[#5b6375]">Capstone Stage to Archive</label>
+                                <select name="stage_id" class="form-select mt-1 block w-full rounded-lg border-[#e2dacf] bg-[#faf8f4] p-2" required>
+                                    <option value="all">All Stages (Capstone 1 & 2)</option>
+                                    @foreach($capstoneStages as $stage)
+                                    <option value="{{ $stage->id }}">{{ $stage->stage_title }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label text-xs font-semibold uppercase text-[#5b6375]">Target School Year (Created Year)</label>
+                                <select name="year" class="form-select mt-1 block w-full rounded-lg border-[#e2dacf] bg-[#faf8f4] p-2" required>
+                                    @for($y = date('Y'); $y >= 2024; $y--)
+                                    <option value="{{ $y }}">{{ $y }}</option>
+                                    @endfor
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label text-xs font-semibold uppercase text-[#5b6375]">New Cycle Name (For Cloned Stage)</label>
+                                <input type="text" name="new_title" class="form-input mt-1 block w-full rounded-lg border-[#e2dacf] bg-[#faf8f4] p-2" placeholder="e.g. Capstone 1 - 2026-2027" required>
+                            </div>
+                            
+                            <div class="pt-2 flex justify-end">
+                                <button type="submit" class="btn-primary flex items-center gap-2">
+                                    <i class="fa-solid fa-box-archive"></i> Run Archival & Clonation
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table of Archived Groups (Single Catalog Div) -->
+            <div class="content-card w-full">
+                <div class="card-accent"></div>
+                <div class="p-6">
+                    <h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-[#0a1428]" style="font-family:'Cormorant Garamond',serif; font-size:1.3rem;">
+                        <i class="fa-solid fa-box-archive text-[#d6b15c]"></i> Archived Capstone Groups Catalog
+                    </h3>
+                    <p class="text-xs text-[#5b6375] mb-6">List of all Capstone groups that have been archived. You can click 'View Progress' to see their completed milestones and score records in read-only mode.</p>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-[#e2dacf]">
+                            <thead>
+                                <tr class="bg-[#faf8f4] text-left text-[11px] font-semibold uppercase tracking-wider text-[#5b6375]">
+                                    <th class="px-6 py-3">Group Name</th>
+                                    <th class="px-6 py-3">Capstone Stage</th>
+                                    <th class="px-6 py-3">Capstone Title</th>
+                                    <th class="px-6 py-3">Section</th>
+                                    <th class="px-6 py-3">Adviser</th>
+                                    <th class="px-6 py-3">Year</th>
+                                    <th class="px-6 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-[#e2dacf] text-sm text-[#171e2c]">
+                                @forelse($archivedGroups as $group)
+                                <tr class="hover:bg-[#faf8f4] transition">
+                                    <td class="px-6 py-4 font-bold">{{ $group->group_name }}</td>
+                                    <td class="px-6 py-4">
+                                        <span class="px-2 py-0.5 text-xs font-semibold rounded bg-[#f5f1e8] text-[#0a1428]">
+                                            {{ $group->capstoneStage->stage_title ?? 'Capstone' }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-xs text-[#5b6375]">{{ $group->capstone_title }}</td>
+                                    <td class="px-6 py-4">{{ $group->section->section_name ?? 'N/A' }}</td>
+                                    <td class="px-6 py-4">
+                                        {{ $group->adviser ? $group->adviser->teacher_first_name . ' ' . $group->adviser->teacher_last_name : 'No Adviser' }}
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="px-2 py-1 text-xs font-semibold rounded bg-[#e8e3d7] text-[#0a1428]">{{ $group->archived_year }}</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <button type="button" onclick="viewArchivedProgress({{ $group->id }}, '{{ addslashes($group->group_name) }}')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#0a1428] text-white hover:bg-opacity-90 transition">
+                                            <i class="fas fa-eye mr-1"></i> View Progress
+                                        </button>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="7" class="px-6 py-8 text-center text-[#5b6375] text-xs">No archived groups in system yet.</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- ======================= MODALS ======================= -->
@@ -1389,6 +1560,46 @@
             <div class="flex justify-end gap-2 pt-3">
                 <button type="button" onclick="closeModal('assign_modal')" class="btn-ghost">Cancel</button>
                 <button type="submit" class="btn-primary">Change Adviser</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ASSIGN SECTION MODAL -->
+<div id="assign_section_modal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-accent"></div>
+        <div class="flex justify-between items-center mb-4">
+            <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">Assign a Section</h2>
+            <button type="button" onclick="closeModal('assign_section_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
+        </div>
+        <form action="{{ route('admin.assign_section') }}" method="POST" class="space-y-4">
+            @csrf
+            <div>
+                <label class="form-label">Section</label>
+                <select name="section_id" id="as_section_select" class="form-select" required onchange="updateCurrentSectionTeacher()">
+                    <option value="" disabled selected>Select section</option>
+                    @foreach($sections as $sec)
+                    <option value="{{ $sec->id }}" data-teacher-user-id="{{ $sec->user_id }}">{{ $sec->section_name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="form-label">Current Teacher</label>
+                <input type="text" id="as_current_teacher" class="form-input opacity-70" readonly placeholder="No Teacher Assigned">
+            </div>
+            <div>
+                <label class="form-label">Assign to Teacher</label>
+                <select name="teacher_user_id" id="as_teacher_select" class="form-select" required>
+                    <option value="none">Unassigned (None)</option>
+                    @foreach($allTeachers as $teacher)
+                    <option value="{{ $teacher->user_id }}">{{ $teacher->teacher_first_name }} {{ $teacher->teacher_last_name }} ({{ $teacher->user_id }})</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="flex justify-end gap-2 pt-3">
+                <button type="button" onclick="closeModal('assign_section_modal')" class="btn-ghost">Cancel</button>
+                <button type="submit" class="btn-primary">Assign Section</button>
             </div>
         </form>
     </div>
@@ -1584,61 +1795,58 @@
 
     <!-- ADD MILESTONE MODAL -->
     <div id="milestone_modal" class="modal-overlay">
-        <div class="modal-box">
+        <div class="modal-box wide">
             <div class="modal-accent"></div>
             <div class="flex justify-between items-center mb-4">
                 <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">Add Milestone</h2>
                 <button type="button" onclick="closeModal('milestone_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
             </div>
-            <form action="{{ route('admin.add_milestone') }}" method="POST" class="space-y-3">
+            <form action="{{ route('admin.add_milestone') }}" method="POST" class="space-y-3" onsubmit="return validateMilestoneForm()">
                 @csrf
                 @if ($errors->any())
                 <div class="bg-red-50 border border-red-300 text-red-700 p-3 rounded-lg mb-4 text-sm"><ul class="list-disc list-inside">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
                 @endif
                 <div><label class="form-label">Milestone Name</label><input type="text" name="milestone_title" class="form-input" placeholder="e.g. title hearing" required></div>
-                <div><label class="form-label">Capstone Stage</label><select name="capstone_stage" class="form-select" required>@foreach($capstoneStages as $stageS)<option value="{{ $stageS->id }}">{{ $stageS->stage_title }}</option>@endforeach</select></div>
-                <div><label class="form-label">Order Position</label><select name="order" class="form-select" required>@php $existingOrders = $milestones->pluck('step_order')->toArray(); $maxOrder = $milestones->count() + 1; @endphp @for ($i = 1; $i <= $maxOrder; $i++)<option value="{{ $i }}" {{ in_array($i, $existingOrders) ? 'disabled' : '' }}>Position {{ $i }} {{ in_array($i, $existingOrders) ? '(taken)' : '' }}</option>@endfor</select></div>
+                <div><label class="form-label">Capstone Stage</label><select name="capstone_stage" class="form-select" required>
+                    <option value="" disabled selected>Select a stage</option>
+                    @foreach($capstoneStages->where('is_enabled', true) as $stageS)<option value="{{ $stageS->id }}">{{ $stageS->stage_title }}</option>@endforeach</select></div>
+                <div>
+                    <label class="form-label">Order Position</label>
+                    @php $nextOrder = ($milestones->max('step_order') ?? 0) + 1; @endphp
+                    <input type="number" name="order" value="{{ $nextOrder }}" class="form-input opacity-70" readonly>
+                    <p class="text-xs text-[#9a9385] mt-1">This position is automatically calculated as the next step order.</p>
+                </div>
                 <div><label class="form-label">Description <span class="text-[#9a9385]">(optional)</span></label><textarea name="description" rows="3" class="form-input resize-none" placeholder="What students need to accomplish..."></textarea></div>
                 <div class="grid grid-cols-2 gap-2">
-                    <div><label class="form-label">Start Date</label><input type="date" name="start_date" min="{{ date('Y-m-d') }}" class="form-input" style="color-scheme:light;"></div>
-                    <div><label class="form-label">Due Date</label><input type="date" name="due_date" min="{{ date('Y-m-d') }}" class="form-input" style="color-scheme:light;"></div>
+                    <div><label class="form-label">Start Date</label><input type="date" name="start_date" class="form-input" style="color-scheme:light;" required></div>
+                    <div><label class="form-label">Due Date</label><input type="date" name="due_date" class="form-input" style="color-scheme:light;" required></div>
                 </div>
-                <div class="flex justify-end gap-2 pt-3"><button type="button" onclick="closeModal('milestone_modal')" class="btn-ghost">Cancel</button><button type="submit" class="btn-primary">Save Milestone</button></div>
-            </form>
-        </div>
-    </div>
 
-    <!-- CREATE RUBRIC MODAL -->
-    <div id="rubrics_modal" class="modal-overlay">
-        <div class="modal-box wide">
-            <div class="modal-accent"></div>
-            <div class="flex justify-between items-center mb-4">
-                <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">Create Rubric</h2>
-                <button type="button" onclick="closeModal('rubrics_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
-            </div>
-            <form action="{{ route('admin.add_rubric') }}" method="POST" class="space-y-4" onsubmit="return validateWeights()">
-                @csrf
-                <div><label class="form-label">Rubric Name</label><input type="text" name="rubric_name" class="form-input" placeholder="e.g. Proposal Defense Rubric" required></div>
-                <div><label class="form-label">Capstone Stage</label><select name="capstone_id" id="rubric_capstone_id" class="form-select" required><option value="" disabled selected>Select capstone stage</option>@foreach($capstoneStages as $stage)<option value="{{ $stage->id }}">{{ $stage->stage_title }}</option>@endforeach</select></div>
-                <div>
-                    <label class="form-label">Milestone</label>
-                    <select name="milestone_id" class="form-select" required id="milestone-select">
-                        <option value="" disabled selected>Select milestone</option>
-                        @foreach($milestones as $milestone)
-                        <option value="{{ $milestone->id }}" data-capstone-stage-id="{{ $milestone->capstone_stage_id }}">{{ $milestone->milestone_title }}</option>
-                        @endforeach
-                    </select>
+                <!-- OPTIONAL RUBRIC CREATION SECTION -->
+                <div class="mt-4 border-t border-[#e2dacf] pt-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="add_rubric" id="add_rubric_chk" class="form-checkbox rounded text-[#d6b15c] focus:ring-[#d6b15c]" onchange="toggleRubricSection(this.checked)">
+                        <span class="text-sm font-semibold text-[#0a1428]">Associate an Evaluation Rubric with this Milestone (Optional)</span>
+                    </label>
                 </div>
-                <div>
-                    <div class="flex justify-between items-end mb-2">
-                        <label class="form-label !mb-0">Criteria <span class="text-[#9a9385] font-normal normal-case">(weights must total 100%)</span></label>
-                        <button type="button" onclick="addCriteriaRow()" class="text-xs text-[#d6b15c] hover:text-[#b88d3a] transition font-medium"><i class="fas fa-plus mr-1"></i>Add criteria</button>
+
+                <div id="milestone_rubric_section" class="hidden space-y-4 mt-4">
+                    <div>
+                        <label class="form-label">Rubric Name</label>
+                        <input type="text" name="rubric_name" id="milestone_rubric_name" class="form-input" placeholder="e.g. Milestone Evaluation Rubric">
                     </div>
-                    <div class="grid grid-cols-12 gap-2 mb-1 text-[11px] text-[#5b6375]"><span class="col-span-6">Criteria</span><span class="col-span-2">Weight %</span><span class="col-span-3">Max score</span><span class="col-span-1"></span></div>
-                    <div id="criteria-list" class="space-y-2"></div>
-                    <div id="error-message" class="text-red-500 text-xs mt-1 hidden"></div>
+                    <div>
+                        <div class="flex justify-between items-end mb-2">
+                            <label class="form-label !mb-0">Criteria <span class="text-[#9a9385] font-normal normal-case">(weights must total 100%)</span></label>
+                            <button type="button" onclick="addCriteriaRow('milestone-criteria-list')" class="text-xs text-[#d6b15c] hover:text-[#b88d3a] transition font-medium"><i class="fas fa-plus mr-1"></i>Add criteria</button>
+                        </div>
+                        <div class="grid grid-cols-12 gap-2 mb-1 text-[11px] text-[#5b6375]"><span class="col-span-6">Criteria</span><span class="col-span-2">Weight %</span><span class="col-span-3">Max score</span><span class="col-span-1"></span></div>
+                        <div id="milestone-criteria-list" class="space-y-2"></div>
+                        <div id="milestone-error-message" class="text-red-500 text-xs mt-1 hidden"></div>
+                    </div>
                 </div>
-                <div class="flex justify-end gap-2 pt-2"><button type="button" onclick="closeModal('rubrics_modal')" class="btn-ghost">Cancel</button><button type="submit" class="btn-primary">Save Rubric</button></div>
+
+                <div class="flex justify-end gap-2 pt-3"><button type="button" onclick="closeModal('milestone_modal')" class="btn-ghost">Cancel</button><button type="submit" class="btn-primary">Save Milestone</button></div>
             </form>
         </div>
     </div>
@@ -1665,7 +1873,7 @@
                     <div>
                         <label class="form-label">Capstone Stage</label>
                         <select name="capstone_stage" id="edit_milestone_stage" class="form-select" required>
-                            @foreach($capstoneStages as $stageS)
+                            @foreach($capstoneStages->where('is_enabled', true) as $stageS)
                             <option value="{{ $stageS->id }}">{{ $stageS->stage_title }}</option>
                             @endforeach
                         </select>
@@ -1714,6 +1922,30 @@
                     </div>
                 </div>
 
+                <!-- OPTIONAL RUBRIC EDIT SECTION -->
+                <div class="mt-4 border-t border-[#e2dacf] pt-4">
+                    <label class="flex items-center gap-2 cursor-pointer mb-3">
+                        <input type="checkbox" name="add_rubric" id="edit_add_rubric_chk" class="form-checkbox rounded text-[#d6b15c] focus:ring-[#d6b15c]">
+                        <span class="text-sm font-semibold text-[#0a1428]">Associate an Evaluation Rubric with this Milestone (Optional)</span>
+                    </label>
+                </div>
+
+                <div id="edit_milestone_rubric_section" class="hidden space-y-4 mt-4">
+                    <div>
+                        <label class="form-label">Rubric Name</label>
+                        <input type="text" name="rubric_name" id="edit_milestone_rubric_name" class="form-input" placeholder="e.g. Milestone Evaluation Rubric">
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-end mb-2">
+                            <label class="form-label !mb-0">Criteria <span class="text-[#9a9385] font-normal normal-case">(weights must total 100%)</span></label>
+                            <button type="button" onclick="addCriteriaRow('edit-milestone-criteria-list')" class="text-xs text-[#d6b15c] hover:text-[#b88d3a] transition font-medium"><i class="fas fa-plus mr-1"></i>Add criteria</button>
+                        </div>
+                        <div class="grid grid-cols-12 gap-2 mb-1 text-[11px] text-[#5b6375]"><span class="col-span-6">Criteria</span><span class="col-span-2">Weight %</span><span class="col-span-3">Max score</span><span class="col-span-1"></span></div>
+                        <div id="edit-milestone-criteria-list" class="space-y-2"></div>
+                        <div id="edit-milestone-error-message" class="text-red-500 text-xs mt-1 hidden"></div>
+                    </div>
+                </div>
+
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" onclick="closeModal('edit_milestone_modal')" class="btn-ghost">Cancel</button>
                     <button type="submit" class="btn-primary">Save Milestone</button>
@@ -1736,11 +1968,11 @@
                 @method('PUT')
                 <input type="hidden" name="rubric_id" id="edit_rubric_id">
                 <div><label class="form-label">Rubric Name</label><input type="text" name="rubric_name" id="edit_rubric_name" class="form-input" required></div>
-                <div><label class="form-label">Capstone Stage</label><select name="capstone_id" id="edit_capstone_id" class="form-select" required><option value="" disabled>Select capstone stage</option>@foreach($capstoneStages as $stage)<option value="{{ $stage->id }}">{{ $stage->stage_title }}</option>@endforeach</select></div>
+                <div><label class="form-label">Capstone Stage</label><select name="capstone_id" id="edit_capstone_id" class="form-select" required><option value="" disabled>Select capstone stage</option>@foreach($capstoneStages->where('is_enabled', true) as $stage)<option value="{{ $stage->id }}">{{ $stage->stage_title }}</option>@endforeach</select></div>
                 <div>
                     <label class="form-label">Milestone</label>
-                    <select name="milestone_id" class="form-select" required id="edit_milestone_select">
-                        <option value="" disabled>Select milestone</option>
+                    <select name="milestone_id" class="form-select" id="edit_milestone_select">
+                        <option value="">None (Optional)</option>
                         @foreach($milestones as $milestone)
                         <option value="{{ $milestone->id }}" data-capstone-stage-id="{{ $milestone->capstone_stage_id }}">{{ $milestone->milestone_title }}</option>
                         @endforeach
@@ -1808,8 +2040,8 @@
             <div>
                 <label class="form-label">Capstone Stage <span class="text-red-500">*</span></label>
                 <select id="create_room_capstone_stage" class="form-select" onchange="filterMilestonesByStage(this.value)" required>
-                    <option value="" disabled selected>Select Capstone Stage</option>
-                    @foreach($capstoneStages as $stage)
+                    <option value="" selected disabled>Select Capstone Stage</option>
+                    @foreach($capstoneStages->where('is_enabled', true) as $stage)
                     <option value="{{ $stage->id }}">{{ $stage->stage_title }}</option>
                     @endforeach
                 </select>
@@ -2021,6 +2253,275 @@
         </form>
     </div>
 </div>
+
+    <!-- VIEW ARCHIVED PROGRESS MODAL (READ-ONLY) -->
+    <div id="archived_progress_modal" class="modal-overlay">
+        <div class="modal-box wide">
+            <div class="modal-accent"></div>
+            <div class="flex justify-between items-center mb-4 p-4 border-b border-[#e2dacf]">
+                <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);" id="apm_title">Archived Group Progress</h2>
+                <button type="button" onclick="closeModal('archived_progress_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
+            </div>
+            <div class="p-4 space-y-4">
+                <div class="flex justify-between items-center bg-[#faf8f4] p-4 border border-[#e2dacf] rounded-xl">
+                    <span class="text-sm font-semibold text-[#0a1428]">Overall Completion Progress:</span>
+                    <span id="apm_progress_pct" class="font-bold text-[#b88d3a]">0%</span>
+                </div>
+                
+                <div class="overflow-x-auto" style="max-height: 350px;">
+                    <table class="min-w-full divide-y divide-[#e2dacf]">
+                        <thead>
+                            <tr class="bg-[#faf8f4] text-left text-[11px] font-semibold uppercase tracking-wider text-[#5b6375]">
+                                <th class="px-4 py-2">Milestone</th>
+                                <th class="px-4 py-2">Completion Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="apm_milestones_tbody" class="divide-y divide-[#e2dacf] text-xs text-[#171e2c]">
+                            <!-- Milestones dynamically populated via AJAX -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-3 border-t border-[#e2dacf] p-4">
+                <button type="button" onclick="closeModal('archived_progress_modal')" class="btn-ghost">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SYSTEM DIRECTORY DETAIL MODAL (TABBED OVERVIEW) -->
+    <div id="dashboard_detail_modal" class="modal-overlay">
+        <div class="modal-box wide" style="max-width: 68rem;">
+            <div class="modal-accent"></div>
+            <div class="flex justify-between items-center mb-6 p-1">
+                <div>
+                    <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.6rem; font-weight:600; color:var(--navy);" id="ddm_modal_title">System Overview Details</h2>
+                    <p class="text-xs text-[#5b6375] mt-1">Detailed directory of all registered entities across the workspace.</p>
+                </div>
+                <button type="button" onclick="closeModal('dashboard_detail_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-2xl focus:outline-none">&times;</button>
+            </div>
+
+            <!-- Tab Buttons -->
+            <div class="flex gap-2 border-b border-[#e2dacf] pb-3 mb-6 overflow-x-auto">
+                <button type="button" onclick="switchDdmTab('students')" id="ddm_tab_students" class="ddm-tab-btn px-4 py-2 text-xs font-semibold rounded-lg transition-all border border-[#e2dacf] text-[#5b6375] hover:bg-[#faf8f4]">
+                    <i class="fas fa-user-graduate mr-1.5 text-[#d6b15c]"></i> Students (<span id="ddm_count_students">{{ count($allStudents ?? []) }}</span>)
+                </button>
+                <button type="button" onclick="switchDdmTab('groups')" id="ddm_tab_groups" class="ddm-tab-btn px-4 py-2 text-xs font-semibold rounded-lg transition-all border border-[#e2dacf] text-[#5b6375] hover:bg-[#faf8f4]">
+                    <i class="fas fa-layer-group mr-1.5 text-[#d6b15c]"></i> Groups (<span id="ddm_count_groups">{{ count($groupsData ?? []) }}</span>)
+                </button>
+                <button type="button" onclick="switchDdmTab('teachers')" id="ddm_tab_teachers" class="ddm-tab-btn px-4 py-2 text-xs font-semibold rounded-lg transition-all border border-[#e2dacf] text-[#5b6375] hover:bg-[#faf8f4]">
+                    <i class="fas fa-chalkboard-teacher mr-1.5 text-[#d6b15c]"></i> Teachers (<span id="ddm_count_teachers">{{ count($allTeachers ?? []) }}</span>)
+                </button>
+                <button type="button" onclick="switchDdmTab('sections')" id="ddm_tab_sections" class="ddm-tab-btn px-4 py-2 text-xs font-semibold rounded-lg transition-all border border-[#e2dacf] text-[#5b6375] hover:bg-[#faf8f4]">
+                    <i class="fas fa-columns mr-1.5 text-[#d6b15c]"></i> Sections (<span id="ddm_count_sections">{{ count($allSections ?? []) }}</span>)
+                </button>
+            </div>
+
+            <!-- Search Filter -->
+            <div class="mb-4">
+                <div class="relative">
+                    <input type="text" id="ddm_search_input" oninput="filterDdmTable()" class="form-input text-xs w-full pl-9 py-2 border border-[#e2dacf] rounded-xl bg-[#faf8f4]" placeholder="Search by name, ID, section, or other details...">
+                    <i class="fas fa-search absolute left-3 top-3 text-[#b8b0a0] text-xs"></i>
+                </div>
+            </div>
+
+            <!-- Tabs Content Container -->
+            <div class="overflow-y-auto max-h-[50vh] border border-[#e2dacf] bg-white rounded-xl">
+                
+                <!-- Students Tab Content -->
+                <div id="ddm_content_students" class="ddm-tab-content hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                                <th class="p-3 pl-4">Student</th>
+                                <th class="p-3">User ID</th>
+                                <th class="p-3">Course</th>
+                                <th class="p-3">Section</th>
+                                <th class="p-3">Group</th>
+                                <th class="p-3 pr-4">Contact</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#faf1e0]">
+                            @forelse($allStudents ?? [] as $st)
+                                <tr class="hover:bg-[#faf8f4]/50 text-xs ddm-row-item transition duration-150" data-search-text="{{ strtolower($st->student_first_name . ' ' . $st->student_last_name . ' ' . $st->user_id . ' ' . $st->course . ' ' . $st->section . ' ' . ($st->groups->pluck('group_name')->join(', ') ?: 'No Group')) }}">
+                                    <td class="p-3 pl-4">
+                                        <div class="flex items-center gap-2.5">
+                                            <div class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style="background:linear-gradient(135deg, var(--navy) 0%, #1e3a5f 100%);">
+                                                {{ strtoupper(substr($st->student_first_name, 0, 1) . substr($st->student_last_name, 0, 1)) }}
+                                            </div>
+                                            <span class="font-semibold text-[#0a1428]">{{ $st->student_first_name }} {{ $st->student_last_name }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-3 text-[#3d4450] font-mono">{{ $st->user->user_id ?? 'N/A' }}</td>
+                                    <td class="p-3 text-[#3d4450]">{{ $st->course }}</td>
+                                    <td class="p-3 text-[#3d4450]">{{ $st->section }}</td>
+                                    <td class="p-3">
+                                        @php $groupNames = $st->groups->pluck('group_name')->join(', '); @endphp
+                                        @if($groupNames)
+                                            <span class="badge badge-navy text-[10px]"><i class="fas fa-layer-group text-[9px] mr-1"></i> {{ $groupNames }}</span>
+                                        @else
+                                            <span class="badge badge-muted text-[10px]">No Group</span>
+                                        @endif
+                                    </td>
+                                    <td class="p-3 pr-4 text-[#5b6375]">
+                                        <div class="flex flex-col text-[10px]">
+                                            <span><i class="fa-regular fa-envelope mr-1 text-[#b8b0a0]"></i> {{ $st->student_email }}</span>
+                                            @if($st->contact_number)
+                                                <span class="mt-0.5"><i class="fa-solid fa-phone mr-1 text-[#b8b0a0]"></i> {{ $st->contact_number }}</span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="6" class="p-8 text-center text-[#5b6375]"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i> No students registered.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Groups Tab Content -->
+                <div id="ddm_content_groups" class="ddm-tab-content hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                                <th class="p-3 pl-4">Group Name</th>
+                                <th class="p-3">Capstone Title</th>
+                                <th class="p-3">Section</th>
+                                <th class="p-3">Adviser</th>
+                                <th class="p-3">Evaluation Room</th>
+                                <th class="p-3 pr-4 text-center">Members</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#faf1e0]">
+                            @forelse($groupsData ?? [] as $gr)
+                                <tr class="hover:bg-[#faf8f4]/50 text-xs ddm-row-item transition duration-150" data-search-text="{{ strtolower($gr['name'] . ' ' . $gr['capstone_title'] . ' ' . $gr['section_name'] . ' ' . ($gr['assigned_teacher_name'] ?? 'Unassigned') . ' ' . ($gr['room_name'] ?? 'Unassigned')) }}">
+                                    <td class="p-3 pl-4 font-semibold text-[#0a1428]">{{ $gr['name'] }}</td>
+                                    <td class="p-3 text-[#3d4450] max-w-xs truncate" title="{{ $gr['capstone_title'] ?? '' }}">{{ $gr['capstone_title'] ?? '—' }}</td>
+                                    <td class="p-3 text-[#3d4450]">{{ $gr['section_name'] }}</td>
+                                    <td class="p-3">
+                                        @if($gr['assigned_teacher_name'])
+                                            <span class="text-[#171e2c] font-medium"><i class="fas fa-chalkboard-teacher text-[#d6b15c] text-[10px] mr-1"></i> {{ $gr['assigned_teacher_name'] }}</span>
+                                        @else
+                                            <span class="text-gray-400 italic">Unassigned</span>
+                                        @endif
+                                    </td>
+                                    <td class="p-3">
+                                        @if($gr['room_name'] && $gr['room_name'] !== 'Unassigned')
+                                            <span class="badge badge-green text-[10px]"><i class="fas fa-door-open text-[9px] mr-1"></i> {{ $gr['room_name'] }}</span>
+                                        @else
+                                            <span class="badge badge-muted text-[10px]">Unassigned</span>
+                                        @endif
+                                    </td>
+                                    <td class="p-3 pr-4 text-center text-[#5b6375] font-semibold">{{ $gr['member_count'] }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="6" class="p-8 text-center text-[#5b6375]"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i> No groups created.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Teachers Tab Content -->
+                <div id="ddm_content_teachers" class="ddm-tab-content hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                                <th class="p-3 pl-4">Teacher</th>
+                                <th class="p-3">User ID</th>
+                                <th class="p-3">Adviser Groups</th>
+                                <th class="p-3">Assigned Sections</th>
+                                <th class="p-3 pr-4">Contact</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#faf1e0]">
+                            @forelse($allTeachers ?? [] as $t)
+                                @php
+                                    $groupNames = $t->groups->pluck('group_name')->join(', ');
+                                    $secNames = $t->sections->pluck('section_name')->join(', ');
+                                @endphp
+                                <tr class="hover:bg-[#faf8f4]/50 text-xs ddm-row-item transition duration-150" data-search-text="{{ strtolower($t->teacher_first_name . ' ' . $t->teacher_last_name . ' ' . ($t->user->user_id ?? '') . ' ' . $groupNames . ' ' . $secNames) }}">
+                                    <td class="p-3 pl-4">
+                                        <div class="flex items-center gap-2.5">
+                                            <div class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style="background:linear-gradient(135deg, var(--navy) 0%, #1e3a5f 100%);">
+                                                {{ strtoupper(substr($t->teacher_first_name, 0, 1) . substr($t->teacher_last_name, 0, 1)) }}
+                                            </div>
+                                            <span class="font-semibold text-[#0a1428]">{{ $t->teacher_first_name }} {{ $t->teacher_last_name }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-3 text-[#3d4450] font-mono">{{ $t->user->user_id ?? 'N/A' }}</td>
+                                    <td class="p-3 text-[#3d4450]">
+                                        <div class="flex flex-wrap gap-1 max-w-xs">
+                                            @forelse($t->groups as $g)
+                                                <span class="badge badge-navy text-[9px]">{{ $g->group_name }}</span>
+                                            @empty
+                                                <span class="text-gray-400 text-[10px] italic">None</span>
+                                            @endforelse
+                                        </div>
+                                    </td>
+                                    <td class="p-3 text-[#3d4450]">
+                                        <div class="flex flex-wrap gap-1 max-w-xs">
+                                            @forelse($t->sections as $sec)
+                                                <span class="badge badge-purple text-[9px]" style="background-color:rgba(107,33,168,0.1); color:rgb(107,33,168); border:1px solid rgba(107,33,168,0.2);">{{ $sec->section_name }}</span>
+                                            @empty
+                                                <span class="text-gray-400 text-[10px] italic">None</span>
+                                            @endforelse
+                                        </div>
+                                    </td>
+                                    <td class="p-3 pr-4 text-[#5b6375]">
+                                        <div class="flex flex-col text-[10px]">
+                                            <span><i class="fa-regular fa-envelope mr-1 text-[#b8b0a0]"></i> {{ $t->teacher_email }}</span>
+                                            @if($t->contact_number)
+                                                <span class="mt-0.5"><i class="fa-solid fa-phone mr-1 text-[#b8b0a0]"></i> {{ $t->contact_number }}</span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="5" class="p-8 text-center text-[#5b6375]"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i> No teachers registered.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Sections Tab Content -->
+                <div id="ddm_content_sections" class="ddm-tab-content hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                                <th class="p-3 pl-4">Section Name</th>
+                                <th class="p-3">Assigned Teacher</th>
+                                <th class="p-3">User ID of Teacher</th>
+                                <th class="p-3 pr-4 text-center">Section ID</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#faf1e0]">
+                            @forelse($sectionsData ?? [] as $sec)
+                                <tr class="hover:bg-[#faf8f4]/50 text-xs ddm-row-item transition duration-150" data-search-text="{{ strtolower($sec['name'] . ' ' . ($sec['assigned_teacher_name'] ?? 'Unassigned') . ' ' . ($sec['assigned_teacher_id'] ?? '')) }}">
+                                    <td class="p-3 pl-4 font-semibold text-[#0a1428]">{{ $sec['name'] }}</td>
+                                    <td class="p-3">
+                                        @if($sec['assigned_teacher_name'])
+                                            <span class="text-[#171e2c] font-medium"><i class="fas fa-chalkboard-teacher text-[#d6b15c] text-[10px] mr-1"></i> {{ $sec['assigned_teacher_name'] }}</span>
+                                        @else
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-medium text-red-700 bg-red-50 border border-red-200"><i class="fas fa-exclamation-triangle text-[9px] mr-1"></i> Unassigned</span>
+                                        @endif
+                                    </td>
+                                    <td class="p-3 text-[#3d4450] font-mono">{{ $sec['assigned_teacher_id'] ?? '—' }}</td>
+                                    <td class="p-3 pr-4 text-center text-[#5b6375] font-mono">{{ $sec['id'] }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="4" class="p-8 text-center text-[#5b6375]"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i> No sections registered.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <div class="flex justify-end pt-4 border-t border-[#e2dacf] mt-5">
+                <button type="button" onclick="closeModal('dashboard_detail_modal')" class="btn-primary text-xs px-5 py-2">Close Details</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ---- SECTION NAVIGATION ----
         const sections = {
@@ -2031,6 +2532,7 @@
             progress: document.getElementById('progress-section'),
             evaluation: document.getElementById('evaluation-section'),
             profile: document.getElementById('profile-section'),
+            capstone: document.getElementById('capstone-section'),
         };
         const navLinks = document.querySelectorAll('.nav-link');
         const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
@@ -2079,6 +2581,10 @@
 
             @if(session('error'))
                 showToast('{{ session('error') }}', true);
+            @endif
+
+            @if($errors->any())
+                showToast('{{ $errors->first() }}', true);
             @endif
 
             @if ($errors->any() && session('import_teachers'))
@@ -2157,6 +2663,130 @@
         // ---- MODALS ----
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        window.openDashboardDetailModal = function(tabName) {
+            openModal('dashboard_detail_modal');
+            switchDdmTab(tabName);
+            // Reset search input
+            const sInput = document.getElementById('ddm_search_input');
+            if (sInput) {
+                sInput.value = '';
+                filterDdmTable();
+            }
+        };
+
+        window.switchDdmTab = function(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.ddm-tab-content').forEach(el => el.classList.add('hidden'));
+            
+            // Reset all tab button styles to default state
+            document.querySelectorAll('.ddm-tab-btn').forEach(btn => {
+                btn.style.borderColor = '#e2dacf';
+                btn.style.color = '#5b6375';
+                btn.style.backgroundColor = 'transparent';
+                btn.classList.remove('active');
+            });
+
+            // Show selected content
+            const content = document.getElementById(`ddm_content_${tabName}`);
+            if (content) content.classList.remove('hidden');
+
+            // Set active button style
+            const activeBtn = document.getElementById(`ddm_tab_${tabName}`);
+            if (activeBtn) {
+                activeBtn.style.borderColor = 'var(--gold)';
+                activeBtn.style.color = 'var(--gold)';
+                activeBtn.style.backgroundColor = '#faf8f4';
+                activeBtn.classList.add('active');
+            }
+
+            // Update modal title prefix based on selected tab
+            const modalTitle = document.getElementById('ddm_modal_title');
+            if (modalTitle) {
+                const titleMap = {
+                    students: 'Students Directory',
+                    groups: 'Capstone Groups Directory',
+                    teachers: 'Teachers Directory',
+                    sections: 'Sections Directory'
+                };
+                modalTitle.textContent = titleMap[tabName] || 'System Overview Details';
+            }
+
+            // Run search filter on switch to apply current filter to the active table
+            filterDdmTable();
+        };
+
+        window.filterDdmTable = function() {
+            const query = document.getElementById('ddm_search_input').value.trim().toLowerCase();
+            const activeTab = document.querySelector('.ddm-tab-btn.active');
+            if (!activeTab) return;
+
+            const tabIdName = activeTab.id.replace('ddm_tab_', '');
+            const activeContent = document.getElementById(`ddm_content_${tabIdName}`);
+            if (!activeContent) return;
+
+            const rows = activeContent.querySelectorAll('.ddm-row-item');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const searchVal = row.dataset.searchText || '';
+                if (!query || searchVal.includes(query)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Update counter in active tab
+            const counterEl = document.getElementById(`ddm_count_${tabIdName}`);
+            if (counterEl) {
+                const originalTotal = rows.length;
+                if (query) {
+                    counterEl.textContent = `${visibleCount}/${originalTotal}`;
+                } else {
+                    counterEl.textContent = originalTotal;
+                }
+            }
+        };
+
+        function viewArchivedProgress(groupId, groupName) {
+            document.getElementById('apm_title').textContent = `Archived Progress: ${groupName}`;
+            const tbody = document.getElementById('apm_milestones_tbody');
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center py-4">Loading progress...</td></tr>';
+            openModal('archived_progress_modal');
+
+            fetch(`/admin/get-group-progress/${groupId}`)
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('apm_progress_pct').textContent = `${data.overall_progress ?? 0}%`;
+                    tbody.innerHTML = '';
+
+                    if (!data.milestones || data.milestones.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="2" class="text-center py-4">No milestones for this stage.</td></tr>';
+                        return;
+                    }
+
+                    data.milestones.forEach(m => {
+                        const tr = document.createElement('tr');
+                        const statusBadge = m.is_completed 
+                            ? '<span class="px-2 py-0.5 text-[10px] font-semibold text-green-700 bg-green-50 rounded">Completed</span>'
+                            : '<span class="px-2 py-0.5 text-[10px] font-semibold text-red-600 bg-red-50 rounded">Pending</span>';
+
+                        tr.innerHTML = `
+                            <td class="px-4 py-3">
+                                <div class="font-bold text-[#0a1428]">${m.title}</div>
+                                <div class="text-[10px] text-[#5b6375]">${m.description ?? ''}</div>
+                            </td>
+                            <td class="px-4 py-3">${statusBadge}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                })
+                .catch(() => {
+                    tbody.innerHTML = '<tr><td colspan="2" class="text-center text-red-500 py-4">Failed to load archived progress data.</td></tr>';
+                });
+        }
         document.querySelectorAll('.modal-overlay').forEach(overlay => {
             overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('active'); });
         });
@@ -2247,6 +2877,37 @@
             list.appendChild(row);
         }
 
+        function toggleRubricSection(checked) {
+            const section = document.getElementById('milestone_rubric_section');
+            section.classList.toggle('hidden', !checked);
+            
+            const nameInput = document.getElementById('milestone_rubric_name');
+            nameInput.required = checked;
+            
+            const criteriaList = document.getElementById('milestone-criteria-list');
+            if (checked && criteriaList.children.length === 0) {
+                addCriteriaRow('milestone-criteria-list');
+            }
+        }
+
+        function validateMilestoneForm() {
+            const chk = document.getElementById('add_rubric_chk');
+            if (chk && chk.checked) {
+                const errorEl = document.getElementById('milestone-error-message');
+                errorEl.classList.add('hidden');
+                const weights = document.querySelectorAll('#milestone-criteria-list input[name="weight[]"]');
+                let total = 0;
+                weights.forEach(w => total += parseFloat(w.value) || 0);
+                total = Math.round(total * 100) / 100;
+                if (total !== 100) {
+                    errorEl.textContent = `Total weight must equal 100%. Current total: ${total}%`;
+                    errorEl.classList.remove('hidden');
+                    return false;
+                }
+            }
+            return true;
+        }
+
         function validateWeights() {
             const errorEl = document.getElementById('error-message');
             errorEl.classList.add('hidden');
@@ -2288,6 +2949,28 @@
                             document.getElementById('edit_certificate_description').value = '';
                         }
 
+                        // Optional Rubric Populating
+                        const hasRubricCheckbox = document.getElementById('edit_add_rubric_chk');
+                        const rubricSection = document.getElementById('edit_milestone_rubric_section');
+                        const criteriaList = document.getElementById('edit-milestone-criteria-list');
+                        criteriaList.innerHTML = ''; // Clear old ones
+
+                        if (data.rubric) {
+                            hasRubricCheckbox.checked = true;
+                            rubricSection.classList.remove('hidden');
+                            document.getElementById('edit_milestone_rubric_name').value = data.rubric.rubric_name;
+                            document.getElementById('edit_milestone_rubric_name').required = true;
+                            
+                            data.rubric.criteria.forEach(c => {
+                                addCriteriaRow('edit-milestone-criteria-list', c);
+                            });
+                        } else {
+                            hasRubricCheckbox.checked = false;
+                            rubricSection.classList.add('hidden');
+                            document.getElementById('edit_milestone_rubric_name').value = '';
+                            document.getElementById('edit_milestone_rubric_name').required = false;
+                        }
+
                         document.getElementById('edit_milestone_form').action = `/admin/update-milestone/${data.id}`;
                         document.getElementById('edit_milestone_errors').classList.add('hidden');
                         openModal('edit_milestone_modal');
@@ -2299,12 +2982,38 @@
                 document.getElementById('edit_milestone_cert_fields').classList.toggle('hidden', !this.checked);
             });
 
+            document.getElementById('edit_add_rubric_chk').addEventListener('change', function () {
+                const section = document.getElementById('edit_milestone_rubric_section');
+                section.classList.toggle('hidden', !this.checked);
+                document.getElementById('edit_milestone_rubric_name').required = this.checked;
+                const criteriaList = document.getElementById('edit-milestone-criteria-list');
+                if (this.checked && criteriaList.children.length === 0) {
+                    addCriteriaRow('edit-milestone-criteria-list');
+                }
+            });
+
             document.getElementById('edit_milestone_form').addEventListener('submit', function (e) {
                 e.preventDefault();
                 const form = this;
                 const errorsBox = document.getElementById('edit_milestone_errors');
                 errorsBox.classList.add('hidden');
                 errorsBox.innerHTML = '';
+
+                // Rubric Criteria Weight Validation
+                const rubricChk = document.getElementById('edit_add_rubric_chk');
+                if (rubricChk && rubricChk.checked) {
+                    const errorEl = document.getElementById('edit-milestone-error-message');
+                    errorEl.classList.add('hidden');
+                    const weights = document.querySelectorAll('#edit-milestone-criteria-list input[name="weight[]"]');
+                    let total = 0;
+                    weights.forEach(w => total += parseFloat(w.value) || 0);
+                    total = Math.round(total * 100) / 100;
+                    if (total !== 100) {
+                        errorEl.textContent = `Total weight must equal 100%. Current total: ${total}%`;
+                        errorEl.classList.remove('hidden');
+                        return;
+                    }
+                }
 
                 fetch(form.action, {
                     method: 'POST',
@@ -2417,6 +3126,25 @@ function openEditRoomModal(roomId) {
             currentEditRoomId = data.id;
             document.getElementById('edit_room_title').textContent = data.room_name;
             renderRoomPanelists(data.panelists);
+            
+            // Populate unassigned teachers choices dynamically
+            const select = document.getElementById('edit_room_teacher_select');
+            select.innerHTML = '';
+            
+            if (data.available_teachers && data.available_teachers.length > 0) {
+                data.available_teachers.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t.id;
+                    opt.textContent = t.name;
+                    select.appendChild(opt);
+                });
+            } else {
+                const opt = document.createElement('option');
+                opt.disabled = true;
+                opt.textContent = 'No available unassigned teachers';
+                select.appendChild(opt);
+            }
+            
             openModal('edit_room_modal');
         })
         .catch(() => showToast('Failed to load room.', true));
@@ -2447,8 +3175,35 @@ function removePanelistFromRoom(teacherId, row) {
         }
     })
     .then(r => r.json())
-    .then(data => { if (data.success) row.remove(); })
+    .then(data => { 
+        if (data.success) {
+            row.remove(); 
+            fetchRoomAvailableTeachers(currentEditRoomId);
+        }
+    })
     .catch(() => showToast('Failed to remove panelist.', true));
+}
+
+function fetchRoomAvailableTeachers(roomId) {
+    fetch(`/admin/get-room/${roomId}`)
+        .then(r => r.json())
+        .then(data => {
+            const select = document.getElementById('edit_room_teacher_select');
+            select.innerHTML = '';
+            if (data.available_teachers && data.available_teachers.length > 0) {
+                data.available_teachers.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t.id;
+                    opt.textContent = t.name;
+                    select.appendChild(opt);
+                });
+            } else {
+                const opt = document.createElement('option');
+                opt.disabled = true;
+                opt.textContent = 'No available unassigned teachers';
+                select.appendChild(opt);
+            }
+        });
 }
 
 document.getElementById('edit_room_add_btn').addEventListener('click', () => {
@@ -2495,6 +3250,9 @@ document.getElementById('edit_room_add_btn').addEventListener('click', () => {
                 <button type="button" class="text-[#5b6375] hover:text-red-500 transition remove-panelist-btn"><i class="fas fa-times"></i></button>`;
             row.querySelector('.remove-panelist-btn').addEventListener('click', () => removePanelistFromRoom(data.panelist.id, row));
             container.appendChild(row);
+            
+            // Refresh available teachers select list
+            fetchRoomAvailableTeachers(currentEditRoomId);
         })
         .catch(() => showToast('Failed to add panelist.', true));
     });
@@ -2529,20 +3287,29 @@ function filterMilestonesByStage(stageId) {
         requiredSelect.innerHTML = '<option value="" disabled selected>Select Required Milestone</option>';
         activitySelect.innerHTML = '<option value="" disabled selected>Select Participate Activity</option>';
 
+        let hasRubrics = false;
         filteredMilestones.forEach(m => {
             const optRequired = document.createElement('option');
             optRequired.value = m.id;
             optRequired.textContent = m.milestone_title;
             requiredSelect.appendChild(optRequired);
 
-            const optActivity = document.createElement('option');
-            optActivity.value = m.milestone_title;
-            optActivity.textContent = m.milestone_title;
-            activitySelect.appendChild(optActivity);
+            if (m.rubrics && m.rubrics.length > 0) {
+                hasRubrics = true;
+                const optActivity = document.createElement('option');
+                optActivity.value = m.milestone_title;
+                optActivity.textContent = m.milestone_title;
+                activitySelect.appendChild(optActivity);
+            }
         });
 
         requiredSelect.disabled = false;
-        activitySelect.disabled = false;
+        if (!hasRubrics) {
+            activitySelect.innerHTML = '<option value="" disabled selected>No milestones with rubrics for this stage</option>';
+            activitySelect.disabled = true;
+        } else {
+            activitySelect.disabled = false;
+        }
     }
 }
 
@@ -2611,18 +3378,12 @@ document.getElementById('ca_group_select').addEventListener('change', function()
         if (capstoneSelect) capstoneSelect.addEventListener('change', filterMilestones);
 
         // ---- STAGE TABS ----
-        const stageTabs = document.querySelectorAll('.stage-tab-btn');
         const milestoneRows = document.querySelectorAll('.milestone-row');
-        function showStage(stage) {
-            stageTabs.forEach(b => b.classList.toggle('active', b.dataset.stage === stage));
-            milestoneRows.forEach(row => row.style.display = row.dataset.stage === stage ? 'flex' : 'none');
-            document.querySelectorAll('.fill-animate').forEach(bar => {
-                bar.style.width = '0%';
-                requestAnimationFrame(() => { setTimeout(() => { bar.style.width = (bar.dataset.target || 0) + '%'; }, 50); });
-            });
-        }
-        stageTabs.forEach(btn => btn.addEventListener('click', () => showStage(btn.dataset.stage)));
-        showStage('1');
+        milestoneRows.forEach(row => row.style.display = 'flex');
+        document.querySelectorAll('.fill-animate').forEach(bar => {
+            bar.style.width = '0%';
+            requestAnimationFrame(() => { setTimeout(() => { bar.style.width = (bar.dataset.target || 0) + '%'; }, 50); });
+        });
 
         // ---- STUDENT/TEACHER EDIT MODALS ----
         function openEditStudentModal(student) {
@@ -2853,6 +3614,65 @@ function regenerateRoomCode(roomId, btn) {
     })
     .catch(() => showToast('Failed to regenerate code.', true));
 }
+
+function updateCurrentSectionTeacher() {
+    const select = document.getElementById('as_section_select');
+    const selectedOption = select.options[select.selectedIndex];
+    const teacherUserId = selectedOption.getAttribute('data-teacher-user-id');
+    
+    const teacherSelect = document.getElementById('as_teacher_select');
+    const currentTeacherInput = document.getElementById('as_current_teacher');
+    
+    if (teacherUserId) {
+        teacherSelect.value = teacherUserId;
+        const matchingTeacherOption = Array.from(teacherSelect.options).find(opt => opt.value === teacherUserId);
+        currentTeacherInput.value = matchingTeacherOption ? matchingTeacherOption.textContent : 'Assigned (ID: ' + teacherUserId + ')';
+    } else {
+        teacherSelect.value = 'none';
+        currentTeacherInput.value = 'No Teacher Assigned';
+    }
+}
+
+// ── ADMIN STUDENT SECTION FILTER ──
+document.addEventListener('DOMContentLoaded', function () {
+    const sectionFilter = document.getElementById('admin-student-section-filter');
+    if (sectionFilter) {
+        sectionFilter.addEventListener('change', function () {
+            const selectedSection = this.value;
+            const tbody = document.querySelector('#sg-students-view tbody');
+            if (!tbody) return;
+            const rows = tbody.querySelectorAll('tr:not(.no-students-row)');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                // The Section cell is index 3 (Student=0, ID=1, Course=2, Section=3, Group=4, Actions=5)
+                const sectionCell = row.cells[3] ? row.cells[3].textContent.trim() : '';
+                if (selectedSection === 'All' || sectionCell === selectedSection) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Handle the "No students found" row
+            let noStudentsRow = tbody.querySelector('.no-students-row');
+            if (visibleCount === 0) {
+                if (!noStudentsRow) {
+                    noStudentsRow = document.createElement('tr');
+                    noStudentsRow.className = 'no-students-row';
+                    noStudentsRow.innerHTML = '<td colspan="6" class="py-6 text-center text-[#5b6375]">No students found in this section.</td>';
+                    tbody.appendChild(noStudentsRow);
+                }
+                noStudentsRow.style.display = '';
+            } else {
+                if (noStudentsRow) {
+                    noStudentsRow.style.display = 'none';
+                }
+            }
+        });
+    }
+});
     </script>
  
 </body>

@@ -90,8 +90,10 @@ Route::middleware('auth')->group(function () {
 
         // Groups & Advisers
         Route::post('/assign-group',  [user_controller::class, 'assignGroups'])->name('admin.assign_group');
+        Route::post('/assign-section',[user_controller::class, 'assignSection'])->name('admin.assign_section');
         Route::post('/create-group',  [user_controller::class, 'createGroup'])->name('admin.create_group');
         Route::get('/get-group/{id}', [user_controller::class, 'getGroupAdmin'])->name('admin.get_group');
+        Route::get('/get-group-progress/{groupId}', [user_controller::class, 'getGroupProgress'])->name('admin.get_group_progress');
         Route::put('/update-group/{id}', [user_controller::class, 'updateGroupAdmin'])->name('admin.update_group');
         Route::get('/get-students/{section}', [user_controller::class, 'getStudentsBySection'])->name('admin.get-students');
 
@@ -119,6 +121,10 @@ Route::middleware('auth')->group(function () {
         // Admin profile
         Route::post('/profile_update',       [user_controller::class, 'adminProfileUpdate'])->name('admin.profile_update');
         Route::post('/update-password',      [user_controller::class, 'updatePassword'])->name('admin.profile.update_password');
+
+        // Capstone management
+        Route::post('/capstone/toggle-stage', [user_controller::class, 'toggleCapstoneStage'])->name('admin.toggle_capstone_stage');
+        Route::post('/capstone/archive',      [user_controller::class, 'archiveCapstoneByYear'])->name('admin.archive_capstone_by_year');
     });
 
     /*

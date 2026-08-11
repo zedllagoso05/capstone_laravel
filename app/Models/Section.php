@@ -12,6 +12,11 @@ class Section extends Model
     protected $fillable = [
         'user_id',        // teacher's id (foreign key to teachers.id)
         'section_name',
+        'is_archived',
+    ];
+
+    protected $casts = [
+        'is_archived' => 'boolean',
     ];
 
     /**

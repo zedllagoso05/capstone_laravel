@@ -12,7 +12,7 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('user_id')->unique();
-            $table->string('name')->nullable()->unique();
+            $table->string('name')->nullable();
             $table->string('email')->nullable()->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password')->nullable();
@@ -173,7 +173,7 @@ Schema::create('admin', function (Blueprint $table) {
         Schema::create('rubrics', function (Blueprint $table) {
             $table->id();
             $table->string('rubric_name');
-            $table->foreignId('milestone_id')->constrained('milestones')->onDelete('cascade');
+            $table->foreignId('milestone_id')->nullable()->constrained('milestones')->onDelete('cascade');
             $table->timestamps();
         });
 

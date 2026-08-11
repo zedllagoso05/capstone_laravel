@@ -13,6 +13,11 @@ class Teacher extends Model
         'teacher_last_name',
         'teacher_email',
         'contact_number',
+        'is_archived',
+    ];
+
+    protected $casts = [
+        'is_archived' => 'boolean',
     ];
 
     /**

@@ -14,8 +14,8 @@ class CapstonestageSeeder extends Seeder
     {
         if (DB::table('capstone_stages')->count() === 0) {
             DB::table('capstone_stages')->insert([
-                ['id' => 1, 'stage_title' => 'Capstone 1'],
-                ['id' => 2, 'stage_title' => 'Capstone 2'],
+                ['id' => 1, 'stage_title' => 'Capstone 1', 'stage_type' => 1, 'is_enabled' => 1],
+                ['id' => 2, 'stage_title' => 'Capstone 2', 'stage_type' => 2, 'is_enabled' => 0],
             ]);
         }
     }

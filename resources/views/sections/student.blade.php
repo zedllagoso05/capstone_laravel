@@ -1268,10 +1268,10 @@
                                     <td colspan="3">
                                         <div class="stage-divider-inner">
                                             <span>
-                                                <i class="fa-solid fa-flag"></i> Capstone {{ $currentStage }}
+                                                <i class="fa-solid fa-flag"></i> {{ $milestone->capstoneStage->stage_title ?? 'Capstone' }}
                                                 <span class="stage-count">({{ $stageCounts[$currentStage] ?? 0 }} milestones)</span>
                                             </span>
-                                            <button type="button" class="stage-toggle-btn" aria-label="Toggle Capstone {{ $currentStage }}">
+                                            <button type="button" class="stage-toggle-btn" aria-label="Toggle {{ $milestone->capstoneStage->stage_title ?? 'Capstone' }}">
                                                 <i class="fa-solid fa-chevron-up"></i>
                                             </button>
                                         </div>
@@ -1768,9 +1768,17 @@
                 if (s && sections[s]) activateSection(s);
             }));
 
-            // ── SHOW SUCCESS TOAST ──
+            // ── SHOW CONFIRMATION TOAST ──
             @if(session('success'))
-            showToast('{{ session('success') }}');
+            showToast('{{ session('success') }}', false);
+            @endif
+
+            @if(session('error'))
+            showToast('{{ session('error') }}', true);
+            @endif
+
+            @if($errors->any())
+            showToast('{{ $errors->first() }}', true);
             @endif
 
             

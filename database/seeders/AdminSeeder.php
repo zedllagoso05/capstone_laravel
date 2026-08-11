@@ -19,7 +19,8 @@ class AdminSeeder extends Seeder
             User::create([
                 'user_id'  => '001',
                 'name'     => 'admin',
-                'email'    => 'admin@mcc.edu',
+                'email'    => 'mccccapstonetracker@gmail.com',
+                'email_verified_at' => now(),
                 'password' => Hash::make('admin12345'),
                 'role'     => 'admin',
             ]);

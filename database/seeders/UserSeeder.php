@@ -19,8 +19,8 @@ class UserSeeder extends Seeder
                 'id'                => 3,
                 'user_id'           => '2023-1418',
                 'name'              => 'chuychuy',
-                'email'             => 'zedllagoso8grapes_student@gmail.com', // changed to avoid unique conflict with teacher
-                'email_verified_at' => null,
+                'email'             => 'zedllagoso8grapes@gmail.com', // changed to avoid unique conflict with teacher
+                'email_verified_at' => now(),
                 'password'          => Hash::make('chuychuy123'),
                 'remember_token'    => null,
                 'role'              => 'student',
@@ -32,8 +32,8 @@ class UserSeeder extends Seeder
                 'id'                => 5,
                 'user_id'           => 'bcd-123',
                 'name'              => 'bcd123',
-                'email'             => 'bcd@gmail.com',
-                'email_verified_at' => null,
+                'email'             => 'zedllagoso05@gmail.com',
+                'email_verified_at' => now(),
                 'password'          => Hash::make('bcd-123'),
                 'remember_token'    => null,
                 'role'              => 'teacher',

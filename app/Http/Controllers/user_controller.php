@@ -66,7 +66,7 @@ class user_controller extends Controller
         }
 
         $incomingdata = $request->validate([
-            'name'     => ['required', 'min:3', new Unique('users', 'name')],
+            'name'     => ['required', 'min:3'],
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|min:6',
         ]);
@@ -78,7 +78,21 @@ class user_controller extends Controller
 
         Auth::login($user);
 
-        return $this->redirectByRole();
+        // ── GENERATE & SEND EMAIL VERIFICATION CODE AFTER CREATING ACCOUNT ──
+        $code = (string) random_int(100000, 999999);
+        Cache::put('verify_code_' . $user->user_id, $code, now()->addMinutes(10));
+
+        Mailer::send(
+            $user->email,
+            $user->user_id,
+            'Your Capstone Tracker verification code',
+            "<p>Your verification code is:</p><h2>{$code}</h2><p>This code expires in 10 minutes.</p>"
+        );
+
+        return redirect()->route('verification.notice')
+            ->with('success', 'A verification code has been sent to your email.')
+            ->with('code_sent', true)
+            ->with('verified_email', $user->email);
     }
 
     // ── VERIFICATION ─────────────────────────────────────────────
@@ -134,14 +148,19 @@ class user_controller extends Controller
             return $this->redirectByRole();
         }
 
+        if (!session('user_id')) {
+            return redirect('/')->withErrors(['id' => 'Please enter your ID first.']);
+        }
+
         $incomingdata = $request->validate([
             'logname'     => 'required',
             'logpassword' => 'required|min:6'
         ]);
 
         if (Auth::attempt([
-            'name'     => $incomingdata['logname'],
-            'password' => $incomingdata['logpassword']
+            'user_id'     => session('user_id'),
+            'name'        => $incomingdata['logname'],
+            'password'    => $incomingdata['logpassword']
         ])) {
             $request->session()->regenerate();
             return $this->redirectByRole(); // ← goes to correct dashboard by role
@@ -239,12 +258,19 @@ class user_controller extends Controller
                 ->toArray();
         }
 
-        $milestones = Milestone::orderBy('step_order')->get();
+        $enabledStageIds = CapstoneStages::where('is_enabled', true)->pluck('id');
+        $milestones = Milestone::whereIn('capstone_stage_id', $enabledStageIds)->orderBy('step_order')->get();
         $overallProgress = 0;
         $nextMilestone = null;
 
         if ($groups) {
-            $completed = $groups->groupMilestones->where('status', 'completed')->count();
+            $enabledMilestoneIds = $milestones->pluck('id')->toArray();
+            $completedMilestoneIds = $groups->groupMilestones
+                ->where('status', 'completed')
+                ->whereIn('milestone_id', $enabledMilestoneIds)
+                ->pluck('milestone_id')
+                ->toArray();
+            $completed = count($completedMilestoneIds);
             $overallProgress = $milestones->count() ? round(($completed / $milestones->count()) * 100) : 0;
             // Next = first milestone (by step order) not yet completed for this group
             $nextMilestone = $milestones->first(fn($m) => !in_array($m->id, $completedMilestoneIds));
@@ -287,19 +313,23 @@ class user_controller extends Controller
         }
         $admin = Admin::where('user_id', $user->user_id)->first();
         // ── Core data ──
-        $milestones = Milestone::orderBy('step_order')->get();
-        $rubrics = Rubric::with(['milestone', 'criteria'])->latest()->get();
-        $groups = Group::with(['students', 'groupMilestones'])->get();
+        $enabledStageIds = CapstoneStages::where('is_enabled', true)->pluck('id');
+        $milestones = Milestone::whereIn('capstone_stage_id', $enabledStageIds)->with('rubrics')->orderBy('step_order')->get();
+        $rubrics = Rubric::whereHas('milestone', function($q) use ($enabledStageIds) {
+            $q->whereIn('capstone_stage_id', $enabledStageIds);
+        })->with(['milestone', 'criteria'])->latest()->get();
+        $groups = Group::where('is_archived', false)->with(['students', 'groupMilestones'])->get();
+        $archivedGroups = Group::where('is_archived', true)->with(['adviser', 'section', 'team_members'])->get();
         $totalGroups = $groups->count();
 
-        $allTeachers = Teacher::with(['groups', 'user', 'sections'])->get();
+        $allTeachers = Teacher::where('is_archived', false)->with(['groups', 'user', 'sections'])->get();
         $totalTeachers = $allTeachers->count();
 
-        $sections = Section::all();
+        $sections = Section::where('is_archived', false)->get();
         $totalSections = $sections->count();
-
+        $allSections= Section:: all();
         // ── Students with their group (singular) ──
-        $allStudents = Student::with(['user', 'groups'])->get();
+        $allStudents = Student::where('is_archived', false)->with(['user', 'groups'])->get();
         $totalStudents = $allStudents->count();
 
         // evaluationroom
@@ -315,7 +345,7 @@ class user_controller extends Controller
             // Get group IDs of those students
             $groupIds = TeamMember::whereIn('user_id', $studentUserIds)->pluck('group_id')->unique();
             // Get groups with their milestones
-            $groupsInSection = Group::whereIn('id', $groupIds)->with('groupMilestones')->get();
+            $groupsInSection = Group::where('is_archived', false)->whereIn('id', $groupIds)->with('groupMilestones')->get();
 
             $total = $groupsInSection->count();
             $done = 0;
@@ -323,8 +353,13 @@ class user_controller extends Controller
             $notStarted = 0;
             $totalProgress = 0;
 
+            $enabledMilestoneIds = $milestones->pluck('id')->toArray();
+
             foreach ($groupsInSection as $group) {
-                $completed = $group->groupMilestones->where('status', 'completed')->count();
+                $completed = $group->groupMilestones
+                    ->where('status', 'completed')
+                    ->whereIn('milestone_id', $enabledMilestoneIds)
+                    ->count();
                 $progress = $milestoneCount > 0 ? ($completed / $milestoneCount) * 100 : 0;
                 $totalProgress += $progress;
 
@@ -371,8 +406,13 @@ class user_controller extends Controller
         $delayedCount = 0;
         $totalProgressSum = 0;
 
+        $enabledMilestoneIds = $milestones->pluck('id')->toArray();
+
         foreach ($groups as $group) {
-            $completed = $group->groupMilestones->where('status', 'completed')->count();
+            $completed = $group->groupMilestones
+                ->where('status', 'completed')
+                ->whereIn('milestone_id', $enabledMilestoneIds)
+                ->count();
             $progress = $milestoneCount > 0 ? ($completed / $milestoneCount) * 100 : 0;
             $totalProgressSum += $progress;
             if ($progress >= 70) {
@@ -408,7 +448,7 @@ class user_controller extends Controller
             ->select('sections.*', 'teachers.teacher_first_name', 'teachers.teacher_last_name')
             ->get();
 
-        $groupsData = Group::with(['adviser', 'section', 'team_members', 'room'])->get()->map(function ($group) {
+        $groupsData = Group::where('is_archived', false)->with(['adviser', 'section', 'team_members', 'room'])->get()->map(function ($group) {
             return [
                 'id'                    => $group->id,
                 'name'                  => $group->group_name,
@@ -436,7 +476,7 @@ class user_controller extends Controller
             ];
         });
 
-        $capstoneStages = CapstoneStages::all();
+        $capstoneStages = CapstoneStages::where('is_archived', false)->get();
 
         // ── Recent Activities (real data) ──
         $recentActivities = collect();
@@ -479,7 +519,7 @@ class user_controller extends Controller
 
         $upcoming = Milestone::whereBetween('due_date', [now(), now()->addDays(3)])->get();
         foreach ($upcoming as $m) {
-            $pendingCount = Group::whereDoesntHave('groupMilestones', function ($q) use ($m) {
+            $pendingCount = Group::where('is_archived', false)->whereDoesntHave('groupMilestones', function ($q) use ($m) {
                 $q->where('milestone_id', $m->id)->where('status', 'completed');
             })->count();
             if ($pendingCount > 0) {
@@ -508,6 +548,7 @@ class user_controller extends Controller
             'admin',
             'allTeachers',
             'allStudents',
+            'allSections',
             'recentActivities',
             'evaluationRooms',
             'sections',
@@ -517,7 +558,8 @@ class user_controller extends Controller
             'totalGroups',
             'totalTeachers',
             'totalSections',
-            'capstoneStages'
+            'capstoneStages',
+            'archivedGroups'
         ));
     }
 
@@ -532,6 +574,31 @@ class user_controller extends Controller
         Group::where('id', $validated['group_id'])->update(['adviser_id' => $validated['adviser_id']]);
 
         return back()->with('success', 'Adviser changed successfully.');
+    }
+
+    // ── ASSIGN / CHANGE SECTION TEACHER ────────────────────────────
+    public function assignSection(Request $request)
+    {
+        $validated = $request->validate([
+            'section_id'      => 'required|exists:sections,id',
+            'teacher_user_id' => 'required|string',
+        ]);
+
+        $section = Section::findOrFail($validated['section_id']);
+
+        if ($validated['teacher_user_id'] === 'none') {
+            $section->user_id = null;
+        } else {
+            $teacherExists = Teacher::where('user_id', $validated['teacher_user_id'])->exists();
+            if (!$teacherExists) {
+                return back()->withErrors(['teacher_user_id' => 'The selected teacher does not exist.']);
+            }
+            $section->user_id = $validated['teacher_user_id'];
+        }
+
+        $section->save();
+
+        return back()->with('success', 'Section assigned successfully.');
     }
 
     public function getTeacherGroups($teacherId)
@@ -562,8 +629,11 @@ class user_controller extends Controller
     // ── All evaluation rooms, for the classroom grid ──
     $allRooms = EvaluationRoom::with(['panelists', 'groups'])->get();
 
-    $groups = Group::where('adviser_id', $teacher->id)
-        ->orWhereIn('room_id', $assignedRoomIds)
+    $groups = Group::where('is_archived', false)
+        ->where(function($query) use ($teacher, $assignedRoomIds) {
+            $query->where('adviser_id', $teacher->id)
+                  ->orWhereIn('room_id', $assignedRoomIds);
+        })
         ->with(['students', 'groupMilestones', 'team_members', 'room'])
         ->get();
 
@@ -573,12 +643,18 @@ class user_controller extends Controller
     $sectionsWithGroups = Section::whereIn('id', $sectionIdsWithGroups)->get();
     $totalStudents = $groups->flatMap(fn($g) => $g->students)->unique('id')->count();
 
-    $milestones = Milestone::orderBy('step_order')->get();
+    $enabledStageIds = CapstoneStages::where('is_enabled', true)->pluck('id');
+    $milestones = Milestone::whereIn('capstone_stage_id', $enabledStageIds)->orderBy('step_order')->get();
     $milestoneCount = $milestones->count();
 
     $groupProgress = [];
+    $enabledMilestoneIds = $milestones->pluck('id')->toArray();
+
     foreach ($groups as $group) {
-        $completed = $group->groupMilestones->where('status', 'completed')->count();
+        $completed = $group->groupMilestones
+            ->where('status', 'completed')
+            ->whereIn('milestone_id', $enabledMilestoneIds)
+            ->count();
         $progress = $milestoneCount > 0 ? round(($completed / $milestoneCount) * 100) : 0;
 
         $groupProgress[] = (object) [
@@ -595,7 +671,14 @@ class user_controller extends Controller
         ->with(['group', 'milestone'])
         ->latest('evaluation_date')
         ->limit(10)
-        ->get();
+        ->get()
+        ->map(function ($e) {
+            $decoded = json_decode($e->feedback, true);
+            if (is_array($decoded) && isset($decoded['feedback_text'])) {
+                $e->feedback = $decoded['feedback_text'];
+            }
+            return $e;
+        });
 
     $totalEvaluations = Evaluation::where('teacher_id', $teacher->id)->count();
 
@@ -604,8 +687,11 @@ class user_controller extends Controller
         ->count();
 
     if ($pendingEvaluations == 0) {
-        $pendingEvaluations = $groups->filter(function($group) use ($milestoneCount) {
-            $completed = $group->groupMilestones->where('status', 'completed')->count();
+        $pendingEvaluations = $groups->filter(function($group) use ($milestoneCount, $enabledMilestoneIds) {
+            $completed = $group->groupMilestones
+                ->where('status', 'completed')
+                ->whereIn('milestone_id', $enabledMilestoneIds)
+                ->count();
             return $completed < $milestoneCount;
         })->count();
     }
@@ -621,8 +707,11 @@ class user_controller extends Controller
     }
 
     $allSections = Section::all();
-    $allGroups = Group::where('adviser_id', $teacher->id)
-        ->orWhereIn('room_id', $assignedRoomIds)
+    $allGroups = Group::where('is_archived', false)
+        ->where(function($query) use ($teacher, $assignedRoomIds) {
+            $query->where('adviser_id', $teacher->id)
+                  ->orWhereIn('room_id', $assignedRoomIds);
+        })
         ->with(['students', 'groupMilestones'])
         ->get();
 
@@ -681,7 +770,8 @@ class user_controller extends Controller
             ]);
         }
 
-        foreach (Milestone::all() as $milestone) {
+        $enabledStageIds = CapstoneStages::where('is_enabled', true)->pluck('id');
+        foreach (Milestone::whereIn('capstone_stage_id', $enabledStageIds)->get() as $milestone) {
             GroupMilestones::firstOrCreate(
                 ['group_id' => $group->id, 'milestone_id' => $milestone->id],
                 ['status' => 'pending', 'due_date' => $milestone->due_date]
@@ -869,7 +959,7 @@ class user_controller extends Controller
     {
         $validatedData = $request->validate([
             'rubric_name'     => 'required|string|max:255',
-            'milestone_id'    => 'required|exists:milestones,id',
+            'milestone_id'    => 'nullable|exists:milestones,id',
             'criteria_name'   => 'required|array|min:1',
             'criteria_name.*' => 'required|string|max:255',
             'weight'          => 'required|array|min:1',
@@ -904,24 +994,66 @@ class user_controller extends Controller
     public function addMilestone(Request $request)
     {
         $validatedData = $request->validate([
-            'milestone_title'=>'required|string|max:255',
-            'capstone_stage'=>'required|integer|exists:capstone_stages,id',
-            'order' => 'required|integer|unique:milestones,step_order',
-            'description'=>'required|string|max:255',
-            'due_date'=>'required|date|after_or_equal:today',
-            'start_date'=>'required|date|after_or_equal:today'
+            'milestone_title' => 'required|string|max:255',
+            'capstone_stage'  => 'required|integer|exists:capstone_stages,id',
+            'order'           => [
+                'required',
+                'integer',
+                Rule::unique('milestones', 'step_order')
+                    ->where('capstone_stage_id', $request->input('capstone_stage'))
+            ],
+            'description'     => 'nullable|string|max:255',
+            'due_date'        => 'required|date',
+            'start_date'      => 'required|date',
+            
+            // Optional Rubric fields
+            'add_rubric'      => 'nullable|string',
+            'rubric_name'     => 'nullable|required_if:add_rubric,on|string|max:255',
+            'criteria_name'   => 'nullable|required_if:add_rubric,on|array',
+            'criteria_name.*' => 'nullable|required_if:add_rubric,on|string|max:255',
+            'weight'          => 'nullable|required_if:add_rubric,on|array',
+            'weight.*'        => 'nullable|required_if:add_rubric,on|numeric|min:0|max:100',
+            'score'           => 'nullable|required_if:add_rubric,on|array',
+            'score.*'         => 'nullable|required_if:add_rubric,on|numeric|min:0',
         ]);
 
-        Milestone::create([
-            'milestone_title'=>$validatedData['milestone_title'],
-            'step_order'=>$validatedData['order'],
-            'milestone_description'=>$validatedData['description'],
-            'start_date'=>$validatedData['start_date'],
-            'due_date'=>$validatedData['due_date'],
-            'capstone_stage_id'=>$validatedData['capstone_stage']
+        if ($request->has('add_rubric') && $request->add_rubric === 'on') {
+            if (round(array_sum($validatedData['weight'] ?? []), 2) != 100) {
+                return back()
+                    ->withErrors(['weight' => 'Criteria weights must add up to 100%.'])
+                    ->withInput();
+            }
+        }
+
+        $milestone = Milestone::create([
+            'milestone_title'       => $validatedData['milestone_title'],
+            'step_order'            => $validatedData['order'],
+            'milestone_description' => $validatedData['description'] ?? '',
+            'start_date'            => $validatedData['start_date'],
+            'due_date'              => $validatedData['due_date'],
+            'capstone_stage_id'     => $validatedData['capstone_stage']
         ]);
 
-        return redirect()->route('admin.page')->with('success', 'milestone added.');
+        if ($request->has('add_rubric') && $request->add_rubric === 'on') {
+            $rubric = Rubric::create([
+                'rubric_name'  => $validatedData['rubric_name'] ?: ($validatedData['milestone_title'] . ' Rubric'),
+                'milestone_id' => $milestone->id,
+            ]);
+
+            if (!empty($validatedData['criteria_name'])) {
+                foreach ($validatedData['criteria_name'] as $i => $name) {
+                    if ($name) {
+                        $rubric->criteria()->create([
+                            'criteria_name' => $name,
+                            'weight'        => $validatedData['weight'][$i],
+                            'max_score'     => $validatedData['score'][$i],
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return redirect()->route('admin.page')->with('success', 'Milestone and Rubric added successfully.');
     }
 
     /**
@@ -969,6 +1101,7 @@ class user_controller extends Controller
             'absent_students' => 'nullable|array',
             'absent_students.*' => 'exists:students,user_id',
             'feedback1'       => 'nullable|string',
+            'rubric_scores'   => 'nullable|array',
         ]);
 
         $teacher = Teacher::where('user_id', Auth::user()->user_id)->firstOrFail();
@@ -990,17 +1123,27 @@ class user_controller extends Controller
         }
         $studentId = $firstMember->user_id;
 
-        // ── 1. Save the Evaluation (Score) ──
-        Evaluation::create([
-            'group_id'        => $validated['group_id'],
-            'milestone_id'    => $validated['milestone_id'],
-            'teacher_id'      => $teacher->id,
-            'student_id'      => $studentId,
-            'score'           => $validated['score'],
-            'max_score'       => $validated['max_score'],
-            'feedback'        => $validated['feedback'] ?? '',
-            'evaluation_date' => now()->toDateString(),
+        // Save rubric scores and feedback text in JSON format in the feedback column
+        $feedbackPayload = json_encode([
+            'feedback_text' => $validated['feedback'] ?? '',
+            'rubric_scores' => $request->input('rubric_scores', []),
         ]);
+
+        // ── 1. Save the Evaluation (Score) ──
+        Evaluation::updateOrCreate(
+            [
+                'group_id'     => $validated['group_id'],
+                'milestone_id' => $validated['milestone_id'],
+                'teacher_id'   => $teacher->id,
+            ],
+            [
+                'student_id'      => $studentId,
+                'score'           => $validated['score'],
+                'max_score'       => $validated['max_score'],
+                'feedback'        => $feedbackPayload,
+                'evaluation_date' => now()->toDateString(),
+            ]
+        );
 
         // ── 2. Calculate Auto-Remarks based on Milestone Dates ──
         $evaluationDate = Carbon::now();
@@ -1027,20 +1170,28 @@ class user_controller extends Controller
         }
 
         // ── 3. Save the Remarks (Attendance & Auto-Compliance) ──
-        \App\Models\Remarks::create([
-            'group_id'         => $validated['group_id'],
-            'milestone_id'     => $validated['milestone_id'],
-            'adviser_id'       => (string) $teacher->id,
-            'all_present'      => $validated['attendance'] === 'present',
-            'compiled'         => $isCompiled,
-            'deduction_points' => $deduction,
-            'feedback'         => $validated['feedback1'] ?? '',
-            'remarks'          => $remarksStatus,
-            'date_evaluated'   => now(),
-        ]);
+        \App\Models\Remarks::updateOrCreate(
+            [
+                'group_id'     => $validated['group_id'],
+                'milestone_id' => $validated['milestone_id'],
+            ],
+            [
+                'adviser_id'       => (string) $teacher->id,
+                'all_present'      => $validated['attendance'] === 'present',
+                'compiled'         => $isCompiled,
+                'deduction_points' => $deduction,
+                'feedback'         => $validated['feedback1'] ?? '',
+                'remarks'          => $remarksStatus,
+                'date_evaluated'   => now(),
+            ]
+        );
 
         // ── 4. Track Absences (if any) ──
         if ($validated['attendance'] === 'absent' && !empty($validated['absent_students'])) {
+            \App\Models\Absence::where('group_id', $validated['group_id'])
+                ->where('milestone_id', $validated['milestone_id'])
+                ->delete();
+
             foreach ($validated['absent_students'] as $absentUserId) {
                 \App\Models\Absence::create([
                     'group_id'     => $validated['group_id'],
@@ -1082,12 +1233,23 @@ class user_controller extends Controller
         $teacher = Teacher::where('user_id', Auth::user()->user_id)->firstOrFail();
         $group = Group::findOrFail($validated['group_id']);
 
-        $isAdviser = $group->adviser_id === $teacher->id;
         $assignedRoomIds = $teacher->evaluationRooms()->pluck('evaluation_rooms.id')->toArray();
         $isPanelist = in_array($group->room_id, $assignedRoomIds);
+        $isAdviser = $group->adviser_id === $teacher->id;
 
-        if (!$isAdviser && !$isPanelist) {
-            return response()->json(['error' => 'You are not authorized to evaluate this group because it is not in your assigned classrooms.'], 403);
+        // Check if the milestone has an associated rubric
+        $hasRubric = \App\Models\Rubric::where('milestone_id', $validated['milestone_id'])->exists();
+
+        if ($hasRubric) {
+            // ONLY panels can evaluate if there is a rubric
+            if (!$isPanelist) {
+                return response()->json(['error' => 'Only the panelist of this room is authorized to evaluate this milestone because it has an associated rubric.'], 403);
+            }
+        } else {
+            // BOTH adviser and panelist can evaluate if there is NO rubric
+            if (!$isPanelist && !$isAdviser) {
+                return response()->json(['error' => 'You are not authorized to evaluate this milestone.'], 403);
+            }
         }
 
         $alreadyCompleted = \App\Models\GroupMilestones::where('group_id', $validated['group_id'])
@@ -1193,7 +1355,9 @@ class user_controller extends Controller
         }
 
         return response()->json(
-            Evaluation::where('group_id', $groupId)->pluck('milestone_id')
+            Evaluation::where('group_id', $groupId)
+                ->where('teacher_id', $teacher->id)
+                ->pluck('milestone_id')
         );
     }
 
@@ -1210,7 +1374,14 @@ class user_controller extends Controller
         $assignedRoomIds = $teacher->evaluationRooms()->pluck('evaluation_rooms.id')->toArray();
         $isPanelist = in_array($group->room_id, $assignedRoomIds);
 
-        if (!$isAdviser && !$isPanelist) {
+        $isSectionTeacher = false;
+        if ($group->section_id) {
+            $isSectionTeacher = \App\Models\Section::where('id', $group->section_id)
+                ->where('user_id', $teacher->user_id)
+                ->exists();
+        }
+
+        if (!$isAdviser && !$isPanelist && !$isSectionTeacher) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -1513,6 +1684,7 @@ class user_controller extends Controller
             ->findOrFail($groupId);
 
         $isAdviser = false;
+        $isPanelist = false;
         if ($user->role === 'teacher') {
             $teacher = Teacher::where('user_id', $user->user_id)->first();
             if (!$teacher) {
@@ -1521,19 +1693,30 @@ class user_controller extends Controller
 
             $isAdviserOfGroup = $group->adviser_id === $teacher->id;
             $assignedRoomIds = $teacher->evaluationRooms()->pluck('evaluation_rooms.id')->toArray();
-            $isPanelist = in_array($group->room_id, $assignedRoomIds);
+            $isPanelistOfGroup = in_array($group->room_id, $assignedRoomIds);
 
-            if (!$isAdviserOfGroup && !$isPanelist) {
+            $isSectionTeacher = false;
+            if ($group->section_id) {
+                $isSectionTeacher = \App\Models\Section::where('id', $group->section_id)
+                    ->where('user_id', $teacher->user_id)
+                    ->exists();
+            }
+
+            if (!$isAdviserOfGroup && !$isPanelistOfGroup && !$isSectionTeacher) {
                 abort(403, 'You are not authorized to view the progress of this group.');
             }
 
             // Only TRUE advisers get the interactive attendance/remark controls in the modal.
             $isAdviser = $isAdviserOfGroup;
+            $isPanelist = $isPanelistOfGroup;
         }
 
-        $milestones = Milestone::orderBy('step_order')->get();
+        $enabledStageIds = CapstoneStages::where('is_enabled', true)->pluck('id');
+        $milestones = Milestone::whereIn('capstone_stage_id', $enabledStageIds)->with(['capstoneStage', 'rubrics'])->orderBy('step_order')->get();
+        $enabledMilestoneIds = $milestones->pluck('id')->toArray();
         $completedMilestoneIds = $group->groupMilestones
             ->where('status', 'completed')
+            ->whereIn('milestone_id', $enabledMilestoneIds)
             ->pluck('milestone_id')
             ->toArray();
 
@@ -1545,13 +1728,40 @@ class user_controller extends Controller
             ->latest('evaluation_date')
             ->limit(5)
             ->get()
-            ->map(fn($e) => [
-                'milestone_title' => $e->milestone->milestone_title ?? 'Evaluation',
-                'teacher_name'    => $e->teacher->user->name ?? 'Teacher',
-                'evaluation_date' => $e->evaluation_date,
-                'score'           => $e->score,
-                'max_score'       => $e->max_score,
-            ]);
+            ->map(function ($e) {
+                $decoded = json_decode($e->feedback, true);
+                if (is_array($decoded) && isset($decoded['feedback_text'])) {
+                    $feedbackText = $decoded['feedback_text'];
+                    $rubricScores = $decoded['rubric_scores'] ?? [];
+                } else {
+                    $feedbackText = $e->feedback;
+                    $rubricScores = [];
+                }
+
+                $rubric = Rubric::where('milestone_id', $e->milestone_id)->with('criteria')->first();
+                $criteriaData = [];
+                if ($rubric) {
+                    foreach ($rubric->criteria as $criterion) {
+                        $criteriaData[] = [
+                            'criteria_name' => $criterion->criteria_name,
+                            'weight'        => $criterion->weight,
+                            'max_score'     => $criterion->max_score,
+                            'given_score'   => $rubricScores[$criterion->id] ?? 0,
+                        ];
+                    }
+                }
+
+                return [
+                    'milestone_id'    => $e->milestone_id,
+                    'milestone_title' => $e->milestone->milestone_title ?? 'Evaluation',
+                    'teacher_name'    => $e->teacher->user->name ?? 'Teacher',
+                    'evaluation_date' => $e->evaluation_date,
+                    'score'           => $e->score,
+                    'max_score'       => $e->max_score,
+                    'feedback'        => $feedbackText,
+                    'criteria'        => $criteriaData,
+                ];
+            });
 
         // ── Remarks & Absences for this group (feeds the Remarks block per milestone) ──
         $remarksByMilestone = \App\Models\Remarks::where('group_id', $groupId)
@@ -1588,11 +1798,13 @@ class user_controller extends Controller
                 'start_date'        => $m->start_date,
                 'due_date'          => $m->due_date,
                 'step_order'        => $m->step_order,
-                'is_completed'      => $isCompleted,
-                'is_next'           => $isNext,
-                'completion_date'   => $completionDate,
-                'capstone_stage_id' => $m->capstone_stage_id,
-                'remarks'           => $r ? [
+                'is_completed'         => $isCompleted,
+                'is_next'              => $isNext,
+                'completion_date'      => $completionDate,
+                'capstone_stage_id'    => $m->capstone_stage_id,
+                'capstone_stage_title' => $m->capstoneStage->stage_title ?? 'Capstone',
+                'has_rubric'           => $m->rubrics->isNotEmpty(),
+                'remarks'              => $r ? [
                     'all_present'      => (bool) $r->all_present,
                     'compiled'         => (bool) $r->compiled,
                     'deduction_points' => (int) $r->deduction_points,
@@ -1616,6 +1828,7 @@ class user_controller extends Controller
             ] : null,
             'evaluations'       => $evaluations,
             'is_adviser'        => $isAdviser,
+            'is_panelist'       => $isPanelist,
         ]);
     }
 
@@ -1809,23 +2022,45 @@ public function joinRoomWithCode(Request $request)
 
     $teacher = Teacher::where('user_id', Auth::user()->user_id)->first();
     if (!$teacher) {
-        return response()->json(['error' => 'Teacher profile not found.'], 404);
+        if ($request->expectsJson() || $request->ajax() || $request->wantsJson()) {
+            return response()->json(['error' => 'Teacher profile not found.'], 404);
+        }
+        return redirect()->back()->with('error', 'Teacher profile not found.');
     }
 
     $room = EvaluationRoom::where('join_code', strtoupper(trim($validated['join_code'])))->first();
     if (!$room) {
-        return response()->json(['error' => 'Invalid code. Please check with the admin and try again.'], 404);
+        if ($request->expectsJson() || $request->ajax() || $request->wantsJson()) {
+            return response()->json(['error' => 'Invalid code. Please check with the admin and try again.'], 404);
+        }
+        return redirect()->back()->with('error', 'Invalid code. Please check with the admin and try again.');
     }
 
     $alreadyThisTeacher = $room->panelists()->where('teacher_id', $teacher->id)->exists();
     if ($alreadyThisTeacher) {
-        return response()->json(['success' => true, 'room_name' => $room->room_name, 'already_joined' => true]);
+        if ($request->expectsJson() || $request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'room_name' => $room->room_name, 'already_joined' => true]);
+        }
+        return redirect()->back()->with('error', "Already joined {$room->room_name}.");
+    }
+
+    // Check if teacher is already assigned to ANY room
+    $isAlreadyAssigned = DB::table('room_panelists')->where('teacher_id', $teacher->id)->exists();
+    if ($isAlreadyAssigned) {
+        if ($request->expectsJson() || $request->ajax() || $request->wantsJson()) {
+            return response()->json(['error' => 'You are already assigned to an evaluation room.'], 422);
+        }
+        return redirect()->back()->with('error', 'You are already assigned to an evaluation room.');
     }
 
     // Add teacher as panelist to this room (avoiding duplicate entries)
     $room->panelists()->attach($teacher->id);
 
-    return response()->json(['success' => true, 'room_name' => $room->room_name]);
+    if ($request->expectsJson() || $request->ajax() || $request->wantsJson()) {
+        return response()->json(['success' => true, 'room_name' => $room->room_name]);
+    }
+
+    return redirect()->back()->with('success', "Joined {$room->room_name} successfully!");
 }
 
     /**
@@ -1842,6 +2077,12 @@ public function joinRoomWithCode(Request $request)
 
     $alreadyThisTeacher = $room->panelists()->where('teacher_id', $teacher->id)->exists();
     if (!$alreadyThisTeacher) {
+        // Check if teacher is already assigned to ANY room
+        $isAlreadyAssigned = DB::table('room_panelists')->where('teacher_id', $teacher->id)->exists();
+        if ($isAlreadyAssigned) {
+            return response()->json(['error' => 'This teacher is already assigned to an evaluation room.'], 422);
+        }
+
         // Add panelist to this room (avoiding duplicate entries)
         $room->panelists()->attach($teacher->id);
     }
@@ -1881,25 +2122,36 @@ public function joinRoomWithCode(Request $request)
         return back()->with('success', 'Evaluation room deleted successfully.');
     }
     public function getMilestone($id)
-{
-    $milestone = Milestone::findOrFail($id);
-    $certificate = Certificate::where('milestone_id', $milestone->id)->first();
+    {
+        $milestone = Milestone::findOrFail($id);
+        $certificate = Certificate::where('milestone_id', $milestone->id)->first();
+        $rubric = Rubric::where('milestone_id', $milestone->id)->with('criteria')->first();
 
-    return response()->json([
-        'id'                     => $milestone->id,
-        'milestone_title'        => $milestone->milestone_title,
-        'milestone_description'  => $milestone->milestone_description,
-        'capstone_stage_id'      => $milestone->capstone_stage_id,
-        'step_order'             => $milestone->step_order,
-        'start_date'             => $milestone->start_date,
-        'due_date'                => $milestone->due_date,
-        'certificate'            => $certificate ? [
-            'id'                       => $certificate->id,
-            'certificate_title'        => $certificate->certificate_title,
-            'certificate_description'  => $certificate->certificate_description,
-        ] : null,
-    ]);
-}
+        return response()->json([
+            'id'                     => $milestone->id,
+            'milestone_title'        => $milestone->milestone_title,
+            'milestone_description'  => $milestone->milestone_description,
+            'capstone_stage_id'      => $milestone->capstone_stage_id,
+            'step_order'             => $milestone->step_order,
+            'start_date'             => $milestone->start_date,
+            'due_date'               => $milestone->due_date,
+            'certificate'            => $certificate ? [
+                'id'                       => $certificate->id,
+                'certificate_title'        => $certificate->certificate_title,
+                'certificate_description'  => $certificate->certificate_description,
+            ] : null,
+            'rubric'                 => $rubric ? [
+                'id'            => $rubric->id,
+                'rubric_name'   => $rubric->rubric_name,
+                'criteria'      => $rubric->criteria->map(fn($c) => [
+                    'id'            => $c->id,
+                    'criteria_name' => $c->criteria_name,
+                    'weight'        => $c->weight,
+                    'max_score'     => $c->max_score,
+                ])
+            ] : null,
+        ]);
+    }
 
 public function updateMilestone(Request $request, $id)
 {
@@ -1908,13 +2160,29 @@ public function updateMilestone(Request $request, $id)
     $validated = $request->validate([
         'milestone_title'          => 'required|string|max:255',
         'capstone_stage'           => 'required|integer|exists:capstone_stages,id',
-        'order'                    => 'required|integer|unique:milestones,step_order,' . $milestone->id,
+        'order'                    => [
+            'required',
+            'integer',
+            Rule::unique('milestones', 'step_order')
+                ->ignore($milestone->id)
+                ->where('capstone_stage_id', $request->input('capstone_stage'))
+        ],
         'description'              => 'required|string|max:255',
         'start_date'               => 'required|date',
         'due_date'                 => 'required|date|after_or_equal:start_date',
         'has_certificate'          => 'nullable|boolean',
         'certificate_title'        => 'required_if:has_certificate,1|nullable|string|max:255',
         'certificate_description'  => 'required_if:has_certificate,1|nullable|string',
+
+        // Optional Rubric fields
+        'add_rubric'               => 'nullable|string',
+        'rubric_name'              => 'nullable|required_if:add_rubric,on|string|max:255',
+        'criteria_name'            => 'nullable|required_if:add_rubric,on|array',
+        'criteria_name.*'          => 'nullable|required_if:add_rubric,on|string|max:255',
+        'weight'                   => 'nullable|required_if:add_rubric,on|array',
+        'weight.*'                 => 'nullable|required_if:add_rubric,on|numeric|min:0|max:100',
+        'score'                    => 'nullable|required_if:add_rubric,on|array',
+        'score.*'                  => 'nullable|required_if:add_rubric,on|numeric|min:0',
     ]);
 
     $milestone->update([
@@ -1939,6 +2207,42 @@ public function updateMilestone(Request $request, $id)
     } else {
         // Admin unchecked "award a certificate" — remove any certificate tied to this milestone
         Certificate::where('milestone_id', $milestone->id)->delete();
+    }
+
+    if ($request->has('add_rubric') && $request->add_rubric === 'on') {
+        if (round(array_sum($request->input('weight') ?? []), 2) != 100) {
+            return response()->json([
+                'errors' => ['weight' => ['Criteria weights must add up to 100%.']]
+            ], 422);
+        }
+
+        // Update or Create Rubric
+        $rubric = Rubric::updateOrCreate(
+            ['milestone_id' => $milestone->id],
+            ['rubric_name'  => $request->input('rubric_name') ?: ($milestone->milestone_title . ' Rubric')]
+        );
+
+        // Clear existing criteria and recreate
+        $rubric->criteria()->delete();
+
+        if (!empty($request->input('criteria_name'))) {
+            foreach ($request->input('criteria_name') as $i => $name) {
+                if ($name) {
+                    $rubric->criteria()->create([
+                        'criteria_name' => $name,
+                        'weight'        => $request->input('weight')[$i],
+                        'max_score'     => $request->input('score')[$i],
+                    ]);
+                }
+            }
+        }
+    } else {
+        // If "add_rubric" is unchecked, let's delete the rubric and its criteria if they exist
+        $existingRubric = Rubric::where('milestone_id', $milestone->id)->first();
+        if ($existingRubric) {
+            $existingRubric->criteria()->delete();
+            $existingRubric->delete();
+        }
     }
 
     return redirect()->route('admin.page')->with('success', 'Milestone updated successfully.');
@@ -2056,8 +2360,18 @@ public function showCertificate($groupId, $certificateId)
     ]);
 
     $panelists = $validated['panelists'] ?? [];
+    $roomCount = $validated['room_count'];
 
-    DB::transaction(function () use ($validated, $panelists) {
+    foreach ($panelists as $teacherId) {
+        $alreadyAssigned = DB::table('room_panelists')->where('teacher_id', $teacherId)->exists();
+        if ($alreadyAssigned) {
+            $teacherObj = Teacher::find($teacherId);
+            $teacherName = $teacherObj ? ($teacherObj->teacher_first_name . ' ' . $teacherObj->teacher_last_name) : 'Selected Teacher';
+            return back()->withErrors(['panelists' => "Teacher {$teacherName} is already assigned to another evaluation room."])->withInput();
+        }
+    }
+
+    DB::transaction(function () use ($validated, $panelists, $roomCount) {
         $requiredMilestoneId = $validated['required_milestone_id'];
 
         // Get all groups without a room that have completed the required milestone
@@ -2068,7 +2382,6 @@ public function showCertificate($groupId, $certificateId)
             })->get();
 
         // Divide groups evenly
-        $roomCount = $validated['room_count'];
         $groupsPerRoom = ceil($groups->count() / $roomCount);
         $rooms = [];
 
@@ -2099,9 +2412,9 @@ public function showCertificate($groupId, $certificateId)
             });
         }
 
-        // Distribute panelists round-robin (each panelist in exactly one room)
-        foreach ($panelists as $i => $teacherId) {
-            $room = $rooms[$i % count($rooms)];
+        // Distribute panelists round-robin (allowing multiple panelists per room, but each in exactly 1 room)
+        foreach ($panelists as $index => $teacherId) {
+            $room = $rooms[$index % count($rooms)];
             $room->panelists()->attach($teacherId);
         }
     });
@@ -2111,6 +2424,13 @@ public function showCertificate($groupId, $certificateId)
        public function getRoom($roomId)
 {
     $room = EvaluationRoom::with(['panelists', 'groups', 'requiredMilestone'])->findOrFail($roomId);
+    
+    // Get all assigned teacher IDs across all rooms
+    $assignedTeacherIds = DB::table('room_panelists')->pluck('teacher_id')->toArray();
+    
+    // Available teachers are those not assigned to any room
+    $availableTeachers = Teacher::whereNotIn('id', $assignedTeacherIds)->get();
+
     return response()->json([
         'id'                 => $room->id,
         'room_name'          => $room->room_name,
@@ -2120,6 +2440,10 @@ public function showCertificate($groupId, $certificateId)
         'panelists'          => $room->panelists->map(fn($p) => [
             'id'   => $p->id,
             'name' => $p->teacher_first_name . ' ' . $p->teacher_last_name,
+        ]),
+        'available_teachers' => $availableTeachers->map(fn($t) => [
+            'id'   => $t->id,
+            'name' => $t->teacher_first_name . ' ' . $t->teacher_last_name,
         ]),
     ]);
 }
@@ -2136,9 +2460,13 @@ public function showCertificate($groupId, $certificateId)
     // ── SEND CODE AFTER LOGIN ────────────────────────
     public function sendVerificationCodeAfterLogin(Request $request)
     {
-        $request->validate(['email' => 'required|email']);
-
         $user = Auth::user();
+        $request->validate([
+            'email' => 'required|email|unique:users,email,' . $user->id,
+        ], [
+            'email.unique' => 'This email is already taken.',
+        ]);
+
         $email = $request->email;
 
         $code = (string) random_int(100000, 999999);
@@ -2163,12 +2491,14 @@ public function showCertificate($groupId, $certificateId)
     // ── CONFIRM VERIFICATION CODE ────────────────────
     public function confirmVerificationCode(Request $request)
     {
+        $user = Auth::user();
         $request->validate([
-            'email' => 'required|email',
+            'email' => 'required|email|unique:users,email,' . $user->id,
             'code'  => 'required|string',
+        ], [
+            'email.unique' => 'This email is already taken.',
         ]);
 
-        $user = Auth::user();
         $cachedCode = Cache::get('verify_code_' . $user->user_id);
 
         if (!$cachedCode || $cachedCode !== $request->code) {
@@ -2295,5 +2625,194 @@ public function showCertificate($groupId, $certificateId)
         Cache::forget('reset_code_' . $user->user_id);
 
         return redirect('/')->with('success', 'Your password has been reset successfully! Please log in.');
+    }
+
+    // ── TOGGLE CAPSTONE STAGE ───────────────────────────────────────
+    public function toggleCapstoneStage(Request $request)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized.');
+        }
+
+        $request->validate([
+            'stage_id' => 'required|exists:capstone_stages,id',
+        ]);
+
+        $stage = CapstoneStages::findOrFail($request->stage_id);
+        
+        if (!$stage->is_enabled) {
+            // Disable all other active (non-archived) capstone stages
+            CapstoneStages::where('is_archived', false)->update(['is_enabled' => 0]);
+            $stage->is_enabled = 1;
+        } else {
+            $stage->is_enabled = 0;
+        }
+        $stage->save();
+
+        $status = $stage->is_enabled ? 'enabled' : 'disabled';
+        return back()->with('success', "{$stage->stage_title} has been {$status} successfully.");
+    }
+
+    // ── ARCHIVE CAPSTONE BY YEAR ────────────────────────────────────
+    public function archiveCapstoneByYear(Request $request)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized.');
+        }
+
+        $request->validate([
+            'stage_id'  => 'required',
+            'year'      => 'required|integer|min:2000|max:2099',
+            'new_title' => 'nullable|string|max:255',
+        ]);
+
+        $year = $request->year;
+        $stageId = $request->stage_id;
+
+        if ($stageId === 'all') {
+            // Find all active capstone stages
+            $activeStages = CapstoneStages::where('is_archived', false)->get();
+            $totalCount = 0;
+            
+            foreach ($activeStages as $stage) {
+                // Find and archive active groups pointing to this stage
+                $groupsToArchive = Group::where('capstone_stage_id', $stage->id)->where('is_archived', false)->get();
+                foreach ($groupsToArchive as $g) {
+                    $g->is_archived = true;
+                    $g->archived_year = $year;
+                    $g->save();
+
+                    // Check adviser of this archived group
+                    $adviserId = $g->adviser_id;
+                    $hasActiveGroups = Group::where('adviser_id', $adviserId)->where('is_archived', false)->exists();
+                    if (!$hasActiveGroups) {
+                        Teacher::where('id', $adviserId)->update(['is_archived' => true]);
+                    }
+
+                    // Check section of this archived group
+                    $secId = $g->section_id;
+                    $hasActiveGroupsSec = Group::where('section_id', $secId)->where('is_archived', false)->exists();
+                    if (!$hasActiveGroupsSec) {
+                        Section::where('id', $secId)->update(['is_archived' => true]);
+                    }
+                }
+
+                // Archive all students in these groups
+                $archivedGroupIds = $groupsToArchive->pluck('id')->toArray();
+                $studentUserIds = TeamMember::whereIn('group_id', $archivedGroupIds)->pluck('user_id')->toArray();
+                Student::whereIn('user_id', $studentUserIds)->update(['is_archived' => true]);
+
+                $totalCount += $groupsToArchive->count();
+
+                // Mark the stage as archived
+                $stage->is_archived = true;
+                $stage->archived_year = $year;
+                $stage->is_enabled = false;
+                $stage->save();
+
+                // Create new active cycle stage and clone milestones
+                $clonedTitle = "Capstone {$stage->stage_type} - Cycle {$year}";
+                $newStage = CapstoneStages::create([
+                    'stage_title'   => $clonedTitle,
+                    'is_enabled'    => $stage->id == 1 ? true : false, // Enable stage 1 as default
+                    'is_archived'   => false,
+                    'stage_type'    => $stage->stage_type,
+                ]);
+
+                // Duplicate milestones
+                $oldMilestones = Milestone::where('capstone_stage_id', $stage->id)->get();
+
+                // Delete active classrooms associated with the archived milestones of this stage
+                $oldMilestoneIds = $oldMilestones->pluck('id')->toArray();
+                EvaluationRoom::whereIn('required_milestone_id', $oldMilestoneIds)->delete();
+
+                foreach ($oldMilestones as $om) {
+                    Milestone::create([
+                        'milestone_title'       => $om->milestone_title,
+                        'milestone_description' => $om->milestone_description,
+                        'capstone_stage_id'     => $newStage->id,
+                        'start_date'            => $om->start_date,
+                        'due_date'              => $om->due_date,
+                        'step_order'            => $om->step_order,
+                    ]);
+                }
+            }
+
+            return back()->with('success', "Successfully archived all active Capstone stages and {$totalCount} group(s) for {$year}, and created new cycles with duplicated milestone templates.");
+        }
+
+        // Single stage archival
+        $stage = CapstoneStages::where('id', $stageId)->where('is_archived', false)->first();
+
+        if (!$stage) {
+            return back()->withErrors(['archive' => 'The selected Capstone stage is already archived or does not exist.']);
+        }
+
+        // Find all active groups pointing to this stage
+        $groupsToArchive = Group::where('capstone_stage_id', $stage->id)->where('is_archived', false)->get();
+
+        // Mark the stage as archived
+        $stage->is_archived = true;
+        $stage->archived_year = $year;
+        $stage->is_enabled = false;
+        $stage->save();
+
+        // Archive all groups of this stage and propagate to teachers/sections
+        foreach ($groupsToArchive as $g) {
+            $g->is_archived = true;
+            $g->archived_year = $year;
+            $g->save();
+
+            // Check adviser of this archived group
+            $adviserId = $g->adviser_id;
+            $hasActiveGroups = Group::where('adviser_id', $adviserId)->where('is_archived', false)->exists();
+            if (!$hasActiveGroups) {
+                Teacher::where('id', $adviserId)->update(['is_archived' => true]);
+            }
+
+            // Check section of this archived group
+            $secId = $g->section_id;
+            $hasActiveGroupsSec = Group::where('section_id', $secId)->where('is_archived', false)->exists();
+            if (!$hasActiveGroupsSec) {
+                Section::where('id', $secId)->update(['is_archived' => true]);
+            }
+        }
+
+        // Archive all students in these groups
+        $archivedGroupIds = $groupsToArchive->pluck('id')->toArray();
+        $studentUserIds = TeamMember::whereIn('group_id', $archivedGroupIds)->pluck('user_id')->toArray();
+        Student::whereIn('user_id', $studentUserIds)->update(['is_archived' => true]);
+
+        // Create new active cycle stage
+        $clonedTitle = $request->new_title ?: "Capstone {$stage->stage_type} - Cycle {$year}";
+        $newStage = CapstoneStages::create([
+            'stage_title'   => $clonedTitle,
+            'is_enabled'    => true, // Enable the newly created stage
+            'is_archived'   => false,
+            'stage_type'    => $stage->stage_type,
+        ]);
+
+        // Enforce only this stage is enabled (disable all others)
+        CapstoneStages::where('id', '!=', $newStage->id)->update(['is_enabled' => false]);
+
+        // Duplicate milestones
+        $oldMilestones = Milestone::where('capstone_stage_id', $stage->id)->get();
+
+        // Delete active classrooms associated with the archived milestones of this stage
+        $oldMilestoneIds = $oldMilestones->pluck('id')->toArray();
+        EvaluationRoom::whereIn('required_milestone_id', $oldMilestoneIds)->delete();
+
+        foreach ($oldMilestones as $om) {
+            Milestone::create([
+                'milestone_title'       => $om->milestone_title,
+                'milestone_description' => $om->milestone_description,
+                'capstone_stage_id'     => $newStage->id,
+                'start_date'            => $om->start_date,
+                'due_date'              => $om->due_date,
+                'step_order'            => $om->step_order,
+            ]);
+        }
+
+        return back()->with('success', "Successfully archived the cycle under '{$stage->stage_title}' for {$year}, archived " . $groupsToArchive->count() . " group(s), and created a new active cycle '{$newStage->stage_title}' with duplicated milestone templates.");
     }
 }

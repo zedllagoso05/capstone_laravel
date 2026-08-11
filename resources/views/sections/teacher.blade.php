@@ -75,6 +75,7 @@
         border: 1px solid rgba(214, 177, 92, 0.14);
         box-shadow: var(--shadow-md);
         transition: var(--transition);
+        cursor: pointer;
     }
     .stat-card:hover {
         transform: translateY(-4px);
@@ -690,6 +691,9 @@
             <a href="#" data-section="dashboard" class="nav-link active-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[#d6b15c]">
                 <i class="fas fa-th-large w-4"></i> <span>Dashboard</span>
             </a>
+            <a href="#" data-section="assignedsections" class="nav-link active-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[#d6b15c]">
+                <i class="fas fa-th-large w-4"></i> <span>Sections</span>
+            </a>
             <a href="#" data-section="sections" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
                 <i class="fas fa-layer-group w-4"></i> <span>Assigned Groups</span>
             </a>
@@ -727,6 +731,9 @@
     <a href="#" data-section="dashboard" class="mobile-nav-link flex flex-col items-center text-[#d6b15c] text-xs py-1">
         <i class="fas fa-th-large text-lg"></i><span class="text-[10px] mt-1">Home</span>
     </a>
+    <a href="#" data-section="assignedsections" class="mobile-nav-link flex flex-col items-center text-[#d6b15c] text-xs py-1">
+        <i class="fas fa-th-large text-lg"></i><span class="text-[10px] mt-1">Sections</span>
+    </a>
     <a href="#" data-section="sections" class="mobile-nav-link flex flex-col items-center text-[rgba(255,255,255,0.55)] text-xs py-1">
         <i class="fas fa-layer-group text-lg"></i><span class="text-[10px] mt-1">Groups</span>
     </a>
@@ -751,56 +758,91 @@
             <div class="gold-accent-line"></div>
             <p class="text-[#5b6375] mt-2 text-sm mb-4">Welcome back, {{ $teacher->teacher_first_name ?? $user->name ?? 'Teacher' }}! You are handling {{ $totalGroups ?? 0 }} groups with {{ $totalStudents ?? 0 }} students.</p>
 
-            @if($assignedRooms->isNotEmpty())
-            <div class="p-4 bg-[#faf8f4] border border-[#d6b15c] rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white" style="background:linear-gradient(135deg, var(--navy) 0%, #1e3a5f 100%); shadow: 0 4px 10px rgba(10,20,40,0.15);">
-                        <i class="fas fa-door-open"></i>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-sm text-[#0a1428] uppercase tracking-wide">Assigned Evaluation Classrooms</h4>
-                        <div class="flex flex-wrap gap-2 mt-1">
-                            @foreach($assignedRooms as $room)
-                            <span class="badge badge-gold font-medium">
-                                <i class="fas fa-location-dot mr-1"></i> {{ $room->room_name }}
-                            </span>
-                            @endforeach
+            <div class="space-y-3">
+                @if($teacherSections->isNotEmpty())
+                <div class="p-4 bg-[#faf8f4] border border-[#d6b15c] rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white flex-shrink-0" style="background:linear-gradient(135deg, var(--navy) 0%, #1e3a5f 100%);">
+                            <i class="fas fa-columns"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm text-[#0a1428] uppercase tracking-wide">Assigned Section(s)</h4>
+                            <div class="flex flex-wrap gap-2 mt-1">
+                                @foreach($teacherSections as $section)
+                                <span class="badge badge-gold font-medium">
+                                    <i class="fas fa-chalkboard mr-1"></i> {{ $section->section_name }}
+                                </span>
+                                @endforeach
+                            </div>
                         </div>
                     </div>
+                    <div class="text-xs text-[#5b6375] italic">
+                        You can manage these sections and create groups within them.
+                    </div>
                 </div>
-                <div class="text-xs text-[#5b6375] italic">
-                    You can only see and evaluate the groups assigned to these rooms.
+                @else
+                <div class="p-4 bg-[#faf8f4] border border-[#e2dacf] rounded-xl flex items-center space-x-3 shadow-sm">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center text-[#5b6375] bg-[#f0ece4] flex-shrink-0">
+                        <i class="fas fa-ban"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm text-[#5b6375] uppercase tracking-wide">No Assigned Sections</h4>
+                        <p class="text-xs text-[#5b6375] mt-0.5">Contact the administrator to assign sections to your account.</p>
+                    </div>
                 </div>
+                @endif
+
+                @if($assignedRooms->isNotEmpty())
+                <div class="p-4 bg-[#faf8f4] border border-[#d6b15c] rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white flex-shrink-0" style="background:linear-gradient(135deg, var(--navy) 0%, #1e3a5f 100%); shadow: 0 4px 10px rgba(10,20,40,0.15);">
+                            <i class="fas fa-door-open"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm text-[#0a1428] uppercase tracking-wide">Assigned Evaluation Classrooms</h4>
+                            <div class="flex flex-wrap gap-2 mt-1">
+                                @foreach($assignedRooms as $room)
+                                <span class="badge badge-gold font-medium">
+                                    <i class="fas fa-location-dot mr-1"></i> {{ $room->room_name }}
+                                </span>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-[#5b6375] italic flex-shrink-0">
+                        You can only see and evaluate the groups assigned to these rooms.
+                    </div>
+                </div>
+                @else
+                <div class="p-4 bg-[#faf8f4] border border-[#e2dacf] rounded-xl flex items-center space-x-3 shadow-sm">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center text-[#5b6375] bg-[#f0ece4] flex-shrink-0">
+                        <i class="fas fa-door-closed"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm text-[#5b6375] uppercase tracking-wide">No Assigned Classrooms</h4>
+                        <p class="text-xs text-[#5b6375] mt-0.5">You have not been assigned to any evaluation classrooms/rooms yet.</p>
+                    </div>
+                </div>
+                @endif
             </div>
-            @else
-            <div class="p-4 bg-[#faf8f4] border border-[#e2dacf] rounded-xl flex items-center space-x-3 shadow-sm">
-                <div class="w-10 h-10 rounded-lg flex items-center justify-center text-[#5b6375] bg-[#f0ece4]">
-                    <i class="fas fa-door-closed"></i>
-                </div>
-                <div>
-                    <h4 class="font-bold text-sm text-[#5b6375] uppercase tracking-wide">No Assigned Classrooms</h4>
-                    <p class="text-xs text-[#5b6375] mt-0.5">You have not been assigned to any evaluation classrooms/rooms yet.</p>
-                </div>
-            </div>
-            @endif
         </div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div class="stat-card p-4 md:p-5 flex justify-between items-center">
+            <div class="stat-card p-4 md:p-5 flex justify-between items-center" onclick="openDashboardDetailModal('groups')">
                 <div><p class="text-[#5b6375] text-xs font-medium">Total Groups</p><p class="text-2xl md:text-3xl font-bold mt-1 text-[#0a1428]" style="font-family:'Cormorant Garamond',serif;">{{ $totalGroups ?? 0 }}</p></div>
                 <div class="icon-circle text-[#d6b15c]"><i class="fas fa-layer-group text-lg"></i></div>
             </div>
-            <div class="stat-card p-4 md:p-5 flex justify-between items-center">
+            <div class="stat-card p-4 md:p-5 flex justify-between items-center" onclick="openDashboardDetailModal('students')">
                 <div><p class="text-[#5b6375] text-xs font-medium">Total Students</p><p class="text-2xl md:text-3xl font-bold mt-1 text-[#0a1428]" style="font-family:'Cormorant Garamond',serif;">{{ $totalStudents ?? 0 }}</p></div>
                 <div class="icon-circle text-[#d6b15c]"><i class="fa-regular fa-user text-lg"></i></div>
             </div>
-            <div class="stat-card p-4 md:p-5 flex justify-between items-center">
+            <div class="stat-card p-4 md:p-5 flex justify-between items-center" onclick="openDashboardDetailModal('evaluations')">
                 <div><p class="text-[#5b6375] text-xs font-medium">Evaluations</p><p class="text-2xl md:text-3xl font-bold mt-1 text-[#0a1428]" style="font-family:'Cormorant Garamond',serif;">{{ $totalEvaluations ?? 0 }}</p></div>
                 <div class="icon-circle text-[#d6b15c]"><i class="fa-regular fa-circle-check text-lg"></i></div>
             </div>
-            <div class="stat-card p-4 md:p-5 flex justify-between items-center">
-                <div><p class="text-[#5b6375] text-xs font-medium">Pending</p><p class="text-2xl md:text-3xl font-bold mt-1 text-[#0a1428]" style="font-family:'Cormorant Garamond',serif;">{{ $pendingEvaluations ?? 0 }}</p></div>
-                <div class="icon-circle text-[#d6b15c]"><i class="fa-regular fa-clock text-lg"></i></div>
+            <div class="stat-card p-4 md:p-5 flex justify-between items-center" onclick="openDashboardDetailModal('sections')">
+                <div><p class="text-[#5b6375] text-xs font-medium">My Sections</p><p class="text-2xl md:text-3xl font-bold mt-1 text-[#0a1428]" style="font-family:'Cormorant Garamond',serif;">{{ count($teacherSections ?? []) }}</p></div>
+                <div class="icon-circle text-[#d6b15c]"><i class="fas fa-columns text-lg"></i></div>
             </div>
         </div>
 
@@ -851,29 +893,169 @@
             <div class="card-accent"></div>
             <div class="p-6">
                 <div class="flex justify-between items-center mb-5"><h3>All Assigned Groups</h3><span class="text-xs text-[#5b6375]">{{ $totalGroups ?? 0 }} groups</span></div>
-                <div class="overflow-x-auto">
-                    <table class="w-full">
-                        <thead><tr><th class="pl-3 text-left">Group Name</th><th class="text-left">Capstone Title</th><th class="text-center">Members</th><th class="text-center">Progress</th><th class="pr-3 text-right">Action</th></tr></thead>
-                        <tbody>
-                            @forelse($groups ?? [] as $group)
-                                @php $completed = $group->groupMilestones->where('status','completed')->count(); $total = $milestones->count()??1; $progress = round(($completed/max($total,1))*100); @endphp
-                                <tr>
-                                    <td class="pl-3"><span class="font-semibold text-[#0a1428]">{{ $group->group_name }}</span></td>
-                                    <td class="text-[#3d4450]">{{ Str::limit($group->capstone_title,30) }}</td>
-                                    <td class="text-center">{{ $group->students->count()??0 }}</td>
-                                    <td class="text-center"><div class="flex items-center justify-center gap-2"><div class="w-16 progress-bar-bg h-1.5"><div class="progress-fill h-1.5" style="width:{{ $progress }}%; background:var(--gold);"></div></div><span class="text-xs">{{ $progress }}%</span></div></td>
-                                    <td class="pr-3 text-right"><button class="text-[#b88d3a] hover:text-[#8b6914] text-xs font-medium transition evaluate-btn" data-group="{{ $group->id }}">Evaluate <i class="fas fa-arrow-right ml-1"></i></button></td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="5" class="py-8 text-center text-[#5b6375]"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>No groups assigned</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                <div class="space-y-3">
+                    @forelse($groups ?? [] as $group)
+                        @php 
+                            $completed = $group->groupMilestones->where('status','completed')->count(); 
+                            $total = $milestones->count()??1; 
+                            $progress = round(($completed/max($total,1))*100); 
+                            $section = $group->students->first()->section ?? 'No Section';
+                        @endphp
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-[#faf8f4] border border-[#e2dacf] rounded-xl text-sm group-item transition hover:shadow-sm" data-search="{{ strtolower($group->group_name . ' ' . $group->capstone_title . ' ' . $section) }}">
+                            <div class="flex flex-col gap-1">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-bold text-[#0a1428] text-base">{{ $group->group_name }}</span>
+                                    <span class="badge badge-navy text-[9px]">{{ $section }}</span>
+                                    <span class="text-xs text-[#5b6375]">• {{ $group->students->count()??0 }} members</span>
+                                </div>
+                                <span class="text-xs text-[#3d4450]">{{ $group->capstone_title }}</span>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-xs text-[#5b6375]">Progress:</span>
+                                    <div class="w-24 progress-bar-bg h-1.5"><div class="progress-fill h-1.5" style="width:{{ $progress }}%; background:var(--gold);"></div></div>
+                                    <span class="text-xs font-semibold">{{ $progress }}%</span>
+                                </div>
+                            </div>
+                            <div class="mt-3 sm:mt-0 flex gap-2">
+                                <button onclick="window.openEvaluationModal({{ $group->id }})" class="btn-primary text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 focus:outline-none transition shadow-sm evaluate-btn" data-group="{{ $group->id }}">
+                                    <i class="fa-regular fa-pen-to-square"></i> Evaluate Group
+                                </button>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="py-8 text-center text-[#5b6375]"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>No groups assigned</div>
+                    @endforelse
                 </div>
             </div>
         </div>
     </div>
+ <!-- ==================== ASSIGNED SECTIONS ==================== -->
+    <div id="assignedsections-section" class="section-container hidden section-card max-w-7xl mx-auto">
+        <div class="mb-8 flex flex-wrap justify-between items-center gap-4">
+            <div><h1>Assigned Section</h1><div class="gold-accent-line"></div><p class="text-[#5b6375] mt-2 text-sm">Manage handled sections</p></div>
+        </div>
+        <div class="grid grid-cols-1 gap-6">
+            @forelse($teacherSections ?? [] as $section)
+                @php 
+                    $groupsInSection = \App\Models\Group::where('section_id', $section->id)->where('is_archived', false)->with(['students', 'groupMilestones', 'room'])->get();
+                    $sectionStudents = \App\Models\Student::where('section', $section->section_name)->with(['user', 'groups'])->get();
+                @endphp
+                <div class="content-card">
+                    <div class="card-accent"></div>
+                    <div class="p-6">
+                        <div class="flex flex-wrap justify-between items-center mb-4 gap-2 border-b border-[#faf8f4] pb-2">
+                            <div class="flex items-center gap-2.5">
+                                <button type="button" onclick="toggleSectionCollapse('{{ $section->id }}')" class="text-[#b8b0a0] hover:text-[#0a1428] transition focus:outline-none w-6 h-6 flex items-center justify-center rounded-full hover:bg-[#faf8f4]">
+                                    <i class="fas fa-chevron-down transform transition-transform duration-200 text-xs" id="collapse_icon_{{ $section->id }}"></i>
+                                </button>
+                                <h3 class="text-lg font-bold text-[#0a1428] cursor-pointer select-none" onclick="toggleSectionCollapse('{{ $section->id }}')">{{ $section->section_name }}</h3>
+                            </div>
+                        </div>
 
+                        <!-- Collapsible Content container -->
+                        <div id="section_collapsible_content_{{ $section->id }}" class="space-y-4">
+                            <div class="flex flex-wrap justify-between items-center mb-2 gap-2">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex bg-[#faf8f4] border border-[#e2dacf] rounded-lg p-0.5 text-[10px]">
+                                        <button type="button" onclick="toggleSectionView('as', '{{ $section->id }}', 'groups')" id="as_toggle_btn_{{ $section->id }}_groups" class="px-2.5 py-1 rounded-md font-semibold text-[#b88d3a] bg-white shadow-sm transition-all focus:outline-none">
+                                            <i class="fas fa-layer-group mr-1"></i> Groups ({{ $groupsInSection->count() }})
+                                        </button>
+                                        <button type="button" onclick="toggleSectionView('as', '{{ $section->id }}', 'students')" id="as_toggle_btn_{{ $section->id }}_students" class="px-2.5 py-1 rounded-md font-semibold text-[#5b6375] hover:text-[#0a1428] transition-all focus:outline-none">
+                                            <i class="fas fa-user-graduate mr-1"></i> Students ({{ $sectionStudents->count() }})
+                                        </button>
+                                    </div>
+                                    <button onclick="openCreateGroupModal('{{ $section->section_name }}')" class="btn-outline text-[10px] py-1 px-2"><i class="fas fa-plus"></i> Create Group</button>
+                                </div>
+                            </div>
+
+                            <!-- Groups View -->
+                            <div id="as_section_groups_view_{{ $section->id }}" class="space-y-3">
+                                @forelse($groupsInSection as $g)
+                                    <div class="p-3 bg-[#faf8f4] rounded-lg border border-[#e2dacf]">
+                                        <div class="flex justify-between items-center">
+                                            <div><p class="font-semibold text-sm text-[#0a1428]">{{ $g->group_name }}</p><p class="text-xs text-[#5b6375]">{{ Str::limit($g->capstone_title,25) }}</p></div>
+                                            <div class="text-right flex flex-col items-end gap-1">
+                                                <span class="text-xs text-[#5b6375]">{{ $g->students->count()??0 }} students</span>
+                                                <div class="flex gap-2">
+                                                    <button onclick="openViewModal({{ $g->id }})" class="text-[#b88d3a] hover:text-[#8b6914] text-xs font-semibold transition">
+                                                        <i class="fas fa-star mr-1"></i>Rubric Scores
+                                                    </button>
+                                                    <button onclick="openViewModal({{ $g->id }})" class="text-[#5b6375] hover:text-[#0a1428] text-xs font-medium transition">
+                                                        <i class="fa-regular fa-eye mr-1"></i>{{ $g->adviser_id == $teacher->id ? 'Check' : 'Show' }}
+                                                    </button>
+                                                    @if($g->adviser_id == $teacher->id)
+                                                        <button class="text-[#5b6375] hover:text-[#0a1428] text-xs font-medium transition edit-team-btn" data-group="{{ $g->id }}">
+                                                            <i class="fa-regular fa-pen-to-square mr-1"></i>Edit Group
+                                                        </button>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="text-center py-6 text-[#5b6375] text-sm bg-[#faf8f4]/50 border border-[#e2dacf] border-dashed rounded-lg"><i class="fa-regular fa-folder-open mr-1.5"></i> No groups in this section</div>
+                                @endforelse
+                            </div>
+
+                            <!-- Students View (Table of Students) -->
+                            <div id="as_section_students_view_{{ $section->id }}" class="hidden overflow-x-auto border border-[#e2dacf] rounded-lg bg-white">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-[11px] border-b border-[#e2dacf]">
+                                            <th class="p-2 pl-3">Student Name</th>
+                                            <th class="p-2">User ID</th>
+                                            <th class="p-2">Group</th>
+                                            <th class="p-2">Contact</th>
+                                            <th class="p-2 pr-3 text-right">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-[#faf1e0] text-[11px]">
+                                        @forelse($sectionStudents as $st)
+                                            @php
+                                                $stGroup = $groupsInSection->first(fn($g) => $g->students->contains($st->id));
+                                            @endphp
+                                            <tr class="hover:bg-[#faf8f4]/30">
+                                                <td class="p-2 pl-3 font-semibold text-[#0a1428]">{{ $st->student_first_name }} {{ $st->student_last_name }}</td>
+                                                <td class="p-2 text-[#5b6375] font-mono">{{ $st->user->user_id ?? 'N/A' }}</td>
+                                                <td class="p-2">
+                                                    @if($stGroup)
+                                                        <span class="badge badge-navy text-[9px] px-1.5 py-0.5"><i class="fas fa-layer-group text-[8px] mr-0.5"></i> {{ $stGroup->group_name }}</span>
+                                                    @else
+                                                        <span class="badge badge-muted text-[9px] px-1.5 py-0.5">Unassigned</span>
+                                                    @endif
+                                                </td>
+                                                <td class="p-2 text-[#5b6375]">
+                                                    <div class="flex flex-col text-[9px]">
+                                                        <span>{{ $st->student_email }}</span>
+                                                        @if($st->contact_number)
+                                                            <span class="text-gray-400 mt-0.5">{{ $st->contact_number }}</span>
+                                                        @endif
+                                                    </div>
+                                                </td>
+                                                <td class="p-2 pr-3 text-right">
+                                                    @if($stGroup)
+                                                        <button onclick="openViewModal({{ $stGroup->id }})" class="text-[#b88d3a] hover:text-[#8b6914] text-[11px] font-semibold transition">
+                                                            <i class="fas fa-star mr-1"></i>Rubric Scores
+                                                        </button>
+                                                    @else
+                                                        <span class="text-gray-400 italic text-[10px]">No Group</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr><td colspan="5" class="p-6 text-center text-[#5b6375]"><i class="fa-regular fa-folder-open text-xl mb-1 block"></i> No students registered in this section.</td></tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            @empty
+                <div class="content-card col-span-2 p-8 text-center"><i class="fa-regular fa-folder-open text-4xl text-[#b8b0a0] mb-3"></i><h3>No Section Assigned</h3><p class="text-[#5b6375] text-sm">Contact the admin to get sections assigned.</p></div>
+            @endforelse
+        </div>
+    </div>
     <!-- ==================== ASSIGNED GROUPS ==================== -->
     <div id="sections-section" class="section-container hidden section-card max-w-7xl mx-auto">
         <div class="mb-8 flex flex-wrap justify-between items-center gap-4">
@@ -972,22 +1154,25 @@
                                 <input type="text" class="room-group-filter form-input text-xs py-1 px-2 w-48" 
                                        placeholder="Search by group, title, or section…" data-room-id="{{ $room->id }}">
                             </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 room-group-list" data-room-id="{{ $room->id }}">
+                            <div class="flex flex-col gap-3 w-full room-group-list" data-room-id="{{ $room->id }}">
                                 @forelse($room->groups as $g)
                                     @php
                                         $section = $g->students->first()->section ?? 'No Section';
                                         $searchData = strtolower($g->group_name . ' ' . ($g->capstone_title ?? '') . ' ' . $section);
                                     @endphp
-                                    <div class="flex flex-col p-2 bg-[#faf8f4] border border-[#e2dacf] rounded-lg text-xs group-item" data-search="{{ $searchData }}">
-                                        <div class="flex justify-between items-start">
-                                            <span class="font-medium text-[#0a1428]">{{ $g->group_name }}</span>
-                                            <button onclick="openViewModal({{ $g->id }})" class="text-[#b88d3a] hover:text-[#8b6914] font-medium">
-                                                <i class="fa-regular fa-eye mr-1"></i>Evaluate
-                                            </button>
+                                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-[#faf8f4] border border-[#e2dacf] rounded-xl text-sm group-item transition hover:shadow-sm w-full" data-search="{{ $searchData }}">
+                                        <div class="flex flex-col gap-1">
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <span class="font-bold text-[#0a1428] text-base">{{ $g->group_name }}</span>
+                                                <span class="badge badge-navy text-[9px]">{{ $section }}</span>
+                                                <span class="text-xs text-[#5b6375]">• {{ $g->students->count() ?? 0 }} members</span>
+                                            </div>
+                                            <span class="text-xs text-[#3d4450]">{{ $g->capstone_title ?? 'No title' }}</span>
                                         </div>
-                                        <div class="mt-1 flex flex-wrap items-center gap-1">
-                                            <span class="text-[#5b6375]">{{ $g->capstone_title ?? 'No title' }}</span>
-                                            <span class="badge badge-muted text-[9px]">{{ $section }}</span>
+                                        <div class="mt-3 sm:mt-0 flex gap-2">
+                                            <button onclick="window.openEvaluationModal({{ $g->id }})" class="btn-primary text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 focus:outline-none transition shadow-sm evaluate-btn" data-group="{{ $g->id }}">
+                                                <i class="fa-regular fa-pen-to-square"></i> Evaluate Group
+                                            </button>
                                         </div>
                                     </div>
                                 @empty
@@ -1029,13 +1214,29 @@
                                     @endif
                                 </div>
                             </div>
-                            <form class="join-room-form flex gap-2" data-room-id="{{ $room->id }}" action="{{ route('teacher.join_room') }}" method="POST">
-                                @csrf
-                                <input type="text" name="join_code" class="form-input join-code-input flex-1 text-sm" placeholder="6-char code" maxlength="6" style="text-transform:uppercase; min-width:120px;">
-                                <button type="submit" class="btn-primary text-xs px-4 whitespace-nowrap">
-                                    <i class="fas fa-key mr-1"></i> Join
-                                </button>
-                            </form>
+                            @php
+                                $isTeacherAlreadyAssigned = $assignedRooms->isNotEmpty();
+                                $roomIsFull = $room->panelists->isNotEmpty();
+                                $isDisabled = $isTeacherAlreadyAssigned || $roomIsFull;
+                            @endphp
+                            @if($isDisabled)
+                                <div class="text-right text-xs font-semibold uppercase tracking-wider text-[#5b6375] bg-[#f5f1e8] border border-[#e2dacf] px-4 py-2.5 rounded-lg flex items-center gap-1.5">
+                                    <i class="fas fa-ban text-red-500"></i>
+                                    @if($roomIsFull)
+                                        Classroom Full
+                                    @else
+                                        Already Assigned
+                                    @endif
+                                </div>
+                            @else
+                                <form class="join-room-form flex gap-2" data-room-id="{{ $room->id }}" action="{{ route('teacher.join_room') }}" method="POST">
+                                    @csrf
+                                    <input type="text" name="join_code" class="form-input join-code-input flex-1 text-sm" placeholder="6-char code" maxlength="6" required style="text-transform:uppercase; min-width:120px;">
+                                    <button type="submit" class="btn-primary text-xs px-4 whitespace-nowrap">
+                                        <i class="fas fa-key mr-1"></i> Join
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -1274,12 +1475,27 @@
                     </select>
                 </div>
             </div>
+            <!-- Attendance -->
             <div>
-            
-  
-            
+                <label class="form-label">Attendance</label>
+                <div class="flex gap-4 mt-1">
+                    <label class="flex items-center gap-2 text-xs cursor-pointer">
+                        <input type="radio" name="attendance" value="present" checked class="form-radio text-[#d6b15c] focus:ring-[#d6b15c]">
+                        <span>All members present</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-xs cursor-pointer">
+                        <input type="radio" name="attendance" value="absent" class="form-radio text-[#d6b15c] focus:ring-[#d6b15c]">
+                        <span>Some members absent</span>
+                    </label>
+                </div>
+            </div>
 
-
+            <!-- Absent Students Checklist -->
+            <div id="absent_students_container" class="hidden">
+                <label class="form-label">Select Absent Student(s)</label>
+                <div id="student_checklist" class="grid grid-cols-2 gap-2 mt-1 p-3 border border-[#e2dacf] rounded-xl bg-[#faf8f4] max-h-36 overflow-y-auto">
+                    <!-- Loaded dynamically via JS -->
+                </div>
             </div>
             <div id="rubric_container" class="mb-4 hidden">
                 <label class="form-label">Rubric: <span id="rubric_name_display" class="text-[#b88d3a]"></span></label>
@@ -1331,6 +1547,219 @@
     </div>
 </div>
 
+@php
+    $uniqueStudents = $groups->flatMap(fn($g) => $g->students)->unique('id');
+@endphp
+
+<!-- TEACHER DIRECTORY DETAIL MODAL (TABBED OVERVIEW) -->
+<div id="dashboard_detail_modal" class="modal-overlay">
+    <div class="modal-box wide" style="max-width: 68rem;">
+        <div class="modal-accent"></div>
+        <div class="flex justify-between items-center mb-6 p-1">
+            <div>
+                <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.6rem; font-weight:600; color:var(--navy);" id="ddm_modal_title">Teacher System Directory Details</h2>
+                <p class="text-xs text-[#5b6375] mt-1">Detailed directory of all entities handled or assigned to you.</p>
+            </div>
+            <button type="button" onclick="closeModal('dashboard_detail_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-2xl focus:outline-none">&times;</button>
+        </div>
+
+        <!-- Tab Buttons -->
+        <div class="flex gap-2 border-b border-[#e2dacf] pb-3 mb-6 overflow-x-auto">
+            <button type="button" onclick="switchDdmTab('groups')" id="ddm_tab_groups" class="ddm-tab-btn px-4 py-2 text-xs font-semibold rounded-lg transition-all border border-[#e2dacf] text-[#5b6375] hover:bg-[#faf8f4]">
+                <i class="fas fa-layer-group mr-1.5 text-[#d6b15c]"></i> Handled Groups (<span id="ddm_count_groups">{{ count($groups ?? []) }}</span>)
+            </button>
+            <button type="button" onclick="switchDdmTab('students')" id="ddm_tab_students" class="ddm-tab-btn px-4 py-2 text-xs font-semibold rounded-lg transition-all border border-[#e2dacf] text-[#5b6375] hover:bg-[#faf8f4]">
+                <i class="fas fa-user-graduate mr-1.5 text-[#d6b15c]"></i> My Students (<span id="ddm_count_students">{{ count($uniqueStudents ?? []) }}</span>)
+            </button>
+            <button type="button" onclick="switchDdmTab('evaluations')" id="ddm_tab_evaluations" class="ddm-tab-btn px-4 py-2 text-xs font-semibold rounded-lg transition-all border border-[#e2dacf] text-[#5b6375] hover:bg-[#faf8f4]">
+                <i class="fa-regular fa-circle-check mr-1.5 text-[#d6b15c]"></i> My Evaluations (<span id="ddm_count_evaluations">{{ count($evaluations ?? []) }}</span>)
+            </button>
+            <button type="button" onclick="switchDdmTab('sections')" id="ddm_tab_sections" class="ddm-tab-btn px-4 py-2 text-xs font-semibold rounded-lg transition-all border border-[#e2dacf] text-[#5b6375] hover:bg-[#faf8f4]">
+                <i class="fas fa-columns mr-1.5 text-[#d6b15c]"></i> My Sections (<span id="ddm_count_sections">{{ count($teacherSections ?? []) }}</span>)
+            </button>
+        </div>
+
+        <!-- Search Filter -->
+        <div class="mb-4">
+            <div class="relative">
+                <input type="text" id="ddm_search_input" oninput="filterDdmTable()" class="form-input text-xs w-full pl-9 py-2 border border-[#e2dacf] rounded-xl bg-[#faf8f4]" placeholder="Search by name, title, section, or details...">
+                <i class="fas fa-search absolute left-3 top-3 text-[#b8b0a0] text-xs"></i>
+            </div>
+        </div>
+
+        <!-- Tabs Content Container -->
+        <div class="overflow-y-auto max-h-[50vh] border border-[#e2dacf] bg-white rounded-xl">
+            
+            <!-- Handled Groups Tab Content -->
+            <div id="ddm_content_groups" class="ddm-tab-content hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                            <th class="p-3 pl-4">Group Name</th>
+                            <th class="p-3">Capstone Title</th>
+                            <th class="p-3">Section</th>
+                            <th class="p-3">Role</th>
+                            <th class="p-3">Room</th>
+                            <th class="p-3 pr-4 text-center">Members</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#faf1e0]">
+                        @forelse($groups ?? [] as $gr)
+                            @php
+                                $isAdviser = $gr->adviser_id == $teacher->id;
+                            @endphp
+                            <tr class="hover:bg-[#faf8f4]/50 text-xs ddm-row-item transition duration-150" data-search-text="{{ strtolower($gr->group_name . ' ' . $gr->capstone_title . ' ' . ($gr->section->section_name ?? '') . ' ' . ($isAdviser ? 'Adviser' : 'Panelist') . ' ' . ($gr->room->room_name ?? '')) }}">
+                                <td class="p-3 pl-4 font-semibold text-[#0a1428]">{{ $gr->group_name }}</td>
+                                <td class="p-3 text-[#3d4450] max-w-xs truncate" title="{{ $gr->capstone_title }}">{{ $gr->capstone_title }}</td>
+                                <td class="p-3 text-[#3d4450]">{{ $gr->section->section_name ?? 'Unassigned' }}</td>
+                                <td class="p-3">
+                                    @if($isAdviser)
+                                        <span class="badge badge-navy text-[10px]"><i class="fas fa-user-tie text-[9px] mr-1"></i> Adviser</span>
+                                    @else
+                                        <span class="badge badge-gold text-[10px]" style="background-color:rgba(214,177,92,0.1); color:rgba(184,141,58,1); border:1px solid rgba(214,177,92,0.25);"><i class="fas fa-users text-[9px] mr-1"></i> Panelist</span>
+                                    @endif
+                                </td>
+                                <td class="p-3">
+                                    @if($gr->room)
+                                        <span class="badge badge-green text-[10px]"><i class="fas fa-door-open text-[9px] mr-1"></i> {{ $gr->room->room_name }}</span>
+                                    @else
+                                        <span class="badge badge-muted text-[10px]">Unassigned</span>
+                                    @endif
+                                </td>
+                                <td class="p-3 pr-4 text-center text-[#5b6375] font-semibold">{{ $gr->students->count() }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" class="p-8 text-center text-[#5b6375]"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i> No handled groups.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- My Students Tab Content -->
+            <div id="ddm_content_students" class="ddm-tab-content hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                            <th class="p-3 pl-4">Student</th>
+                            <th class="p-3">User ID</th>
+                            <th class="p-3">Course</th>
+                            <th class="p-3">Section</th>
+                            <th class="p-3">Group</th>
+                            <th class="p-3 pr-4">Contact</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#faf1e0]">
+                        @forelse($uniqueStudents ?? [] as $st)
+                            @php
+                                $studentGroup = $groups->first(fn($g) => $g->students->contains($st->id));
+                                $grpName = $studentGroup ? $studentGroup->group_name : 'No Group';
+                            @endphp
+                            <tr class="hover:bg-[#faf8f4]/50 text-xs ddm-row-item transition duration-150" data-search-text="{{ strtolower($st->student_first_name . ' ' . $st->student_last_name . ' ' . $st->user_id . ' ' . $st->course . ' ' . $st->section . ' ' . $grpName) }}">
+                                <td class="p-3 pl-4">
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style="background:linear-gradient(135deg, var(--navy) 0%, #1e3a5f 100%);">
+                                            {{ strtoupper(substr($st->student_first_name, 0, 1) . substr($st->student_last_name, 0, 1)) }}
+                                        </div>
+                                        <span class="font-semibold text-[#0a1428]">{{ $st->student_first_name }} {{ $st->student_last_name }}</span>
+                                    </div>
+                                </td>
+                                <td class="p-3 text-[#3d4450] font-mono">{{ $st->user->user_id ?? 'N/A' }}</td>
+                                <td class="p-3 text-[#3d4450]">{{ $st->course }}</td>
+                                <td class="p-3 text-[#3d4450]">{{ $st->section }}</td>
+                                <td class="p-3">
+                                    @if($studentGroup)
+                                        <span class="badge badge-navy text-[10px]"><i class="fas fa-layer-group text-[9px] mr-1"></i> {{ $grpName }}</span>
+                                    @else
+                                        <span class="badge badge-muted text-[10px]">No Group</span>
+                                    @endif
+                                </td>
+                                <td class="p-3 pr-4 text-[#5b6375]">
+                                    <div class="flex flex-col text-[10px]">
+                                        <span><i class="fa-regular fa-envelope mr-1 text-[#b8b0a0]"></i> {{ $st->student_email }}</span>
+                                        @if($st->contact_number)
+                                            <span class="mt-0.5"><i class="fa-solid fa-phone mr-1 text-[#b8b0a0]"></i> {{ $st->contact_number }}</span>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" class="p-8 text-center text-[#5b6375]"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i> No students registered in your handled groups.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- My Evaluations Tab Content -->
+            <div id="ddm_content_evaluations" class="ddm-tab-content hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                            <th class="p-3 pl-4">Group Name</th>
+                            <th class="p-3">Milestone</th>
+                            <th class="p-3 text-center">Score</th>
+                            <th class="p-3">Date Evaluated</th>
+                            <th class="p-3 pr-4">Feedback</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#faf1e0]">
+                        @forelse($evaluations ?? [] as $ev)
+                            <tr class="hover:bg-[#faf8f4]/50 text-xs ddm-row-item transition duration-150" data-search-text="{{ strtolower(($ev->group->group_name ?? 'Unknown') . ' ' . ($ev->milestone->milestone_title ?? '') . ' ' . $ev->feedback) }}">
+                                <td class="p-3 pl-4 font-semibold text-[#0a1428]">{{ $ev->group->group_name ?? 'Unknown' }}</td>
+                                <td class="p-3 text-[#3d4450]">{{ $ev->milestone->milestone_title ?? '' }}</td>
+                                <td class="p-3 text-center text-[#1e6b3a] font-bold">{{ $ev->score }} / {{ $ev->max_score }}</td>
+                                <td class="p-3 text-[#3d4450] font-mono">{{ \Carbon\Carbon::parse($ev->evaluation_date)->format('M d, Y') }}</td>
+                                <td class="p-3 pr-4 text-[#5b6375] italic max-w-sm truncate" title="{{ $ev->feedback }}">{{ $ev->feedback }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="5" class="p-8 text-center text-[#5b6375]"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i> No evaluations submitted by you yet.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- My Sections Tab Content -->
+            <div id="ddm_content_sections" class="ddm-tab-content hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                            <th class="p-3 pl-4">Section Name</th>
+                            <th class="p-3">Assigned Groups Count</th>
+                            <th class="p-3 pr-4">Assigned Groups</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#faf1e0]">
+                        @forelse($teacherSections ?? [] as $sec)
+                            @php
+                                $secGroups = $groups->where('section_id', $sec->id);
+                            @endphp
+                            <tr class="hover:bg-[#faf8f4]/50 text-xs ddm-row-item transition duration-150" data-search-text="{{ strtolower($sec->section_name . ' ' . $secGroups->pluck('group_name')->join(' ')) }}">
+                                <td class="p-3 pl-4 font-semibold text-[#0a1428]">{{ $sec->section_name }}</td>
+                                <td class="p-3 text-[#3d4450] font-mono">{{ $secGroups->count() }} group(s)</td>
+                                <td class="p-3 pr-4">
+                                    <div class="flex flex-wrap gap-1">
+                                        @forelse($secGroups as $sg)
+                                            <span class="badge badge-navy text-[9px]">{{ $sg->group_name }}</span>
+                                        @empty
+                                            <span class="text-gray-400 italic text-[10px]">No groups in this section</span>
+                                        @endforelse
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="3" class="p-8 text-center text-[#5b6375]"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i> No sections assigned.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+        <div class="flex justify-end pt-4 border-t border-[#e2dacf] mt-5">
+            <button type="button" onclick="closeModal('dashboard_detail_modal')" class="btn-primary text-xs px-5 py-2">Close Details</button>
+        </div>
+    </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════════
 // MODAL HELPERS
@@ -1343,6 +1772,132 @@ function closeModal(id) {
     const modal = document.getElementById(id);
     if (modal) modal.classList.remove('active');
 }
+
+window.toggleSectionCollapse = function(sectionId) {
+    const content = document.getElementById(`section_collapsible_content_${sectionId}`);
+    const icon = document.getElementById(`collapse_icon_${sectionId}`);
+    if (!content || !icon) return;
+
+    const isCollapsed = content.classList.toggle('hidden');
+    if (isCollapsed) {
+        icon.style.transform = 'rotate(-90deg)';
+    } else {
+        icon.style.transform = 'rotate(0deg)';
+    }
+};
+
+window.toggleSectionView = function(prefix, sectionId, viewType) {
+    const groupsView = document.getElementById(`${prefix}_section_groups_view_${sectionId}`);
+    const studentsView = document.getElementById(`${prefix}_section_students_view_${sectionId}`);
+    const groupsBtn = document.getElementById(`${prefix}_toggle_btn_${sectionId}_groups`);
+    const studentsBtn = document.getElementById(`${prefix}_toggle_btn_${sectionId}_students`);
+
+    if (!groupsView || !studentsView || !groupsBtn || !studentsBtn) return;
+
+    if (viewType === 'groups') {
+        groupsView.classList.remove('hidden');
+        studentsView.classList.add('hidden');
+
+        // Style groups button active
+        groupsBtn.className = 'px-2.5 py-1 rounded-md font-semibold text-[#b88d3a] bg-white shadow-sm transition-all focus:outline-none';
+        // Style students button inactive
+        studentsBtn.className = 'px-2.5 py-1 rounded-md font-semibold text-[#5b6375] hover:text-[#0a1428] transition-all focus:outline-none';
+    } else {
+        groupsView.classList.add('hidden');
+        studentsView.classList.remove('hidden');
+
+        // Style students button active
+        studentsBtn.className = 'px-2.5 py-1 rounded-md font-semibold text-[#b88d3a] bg-white shadow-sm transition-all focus:outline-none';
+        // Style groups button inactive
+        groupsBtn.className = 'px-2.5 py-1 rounded-md font-semibold text-[#5b6375] hover:text-[#0a1428] transition-all focus:outline-none';
+    }
+};
+
+window.openDashboardDetailModal = function(tabName) {
+    openModal('dashboard_detail_modal');
+    switchDdmTab(tabName);
+    // Reset search input
+    const sInput = document.getElementById('ddm_search_input');
+    if (sInput) {
+        sInput.value = '';
+        filterDdmTable();
+    }
+};
+
+window.switchDdmTab = function(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.ddm-tab-content').forEach(el => el.classList.add('hidden'));
+    
+    // Reset all tab button styles to default state
+    document.querySelectorAll('.ddm-tab-btn').forEach(btn => {
+        btn.style.borderColor = '#e2dacf';
+        btn.style.color = '#5b6375';
+        btn.style.backgroundColor = 'transparent';
+        btn.classList.remove('active');
+    });
+
+    // Show selected content
+    const content = document.getElementById(`ddm_content_${tabName}`);
+    if (content) content.classList.remove('hidden');
+
+    // Set active button style
+    const activeBtn = document.getElementById(`ddm_tab_${tabName}`);
+    if (activeBtn) {
+        activeBtn.style.borderColor = 'var(--gold)';
+        activeBtn.style.color = 'var(--gold)';
+        activeBtn.style.backgroundColor = '#faf8f4';
+        activeBtn.classList.add('active');
+    }
+
+    // Update modal title prefix based on selected tab
+    const modalTitle = document.getElementById('ddm_modal_title');
+    if (modalTitle) {
+        const titleMap = {
+            students: 'My Students Directory',
+            groups: 'Handled Groups Directory',
+            evaluations: 'Submitted Evaluations',
+            sections: 'My Sections Directory'
+        };
+        modalTitle.textContent = titleMap[tabName] || 'Teacher System Directory Details';
+    }
+
+    // Run search filter on switch to apply current filter to the active table
+    filterDdmTable();
+};
+
+window.filterDdmTable = function() {
+    const query = document.getElementById('ddm_search_input').value.trim().toLowerCase();
+    const activeTab = document.querySelector('.ddm-tab-btn.active');
+    if (!activeTab) return;
+
+    const tabIdName = activeTab.id.replace('ddm_tab_', '');
+    const activeContent = document.getElementById(`ddm_content_${tabIdName}`);
+    if (!activeContent) return;
+
+    const rows = activeContent.querySelectorAll('.ddm-row-item');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const searchVal = row.dataset.searchText || '';
+        if (!query || searchVal.includes(query)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    // Update counter in active tab
+    const counterEl = document.getElementById(`ddm_count_${tabIdName}`);
+    if (counterEl) {
+        const originalTotal = rows.length;
+        if (query) {
+            counterEl.textContent = `${visibleCount}/${originalTotal}`;
+        } else {
+            counterEl.textContent = originalTotal;
+        }
+    }
+};
 document.addEventListener('click', function (e) {
     if (e.target.classList.contains('modal-overlay') && e.target.classList.contains('active')) {
         e.target.classList.remove('active');
@@ -1420,7 +1975,7 @@ function openViewModal(groupId) {
                 currentStage = m.capstone_stage_id;
                 const divider = document.createElement('tr');
                 divider.className = 'stage-divider';
-                divider.innerHTML = `<td colspan="3">Capstone ${currentStage}</td>`;
+                divider.innerHTML = `<td colspan="3">${m.capstone_stage_title}</td>`;
                 tbody.appendChild(divider);
             }
 
@@ -1438,95 +1993,172 @@ function openViewModal(groupId) {
                 ${statusBadge}
             `;
 
-            let remarksHtml;
-           if (m.remarks) {
-                const r = m.remarks;
-                const statusText = r.remarks_status || (r.compiled ? 'On Time Compliance' : 'Late Submission');
+            const evaluations = data.evaluations || [];
+            const milestoneEvals = evaluations.filter(e => e.milestone_id == m.id);
+            let remarksHtml = '';
 
-                let statusClass = 'on-time', statusIcon = 'fa-circle-check';
-                if (/late/i.test(statusText)) { statusClass = 'late'; statusIcon = 'fa-triangle-exclamation'; }
-                else if (/early/i.test(statusText)) { statusClass = 'early'; statusIcon = 'fa-clock'; }
-
-                const absentNames = (m.absent_students && m.absent_students.length) ? m.absent_students : [];
-
-                const absenceTableHtml = (!r.all_present && absentNames.length)
-                    ? `<table class="absence-table">
-                        <thead><tr><th>#</th><th>Absent Student</th></tr></thead>
-                        <tbody>
-                            ${absentNames.map((name, i) => `<tr><td>${i + 1}</td><td>${name}</td></tr>`).join('')}
-                        </tbody>
-                    </table>`
-                    : '';
-
-                const feedbackHtml = r.feedback ? `<div class="remark-feedback">"${r.feedback}"</div>` : '';
-
-                remarksHtml = `
-                    <div class="remark-summary">
-                        <span class="remark-status-badge ${statusClass}"><i class="fa-solid ${statusIcon}"></i> ${statusText}</span>
-                        ${r.deduction_points ? `<span class="remark-deduction"><i class="fa-solid fa-minus"></i> ${r.deduction_points} pts deduction</span>` : ''}
-                        <span class="remark-attendance"><i class="fa-solid fa-user-group"></i> ${r.all_present ? 'All members present' : `${absentNames.length} member(s) absent`}</span>
-                        ${absenceTableHtml}
-                        ${feedbackHtml}
-                    </div>
-                `;
-           } else if (m.is_next && data.is_adviser) {
-                remarksHtml = `
-                    <div class="mb-2">
-                        <label class="form-label text-[10px]">Attendance</label>
-                        <div class="flex flex-col gap-1 mt-1">
-                            <label class="flex items-center gap-2 text-xs cursor-pointer">
-                                <input type="radio" name="attendance_${m.id}" value="present" class="attendance-radio" checked> All present
-                            </label>
-                            <label class="flex items-center gap-2 text-xs cursor-pointer">
-                                <input type="radio" name="attendance_${m.id}" value="absent" class="attendance-radio"> Some absent
-                            </label>
+            if (m.has_rubric) {
+                if (milestoneEvals.length > 0) {
+                    remarksHtml = '';
+                } else if (data.is_adviser || data.is_panelist) {
+                    remarksHtml = `
+                        <div class="flex flex-col gap-1.5 items-start">
+                            <span class="task-status next" style="background-color: rgba(10,20,40,0.08); color: var(--navy); border: 1px solid rgba(10,20,40,0.15);"><i class="fa-solid fa-circle-info mr-1"></i> Panelist Evaluation Only</span>
+                          
                         </div>
-                    </div>
-                    <div id="absent_container_${m.id}" class="mb-2 hidden">
-                        <label class="form-label text-[10px]">Absent Students</label>
-                        <div id="absent_list_${m.id}" class="grid grid-cols-1 gap-1 mt-1 p-2 border border-[#e2dacf] rounded-lg bg-[#faf8f4] max-h-28 overflow-y-auto text-xs"></div>
-                    </div>
-                    <div class="mb-2">
-                        <input type="text" class="form-input text-xs remark-feedback-input" placeholder="Optional remarks...">
-                    </div>
-                    <button type="button" class="btn-primary text-xs submit-remark-btn" data-milestone-id="${m.id}">
-                        <i class="fas fa-check mr-1"></i> Evaluate
-                    </button>
-                `;
-            } else if (m.is_next && !data.is_adviser) {
-                remarksHtml = `<span class="task-status next">Next Step — awaiting adviser evaluation</span>`;
+                    `;
+                } else {
+                    remarksHtml = `<span class="task-status pending"><i class="fa-solid fa-clock mr-1"></i> Awaiting Panelist Evaluation</span>`;
+                }
             } else {
-                remarksHtml = `<span class="remark-empty">Not yet available</span>`;
+                if (m.remarks) {
+                    const r = m.remarks;
+                    const statusText = r.remarks_status || (r.compiled ? 'On Time Compliance' : 'Late Submission');
+
+                    let statusClass = 'on-time', statusIcon = 'fa-circle-check';
+                    if (/late/i.test(statusText)) { statusClass = 'late'; statusIcon = 'fa-triangle-exclamation'; }
+                    else if (/early/i.test(statusText)) { statusClass = 'early'; statusIcon = 'fa-clock'; }
+
+                    const absentNames = (m.absent_students && m.absent_students.length) ? m.absent_students : [];
+
+                    const absenceTableHtml = (!r.all_present && absentNames.length)
+                        ? `<table class="absence-table">
+                            <thead><tr><th>#</th><th>Absent Student</th></tr></thead>
+                            <tbody>
+                                ${absentNames.map((name, i) => `<tr><td>${i + 1}</td><td>${name}</td></tr>`).join('')}
+                            </tbody>
+                        </table>`
+                        : '';
+
+                    const feedbackHtml = r.feedback ? `<div class="remark-feedback">"${r.feedback}"</div>` : '';
+
+                    remarksHtml = `
+                        <div class="remark-summary">
+                            <span class="remark-status-badge ${statusClass}"><i class="fa-solid ${statusIcon}"></i> ${statusText}</span>
+                            ${r.deduction_points ? `<span class="remark-deduction"><i class="fa-solid fa-minus"></i> ${r.deduction_points} pts deduction</span>` : ''}
+                            <span class="remark-attendance"><i class="fa-solid fa-user-group"></i> ${r.all_present ? 'All members present' : `${absentNames.length} member(s) absent`}</span>
+                            ${absenceTableHtml}
+                            ${feedbackHtml}
+                        </div>
+                    `;
+                } else if (m.is_next && data.is_adviser) {
+                    remarksHtml = `
+                        <div class="mb-2">
+                            <label class="form-label text-[10px]">Attendance</label>
+                            <div class="flex flex-col gap-1 mt-1">
+                                <label class="flex items-center gap-2 text-xs cursor-pointer">
+                                    <input type="radio" name="attendance_${m.id}" value="present" class="attendance-radio" checked> All present
+                                </label>
+                                <label class="flex items-center gap-2 text-xs cursor-pointer">
+                                    <input type="radio" name="attendance_${m.id}" value="absent" class="attendance-radio"> Some absent
+                                </label>
+                            </div>
+                        </div>
+                        <div id="absent_container_${m.id}" class="mb-2 hidden">
+                            <label class="form-label text-[10px]">Absent Students</label>
+                            <div id="absent_list_${m.id}" class="grid grid-cols-1 gap-1 mt-1 p-2 border border-[#e2dacf] rounded-lg bg-[#faf8f4] max-h-28 overflow-y-auto text-xs"></div>
+                        </div>
+                        <div class="mb-2">
+                            <input type="text" class="form-input text-xs remark-feedback-input" placeholder="Optional remarks...">
+                        </div>
+                        <button type="button" class="btn-primary text-xs submit-remark-btn" data-milestone-id="${m.id}">
+                            <i class="fas fa-check mr-1"></i> Evaluate
+                        </button>
+                    `;
+                } else if (m.is_next && !data.is_adviser) {
+                    remarksHtml = `<span class="task-status next">Next Step — awaiting adviser evaluation</span>`;
+                } else {
+                    remarksHtml = `<span class="remark-empty">Not yet available</span>`;
+                }
             }
 
-            row.innerHTML = `<td>${dateHtml}</td><td>${taskHtml}</td><td>${remarksHtml}</td>`;
+            let evaluationHtml = '';
+            if (milestoneEvals.length > 0) {
+                evaluationHtml = milestoneEvals.map((evaluation, idx) => {
+                    let criteriaRowsHtml = '';
+                    if (evaluation.criteria && evaluation.criteria.length > 0) {
+                        criteriaRowsHtml = `
+                            <div id="eval_rubric_details_${m.id}_${idx}" class="hidden mt-2 p-2 bg-[#faf8f4] border border-[#e2dacf] rounded-lg">
+                                <table class="w-full text-[11px]">
+                                    <thead>
+                                        <tr class="border-b border-[#e2dacf] text-left text-[#5b6375]">
+                                            <th class="py-1 text-left">Criterion</th>
+                                            <th class="py-1 text-center font-normal">Weight</th>
+                                            <th class="py-1 text-center font-normal">Max</th>
+                                            <th class="py-1 text-center font-normal">Score</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${evaluation.criteria.map(c => `
+                                            <tr class="border-b border-[#faf1e0]">
+                                                <td class="py-1 text-left text-[#171e2c] font-medium">${c.criteria_name}</td>
+                                                <td class="py-1 text-center text-[#5b6375]">${c.weight}%</td>
+                                                <td class="py-1 text-center text-[#5b6375]">${c.max_score}</td>
+                                                <td class="py-1 text-center font-bold text-[#1e6b3a]">${c.given_score}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                    }
+
+                    return `
+                        <div class="mt-3 pt-3 border-t border-[#e2dacf] text-xs">
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold text-[#0a1428]"><i class="fa-solid fa-square-poll-vertical text-[#d6b15c] mr-1"></i> Panelist Evaluation</span>
+                                <span class="font-bold text-[#1e6b3a]">${evaluation.score} / ${evaluation.max_score}</span>
+                            </div>
+                            <p class="text-[10px] text-[#5b6375] mt-0.5">By ${evaluation.teacher_name} on ${fmtDate(evaluation.evaluation_date)}</p>
+                            ${evaluation.feedback ? `<p class="italic text-[#5b6375] mt-1 bg-[#fbfaf7] p-1.5 border-l-2 border-[#d6b15c]">${evaluation.feedback}</p>` : ''}
+                            ${criteriaRowsHtml ? `
+                                <button onclick="document.getElementById('eval_rubric_details_${m.id}_${idx}').classList.toggle('hidden'); event.stopPropagation();" class="text-[#b88d3a] hover:text-[#8b6914] text-[11px] font-medium mt-1.5 block focus:outline-none">
+                                    <i class="fas fa-list mr-1"></i> Toggle Rubric Criteria Scores
+                                </button>
+                                ${criteriaRowsHtml}
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+            } else if (m.has_rubric) {
+                evaluationHtml = `
+                    <div class="mt-3 text-xs text-[#5b6375] italic bg-[#faf8f4] p-2 border border-[#e2dacf] rounded-lg">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-500 mr-1.5"></i> This group has not been evaluated yet for this milestone.
+                    </div>
+                `;
+            }
+
+            row.innerHTML = `<td>${dateHtml}</td><td>${taskHtml}</td><td>${remarksHtml}${evaluationHtml}</td>`;
             tbody.appendChild(row);
 
            if (!m.remarks && m.is_next && data.is_adviser) {
-                const absentList = row.querySelector(`#absent_list_${m.id}`);
-                if (absentList) {
-                    absentList.innerHTML = members.length
-                        ? members.map(mem => `
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" value="${mem.user_id}" class="absent-checkbox">
-                                ${mem.name} <span class="text-[#5b6375]">(${mem.user_id})</span>
-                            </label>`).join('')
-                        : '<span class="text-[#5b6375]">No members found.</span>';
-                }
-                row.querySelectorAll(`input[name="attendance_${m.id}"]`).forEach(radio => {
-                    radio.addEventListener('change', function () {
-                        row.querySelector(`#absent_container_${m.id}`).classList.toggle('hidden', this.value !== 'absent');
-                    });
-                });
-                row.querySelector('.submit-remark-btn').addEventListener('click', function () {
-                    const attendance = row.querySelector(`input[name="attendance_${m.id}"]:checked`)?.value || 'present';
-                    const checkedAbsent = row.querySelectorAll('.absent-checkbox:checked');
-                    if (attendance === 'absent' && checkedAbsent.length === 0) {
-                        showToast('Please select at least one absent student.', true);
-                        return;
+                const submitBtn = row.querySelector('.submit-remark-btn');
+                if (submitBtn) {
+                    const absentList = row.querySelector(`#absent_list_${m.id}`);
+                    if (absentList) {
+                        absentList.innerHTML = members.length
+                            ? members.map(mem => `
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" value="${mem.user_id}" class="absent-checkbox">
+                                    ${mem.name} <span class="text-[#5b6375]">(${mem.user_id})</span>
+                                </label>`).join('')
+                            : '<span class="text-[#5b6375]">No members found.</span>';
                     }
-                    submitRemarkEvaluation(groupId, m.id, this, row);
-                });
+                    row.querySelectorAll(`input[name="attendance_${m.id}"]`).forEach(radio => {
+                        radio.addEventListener('change', function () {
+                            row.querySelector(`#absent_container_${m.id}`).classList.toggle('hidden', this.value !== 'absent');
+                        });
+                    });
+                    submitBtn.addEventListener('click', function () {
+                        const attendance = row.querySelector(`input[name="attendance_${m.id}"]:checked`)?.value || 'present';
+                        const checkedAbsent = row.querySelectorAll('.absent-checkbox:checked');
+                        if (attendance === 'absent' && checkedAbsent.length === 0) {
+                            showToast('Please select at least one absent student.', true);
+                            return;
+                        }
+                        submitRemarkEvaluation(groupId, m.id, this, row);
+                    });
+                }
            }
             
         });
@@ -1611,6 +2243,12 @@ document.addEventListener('DOMContentLoaded', function () {
     @if(session('success'))
         showToast('{{ session('success') }}');
     @endif
+    @if(session('error'))
+        showToast('{{ session('error') }}', true);
+    @endif
+    @if($errors->any())
+        showToast('{{ $errors->first() }}', true);
+    @endif
 
     // ── ATTENDANCE TOGGLE LOGIC ──────────────────────
     const attendanceRadios = document.querySelectorAll('input[name="attendance"]');
@@ -1631,10 +2269,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── SECTION SWITCHING ──────────────────────
     const sections = {
         dashboard: document.getElementById('dashboard-section'),
+        assignedsections: document.getElementById('assignedsections-section'),
+
         sections: document.getElementById('sections-section'),
         evaluate: document.getElementById('evaluate-section'),
         profile: document.getElementById('profile-section'),
-
     };
     const navLinks = document.querySelectorAll('.nav-link');
     const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
@@ -1734,15 +2373,17 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+  if (addBtn && studentSelect) {
     addBtn.addEventListener('click', () => {
         Array.from(studentSelect.selectedOptions).forEach(o => {
             if (o.value) addRow(o.value, o.textContent);
         });
         studentSelect.selectedIndex = -1;
     });
+}
 
     // ── EVALUATION MODAL ────────────────────────
-    window.openEvaluationModal = function (groupId) {
+    window.openEvaluationModal = function (groupId, milestoneId = null) {
     // ── Set the hidden group ID ──
     document.getElementById('eval_group_id').value = groupId;
 
@@ -1750,7 +2391,7 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
         const groupEl = document.querySelector(`[data-group="${groupId}"]`);
         if (groupEl) {
-            const nameEl = groupEl.closest('.content-card, tr')?.querySelector('.font-semibold, h4');
+            const nameEl = groupEl.closest('.content-card, tr, .group-item')?.querySelector('.font-bold, .font-semibold, h4');
             if (nameEl) {
                 document.getElementById('eval_group_name').value = nameEl.textContent.trim();
             }
@@ -1761,11 +2402,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Reset the form ──
     const milestoneSelect = document.getElementById('milestone_select');
-    milestoneSelect.value = '';
-    document.getElementById('rubric_container').classList.add('hidden');
-    document.getElementById('criteria_tbody').innerHTML = '';
-    document.getElementById('eval_total_score').value = '';
-    document.getElementById('eval_max_score').value = '';
+    milestoneSelect.value = milestoneId || '';
+    if (milestoneId) {
+        document.getElementById('eval_milestone_id').value = milestoneId;
+        setTimeout(() => {
+            milestoneSelect.dispatchEvent(new Event('change'));
+        }, 100);
+    } else {
+        document.getElementById('rubric_container').classList.add('hidden');
+        document.getElementById('criteria_tbody').innerHTML = '';
+        document.getElementById('eval_total_score').value = '';
+        document.getElementById('eval_max_score').value = '';
+    }
 
     // ── Open the modal first (user sees it immediately) ──
     openModal('evaluationModal');
@@ -1803,6 +2451,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(r => r.json())
         .then(evaluatedIds => {
             evaluatedIds.forEach(id => {
+                if (id == milestoneId) return; // Keep current milestone option active
                 const opt = milestoneSelect.querySelector(`option[value="${id}"]`);
                 if (opt) {
                     opt.disabled = true;
@@ -1853,12 +2502,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                     rubricName.textContent = data.rubric_name;
                     let html = '';
-                    data.criteria.forEach(c => {
+                    data.criteria.forEach((c) => {
                         html += `<tr class="border-b border-[#e2dacf]">
                             <td class="py-2">${c.criteria_name}</td>
                             <td class="text-center">${c.weight}%</td>
                             <td class="text-center">${c.max_score}</td>
-                            <td class="text-center"><input type="number" class="criteria-score w-20 form-input text-center" data-weight="${c.weight}" data-max="${c.max_score}" min="0" max="${c.max_score}" step="0.01" value="0"></td>
+                            <td class="text-center">
+                                <input type="number" name="rubric_scores[${c.id}]" class="criteria-score w-20 form-input text-center" data-weight="${c.weight}" data-max="${c.max_score}" min="0" max="${c.max_score}" step="0.01" value="0">
+                            </td>
                         </tr>`;
                     });
                     tbody.innerHTML = html;
@@ -2000,107 +2651,7 @@ document.addEventListener('DOMContentLoaded', function () {
     );
 
     // classroom
-    // ── JOIN CLASSROOM WITH CODE ──────────────────
-   // ── JOIN CLASSROOM WITH CODE ──────────────────
-document.querySelectorAll('.join-room-form').forEach(form => {
-    form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        const input = this.querySelector('.join-code-input');
-        const code = input.value.trim().toUpperCase();
-        if (!code) {
-            showToast('Please enter a classroom code.', true);
-            return;
-        }
-
-        const submitBtn = this.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        const originalHtml = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-        fetch('{{ route("teacher.join_room") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ join_code: code })
-        })
-        .then(async r => {
-            const data = await r.json();
-            if (!r.ok) throw data;
-            return data;
-        })
-        .then(data => {
-            showToast(`Joined ${data.room_name} successfully!`);
-            // ── Move the room card to "Your Classrooms" ──
-            const roomCard = this.closest('.content-card');
-            const unassignedContainer = roomCard.parentElement;
-            const assignedContainer = document.querySelector('#evaluate-section .space-y-4.mb-8');
-            if (assignedContainer) {
-                // Remove the "Available Classrooms" heading if no rooms left
-                const unassignedHeading = unassignedContainer.previousElementSibling;
-                roomCard.classList.remove('opacity-80', 'hover:opacity-100');
-                roomCard.style.opacity = '1';
-                // Update badge and icon
-                const badge = roomCard.querySelector('.badge-amber');
-                if (badge) {
-                    badge.className = 'badge badge-green';
-                    badge.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Joined';
-                }
-                const iconDiv = roomCard.querySelector('.w-12.h-12.rounded-xl');
-                if (iconDiv) {
-                    iconDiv.style.background = 'linear-gradient(135deg, var(--navy) 0%, #1e3a5f 100%)';
-                    const icon = iconDiv.querySelector('i');
-                    if (icon) {
-                        icon.className = 'fas fa-door-open text-[#d6b15c]';
-                    }
-                }
-                // Move the card
-                assignedContainer.appendChild(roomCard);
-                // Hide the "Available Classrooms" section if empty
-                if (!unassignedContainer.children.length) {
-                    const heading = unassignedContainer.previousElementSibling;
-                    if (heading && heading.tagName === 'H3' && heading.textContent.includes('Available Classrooms')) {
-                        heading.style.display = 'none';
-                    }
-                    unassignedContainer.style.display = 'none';
-                }
-                // Show the "Your Classrooms" section if it was hidden
-                const yourHeading = assignedContainer.previousElementSibling;
-                if (yourHeading && yourHeading.tagName === 'H3' && yourHeading.textContent.includes('Your Classrooms')) {
-                    yourHeading.style.display = 'flex';
-                }
-                assignedContainer.style.display = 'block';
-                // Update the "Assigned Evaluation Classrooms" count in dashboard
-                const assignedBadgeContainer = document.querySelector('#dashboard-section .flex.flex-wrap.gap-2.mt-1');
-                if (assignedBadgeContainer) {
-                    const newBadge = document.createElement('span');
-                    newBadge.className = 'badge badge-gold font-medium';
-                    newBadge.innerHTML = `<i class="fas fa-location-dot mr-1"></i> ${data.room_name}`;
-                    assignedBadgeContainer.appendChild(newBadge);
-                    // Update the "No assigned classrooms" message if present
-                    const noAssignedMsg = document.querySelector('#dashboard-section .p-4.bg-\\[\\#faf8f4\\].border.border-\\[\\#e2dacf\\]');
-                    if (noAssignedMsg && noAssignedMsg.textContent.includes('No Assigned Classrooms')) {
-                        noAssignedMsg.remove();
-                    }
-                }
-            } else {
-                // Fallback: if no "Your Classrooms" section exists, just reload
-                window.location.reload();
-            }
-        })
-        .catch(err => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalHtml;
-            showToast((err && err.error) || 'Failed to join classroom.', true);
-        })
-        .finally(() => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalHtml;
-        });
-    });
-});
+    // Classroom join submits via standard HTML form and redirects back
 // ── FILTER GROUPS IN ROOMS (by name, capstone title, section) ──
 document.querySelectorAll('.room-group-filter').forEach(input => {
     input.addEventListener('input', function () {

@@ -69,7 +69,7 @@ class EvaluationRoomViewTest extends TestCase
         // 4. Create a Section
         $section = Section::create([
             'section_name' => 'IT3A',
-            'user_id'      => $teacherUser1->id,
+            'user_id'      => $teacherUser1->user_id,
         ]);
 
         // 5. Create Group 1 assigned to the room, and Group 2 NOT assigned to the room
@@ -89,11 +89,21 @@ class EvaluationRoomViewTest extends TestCase
             'room_id'        => null, // Unassigned
         ]);
 
-        // 6. Test Teacher 1 Dashboard contains Group 1 but not Group 2 (since Group 2 is not in Room 1)
+        // 6. Test Teacher 1 Dashboard contains Group 1 and Group 2 (since Group 2 is in the same section IT3A)
         $response = $this->actingAs($teacherUser1)->get(route('teacher.page'));
         $response->assertStatus(200);
         $response->assertSee('Group Alpha');
-        $response->assertDontSee('Group Beta');
+        $response->assertSee('Group Beta');
+        $response->assertSee('id="assignedsections-section"', false);
+        $response->assertSee('id="dashboard_detail_modal"', false);
+        $response->assertSee('Assigned Section(s)', false);
+        $response->assertSee('My Sections', false);
+        $response->assertSee('as_toggle_btn_', false);
+        $response->assertSee('as_section_students_view_', false);
+        $response->assertSee('Rubric Scores', false);
+        $response->assertSee('grid-cols-1 gap-6', false);
+        $response->assertSee('toggleSectionCollapse', false);
+        $response->assertSee('section_collapsible_content_', false);
 
         // 7. Test Student assigned to Group 1 can see their presentation room
         $studentUser = User::create([
@@ -132,7 +142,7 @@ class EvaluationRoomViewTest extends TestCase
     }
 
     /**
-     * Test that a teacher can successfully join an evaluation room with a valid 6-char code.
+     * Test that a teacher can successfully join an evaluation room with a valid 6-char code via AJAX/JSON.
      */
     public function test_teacher_can_join_room_with_code(): void
     {
@@ -164,7 +174,7 @@ class EvaluationRoomViewTest extends TestCase
         // 3. Make post request to join route with valid code
         $response = $this->withoutMiddleware()
             ->actingAs($teacherUser)
-            ->post(route('teacher.join_room'), [
+            ->postJson(route('teacher.join_room'), [
                 'join_code' => 'xyz123', // case-insensitive test
             ]);
 
@@ -173,6 +183,51 @@ class EvaluationRoomViewTest extends TestCase
             'success'   => true,
             'room_name' => 'IT Lab 2',
         ]);
+
+        // 4. Assert database is updated (teacher attached as panelist to the room)
+        $this->assertTrue($room->panelists->contains($teacher->id));
+    }
+
+    /**
+     * Test that a teacher can successfully join an evaluation room via standard HTML form (redirect).
+     */
+    public function test_teacher_can_join_room_with_code_redirect(): void
+    {
+        // 1. Create a teacher
+        $teacherUser = User::create([
+            'user_id'  => 'teacher-04',
+            'name'     => 'Teacher Four',
+            'email'    => 'teacher4@example.com',
+            'password' => bcrypt('password'),
+            'role'     => 'teacher',
+            'email_verified_at' => now(),
+        ]);
+
+        $teacher = Teacher::create([
+            'user_id'             => 'teacher-04',
+            'teacher_first_name'  => 'Alice',
+            'teacher_last_name'   => 'Smith',
+            'teacher_email'       => 'teacher4@example.com',
+            'teacher_middle_name' => 'M',
+            'contact_number'      => '09122223334',
+        ]);
+
+        // 2. Create a room with a join code
+        $room = EvaluationRoom::create([
+            'room_name' => 'IT Lab 3',
+            'join_code' => 'ABC456',
+        ]);
+
+        // 3. Make post request to join route with valid code (standard form POST)
+        $response = $this->withoutMiddleware()
+            ->actingAs($teacherUser)
+            ->post(route('teacher.join_room'), [
+                'join_code' => 'abc456',
+            ]);
+
+        $response->assertStatus(302);
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
 
         // 4. Assert database is updated (teacher attached as panelist to the room)
         $this->assertTrue($room->panelists->contains($teacher->id));

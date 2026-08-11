@@ -12,7 +12,19 @@ class Group extends Model
         'adviser_id',
         'section_id',
         'room_id',
+        'capstone_stage_id',
+        'is_archived',
+        'archived_year',
     ];
+
+    protected $casts = [
+        'is_archived' => 'boolean',
+    ];
+
+    public function capstoneStage()
+    {
+        return $this->belongsTo(CapstoneStages::class, 'capstone_stage_id');
+    }
 
     public function room()
     {
