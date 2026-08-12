@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ $certificate->certificate_title }} — {{ $group->group_name }}</title>
-    @vite(['resources/css/dashboard.css', 'resources/js/app.js'])
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <script src="/js/app.js" defer></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'DM Sans', sans-serif; }
         body {

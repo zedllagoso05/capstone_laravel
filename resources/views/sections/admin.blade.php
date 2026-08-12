@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Capstone Tracker | Admin Dashboard</title>
-    @vite(['resources/css/dashboard.css', 'resources/js/app.js'])
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <script src="/js/app.js" defer></script>
     <style>
         :root {
             --navy: #0a1428;
@@ -614,14 +615,14 @@
     <!-- DESKTOP SIDEBAR -->
     <aside class="desktop-sidebar fixed left-0 top-0 h-full w-64 flex flex-col justify-between z-20  hidden md:flex">
         <div>
-            <div class="p-6 flex items-center space-x-3 border-b border-[rgba(214,177,92,0.15)]">
-                <div class="w-9 h-9 rounded-xl flex items-center justify-center shadow-md"
+            <div class="p-6 flex items-center space-x-3 border-b border-[rgba(214,177,92,0.12)]">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
                      style="background:linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);">
-                    <i class="fas fa-graduation-cap text-white text-sm"></i>
+                    <i class="fas fa-graduation-cap text-white text-lg"></i>
                 </div>
-                <div>
-                    <h1 class="text-sm font-bold tracking-wide text-white" style="font-family:'DM Sans',sans-serif;">Capstone Tracker</h1>
-                    <p class="text-[10px] uppercase tracking-widest font-semibold" style="color:var(--gold-light);">Admin</p>
+                <div class="flex flex-col">
+                    <span class="font-bold text-sm text-white tracking-[0.5px]">Capstone Tracker</span>
+                    <small class="text-[10px] font-semibold tracking-[1px] uppercase mt-0.5" style="color: var(--gold-light); opacity: 0.85;">Admin</small>
                 </div>
             </div>
             <nav class="mt-6 px-4 space-y-1">
@@ -648,7 +649,7 @@
                     <i class="fas fa-user w-4"></i><span>Profile</span>
                 </a>
                 <a href="#" data-section="capstone" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
-                    <i class="fas fa-user w-4"></i><span>Capstones</span>
+                    <i class="fas fa-scroll w-4"></i><span>Capstones</span>
         </a>
             </nav>
         </div>
@@ -695,8 +696,8 @@
         <a href="#" data-section="profile" class="mobile-nav-link flex flex-col items-center text-[rgba(255,255,255,0.55)] text-xs py-1">
             <i class="fas fa-user text-lg"></i><span class="text-[10px] mt-1">Profile</span>
         </a>
-        <a href="#" data-section="capstone" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
-                    <i class="fas fa-user w-4"></i><span>Capstones</span>
+        <a href="#" data-section="capstone" class="mobile-nav-link flex flex-col items-center text-[rgba(255,255,255,0.55)] text-xs py-1">
+            <i class="fas fa-scroll text-lg"></i><span class="text-[10px] mt-1">Capstones</span>
         </a>
         <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="mobile-nav-link flex flex-col items-center text-red-400 hover:text-red-300 text-xs py-1">
             <i class="fas fa-sign-out-alt text-lg"></i><span class="text-[10px] mt-1">Sign Out</span>

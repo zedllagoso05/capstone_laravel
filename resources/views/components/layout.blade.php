@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Capstone Tracker — MCC | Intelligent Student Tracking System</title>
-@vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="stylesheet" href="/css/app.css">
+    <script src="/js/app.js" defer></script>
     {{ $styles ?? '' }}
 </head>
 <body>
