@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ $certificate->certificate_title }} — {{ $group->group_name }}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    @vite(['resources/css/dashboard.css', 'resources/js/app.js'])
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'DM Sans', sans-serif; }
         body {

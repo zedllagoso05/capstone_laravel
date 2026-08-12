@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Capstone Tracker | Teacher Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+    @vite(['resources/css/dashboard.css', 'resources/js/app.js'])
  <style>
     :root {
         --navy: #0a1428;
@@ -963,7 +961,6 @@
                                             <i class="fas fa-user-graduate mr-1"></i> Students ({{ $sectionStudents->count() }})
                                         </button>
                                     </div>
-                                    <button onclick="openCreateGroupModal('{{ $section->section_name }}')" class="btn-outline text-[10px] py-1 px-2"><i class="fas fa-plus"></i> Create Group</button>
                                 </div>
                             </div>
 
@@ -982,11 +979,6 @@
                                                     <button onclick="openViewModal({{ $g->id }})" class="text-[#5b6375] hover:text-[#0a1428] text-xs font-medium transition">
                                                         <i class="fa-regular fa-eye mr-1"></i>{{ $g->adviser_id == $teacher->id ? 'Check' : 'Show' }}
                                                     </button>
-                                                    @if($g->adviser_id == $teacher->id)
-                                                        <button class="text-[#5b6375] hover:text-[#0a1428] text-xs font-medium transition edit-team-btn" data-group="{{ $g->id }}">
-                                                            <i class="fa-regular fa-pen-to-square mr-1"></i>Edit Group
-                                                        </button>
-                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
@@ -1059,7 +1051,7 @@
     <!-- ==================== ASSIGNED GROUPS ==================== -->
     <div id="sections-section" class="section-container hidden section-card max-w-7xl mx-auto">
         <div class="mb-8 flex flex-wrap justify-between items-center gap-4">
-            <div><h1>Assigned Groups</h1><div class="gold-accent-line"></div><p class="text-[#5b6375] mt-2 text-sm">Manage handled sections and create groups</p></div>
+            <div><h1>Assigned Groups</h1><div class="gold-accent-line"></div><p class="text-[#5b6375] mt-2 text-sm">Manage handled sections</p></div>
             {{--    <button onclick="openCreateGroupModal()" class="btn-primary"><i class="fas fa-plus mr-1"></i> Create Group</button> --}}
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1073,7 +1065,6 @@
                             <h3>{{ $section->section_name }}</h3>
                             <div class="flex items-center gap-2">
                                 <span class="text-xs text-[#5b6375]">{{ $groupsInSection->count() }} groups</span>
-                                <button onclick="openCreateGroupModal('{{ $section->section_name }}')" class="btn-outline text-xs py-1 px-2"><i class="fas fa-plus"></i> Create</button>
                             </div>
                         </div>
                         <div class="space-y-3">
@@ -1086,9 +1077,6 @@
                                         <div class="flex gap-2">
                                             <button onclick="openViewModal({{ $g->id }})" class="text-[#5b6375] hover:text-[#0a1428] text-xs font-medium transition">
                                                 <i class="fa-regular fa-eye mr-1"></i>{{ $g->adviser_id == $teacher->id ? 'Check' : 'Show' }}
-                                            </button>
-                                            <button class="text-[#5b6375] hover:text-[#0a1428] text-xs font-medium transition edit-team-btn" data-group="{{ $g->id }}">
-                                                <i class="fa-regular fa-pen-to-square mr-1"></i>Edit Group
                                             </button>
                                         </div>
                                     </div>
