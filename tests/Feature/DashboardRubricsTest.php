@@ -198,6 +198,7 @@ class DashboardRubricsTest extends TestCase
         $evaluation = $data['evaluations'][0];
         $this->assertEquals(90.00, $evaluation['score']);
         $this->assertEquals('Excellent work!', $evaluation['feedback']);
+        $this->assertEquals('Jane', $evaluation['teacher_name']);
         $this->assertNotEmpty($evaluation['criteria']);
         
         // Assert criteria scores are returned
@@ -368,5 +369,115 @@ class DashboardRubricsTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('error', 'You are already assigned to an evaluation room.');
         $this->assertFalse($room2->panelists->contains($teacher1->id));
+    }
+
+    /**
+     * Test admin can delete a rubric.
+     */
+    public function test_admin_can_delete_rubric(): void
+    {
+        $adminUser = User::create([
+            'user_id'  => 'admin-04',
+            'name'     => 'Admin User 4',
+            'email'    => 'admin4@example.com',
+            'password' => bcrypt('password'),
+            'role'     => 'admin',
+        ]);
+
+        $rubric = Rubric::create([
+            'rubric_name'  => 'Rubric to delete',
+            'milestone_id' => null,
+        ]);
+
+        $criterion = RubricCriteria::create([
+            'rubric_id'     => $rubric->id,
+            'criteria_name' => 'Criterion to delete',
+            'weight'        => 100,
+            'max_score'     => 100,
+        ]);
+
+        $response = $this->actingAs($adminUser)->withoutMiddleware()->post(route('admin.delete_rubrics'), [
+            'rubric_id'      => $rubric->id,
+            'admin_password' => 'password',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseMissing('rubrics', [
+            'id' => $rubric->id,
+        ]);
+        $this->assertDatabaseMissing('rubric_criteria', [
+            'id' => $criterion->id,
+        ]);
+    }
+
+    /**
+     * Test admin can reorder milestones in Capstone 1.
+     */
+    public function test_admin_can_reorder_milestones_in_capstone_1(): void
+    {
+        $adminUser = User::create([
+            'user_id'  => 'admin-05',
+            'name'     => 'Admin User 5',
+            'email'    => 'admin5@example.com',
+            'password' => bcrypt('password'),
+            'role'     => 'admin',
+        ]);
+
+        $m1 = Milestone::create([
+            'milestone_title'       => 'Milestone A',
+            'milestone_description' => 'A',
+            'capstone_stage_id'     => 1,
+            'step_order'            => 1,
+            'start_date'            => '2026-08-01',
+            'due_date'              => '2026-08-05',
+        ]);
+
+        $m2 = Milestone::create([
+            'milestone_title'       => 'Milestone B',
+            'milestone_description' => 'B',
+            'capstone_stage_id'     => 1,
+            'step_order'            => 2,
+            'start_date'            => '2026-08-01',
+            'due_date'              => '2026-08-05',
+        ]);
+
+        // Reorder them: $m2 first, then $m1
+        $response = $this->actingAs($adminUser)->withoutMiddleware()->post(route('admin.reorder_milestones'), [
+            'milestone_ids' => [$m2->id, $m1->id],
+        ]);
+
+        $response->assertRedirect();
+        $this->assertEquals(1, $m2->fresh()->step_order);
+        $this->assertEquals(2, $m1->fresh()->step_order);
+    }
+
+    /**
+     * Test admin cannot reorder milestones in Capstone 2.
+     */
+    public function test_admin_cannot_reorder_milestones_in_capstone_2(): void
+    {
+        $adminUser = User::create([
+            'user_id'  => 'admin-06',
+            'name'     => 'Admin User 6',
+            'email'    => 'admin6@example.com',
+            'password' => bcrypt('password'),
+            'role'     => 'admin',
+        ]);
+
+        $m1 = Milestone::create([
+            'milestone_title'       => 'Milestone C',
+            'milestone_description' => 'C',
+            'capstone_stage_id'     => 2,
+            'step_order'            => 1,
+            'start_date'            => '2026-08-01',
+            'due_date'              => '2026-08-05',
+        ]);
+
+        $response = $this->actingAs($adminUser)->withoutMiddleware()->post(route('admin.reorder_milestones'), [
+            'milestone_ids' => [$m1->id],
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error', 'Only milestones in Capstone 1 can be rearranged.');
     }
 }

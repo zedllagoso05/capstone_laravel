@@ -15,6 +15,8 @@ class Group extends Model
         'capstone_stage_id',
         'is_archived',
         'archived_year',
+        'revision_status',
+        'revision_description',
     ];
 
     protected $casts = [

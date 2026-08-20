@@ -240,4 +240,100 @@ class CreateRoomTest extends TestCase
         $this->assertEquals($room->id, $groupCompleted->room_id);
         $this->assertNull($groupIncomplete->room_id);
     }
+
+    /**
+     * Test that recommendation sheet is required to proceed to the oral presentation room.
+     */
+    public function test_recommendation_sheet_required_to_proceed_to_oral_presentation_room(): void
+    {
+        // 1. Create admin and teacher
+        $admin = User::create([
+            'user_id'           => 'admin-02',
+            'name'              => 'Admin User 2',
+            'email'             => 'admin2@example.com',
+            'password'          => bcrypt('password'),
+            'role'              => 'admin',
+            'email_verified_at' => now(),
+        ]);
+
+        $teacherUser = User::create([
+            'user_id'           => 'teacher-02',
+            'name'              => 'Teacher User 2',
+            'email'             => 'teacher2@example.com',
+            'password'          => bcrypt('password'),
+            'role'              => 'teacher',
+            'email_verified_at' => now(),
+        ]);
+
+        $teacher = Teacher::create([
+            'user_id'            => 'teacher-02',
+            'teacher_first_name' => 'Jane',
+            'teacher_last_name'  => 'Smith',
+            'teacher_email'      => 'teacher2@example.com',
+            'contact_number'     => '09876543210',
+        ]);
+
+        $section = Section::create([
+            'section_name' => 'IT3B',
+            'user_id'      => $teacherUser->id,
+        ]);
+
+        // 2. Create recommendation sheet milestone and oral presentation milestone
+        $recomMilestone = Milestone::create([
+            'milestone_title'       => 'ISSUANCE OF RECOMMENDATION SHEET',
+            'milestone_description' => 'Must be completed to proceed',
+            'step_order'            => 1,
+            'capstone_stage_id'     => 1,
+        ]);
+
+        $oralMilestone = Milestone::create([
+            'milestone_title'       => 'Capstone Oral Presentation',
+            'milestone_description' => 'Oral defense milestone',
+            'step_order'            => 2,
+            'capstone_stage_id'     => 1,
+        ]);
+
+        // 3. Create two groups
+        $groupQualified = Group::create([
+            'group_name'     => 'Qualified Group',
+            'capstone_title' => 'Qualified Title',
+            'adviser_id'     => $teacher->id,
+            'section_id'     => $section->id,
+        ]);
+
+        $groupUnqualified = Group::create([
+            'group_name'     => 'Unqualified Group',
+            'capstone_title' => 'Unqualified Title',
+            'adviser_id'     => $teacher->id,
+            'section_id'     => $section->id,
+        ]);
+
+        // Complete the recommendation sheet milestone ONLY for the qualified group
+        GroupMilestones::create([
+            'group_id'     => $groupQualified->id,
+            'milestone_id' => $recomMilestone->id,
+            'status'       => 'completed',
+        ]);
+
+        // 4. Create room for "Capstone Oral Presentation"
+        $response = $this->withoutMiddleware()
+            ->actingAs($admin)
+            ->post(route('admin.create_room'), [
+                'room_count'            => 1,
+                'required_milestone_id' => $oralMilestone->id,
+                'panelists'             => [$teacher->id],
+            ]);
+
+        $response->assertRedirect();
+
+        // 5. Verify room is created and only the qualified group is assigned
+        $this->assertEquals(1, EvaluationRoom::count());
+        $room = EvaluationRoom::first();
+
+        $groupQualified->refresh();
+        $groupUnqualified->refresh();
+
+        $this->assertEquals($room->id, $groupQualified->room_id);
+        $this->assertNull($groupUnqualified->room_id);
+    }
 }

@@ -280,7 +280,31 @@ class user_controller extends Controller
             ->with('milestone', 'teacher.user')
             ->latest('evaluation_date')
             ->limit(5)
-            ->get();
+            ->get()
+            ->map(function ($e) {
+                $decoded = json_decode($e->feedback, true);
+                if (is_array($decoded) && isset($decoded['feedback_text'])) {
+                    $e->feedback = $decoded['feedback_text'];
+                }
+                return $e;
+            });
+
+        $allEvaluations = $groups
+            ? Evaluation::where('group_id', $groups->id)
+                ->with(['milestone', 'teacher.user'])
+                ->latest('evaluation_date')
+                ->get()
+                ->map(function ($e) {
+                    $decoded = json_decode($e->feedback, true);
+                    if (is_array($decoded) && isset($decoded['feedback_text'])) {
+                        $e->feedback = $decoded['feedback_text'];
+                        $e->rubric_scores = $decoded['rubric_scores'] ?? [];
+                    } else {
+                        $e->rubric_scores = [];
+                    }
+                    return $e;
+                })
+            : collect();
             
         $groupcertificates = $groups
             ? GroupCertificate::where('group_id', $groups->id)->get()
@@ -298,7 +322,7 @@ class user_controller extends Controller
         return view('sections.student', compact(
             'user', 'student', 'groups', 'members', 'adviser',
             'milestones', 'overallProgress', 'nextMilestone',
-            'evaluations', 'certificates', 'completedMilestoneIds', 'groupcertificates',
+            'evaluations', 'allEvaluations', 'certificates', 'completedMilestoneIds', 'groupcertificates',
             'remarksByMilestone', 'absencesByMilestone'
         ));
     }
@@ -534,6 +558,20 @@ class user_controller extends Controller
 
         $recentActivities = $recentActivities->sortByDesc('timestamp')->take(8)->values();
 
+        // ── Active/Enabled Capstone Year ──
+        $enabledYear = \App\Models\Setting::get('active_year', '2026');
+
+        $customYears = \App\Models\Setting::get('custom_years', '');
+        $customYearsArray = $customYears ? explode(',', $customYears) : [];
+        $allCapstoneYears = array_unique(array_merge(
+            [date('Y'), '2026', '2027'],
+            \App\Models\Group::pluck('archived_year')->filter()->toArray(),
+            \App\Models\CapstoneStages::pluck('archived_year')->filter()->toArray(),
+            [$enabledYear],
+            $customYearsArray
+        ));
+        sort($allCapstoneYears);
+
         return view('sections.admin', compact(
             'user',
             'milestones',
@@ -559,7 +597,9 @@ class user_controller extends Controller
             'totalTeachers',
             'totalSections',
             'capstoneStages',
-            'archivedGroups'
+            'archivedGroups',
+            'enabledYear',
+            'allCapstoneYears'
         ));
     }
 
@@ -1206,6 +1246,13 @@ class user_controller extends Controller
             ['group_id' => $validated['group_id'], 'milestone_id' => $validated['milestone_id']],
             ['status' => 'completed', 'completion_date' => now()->toDateString()]
         );
+        
+        // Reset Group Revision Status
+        $group->update([
+            'revision_status' => 'none',
+            'revision_description' => null,
+        ]);
+
         // ── 6. Auto-issue certificate if this milestone has one ──
         $this->autoIssueCertificateIfEligible($validated['group_id'], $validated['milestone_id']);
 
@@ -1314,6 +1361,10 @@ class user_controller extends Controller
             ['group_id' => $validated['group_id'], 'milestone_id' => $validated['milestone_id']],
             ['status' => 'completed', 'completion_date' => now()->toDateString()]
         );
+        $group->update([
+            'revision_status' => 'none',
+            'revision_description' => null,
+        ]);
         // Auto-issue certificate if this milestone has one
         $this->autoIssueCertificateIfEligible($validated['group_id'], $validated['milestone_id']);
 
@@ -1754,7 +1805,7 @@ class user_controller extends Controller
                 return [
                     'milestone_id'    => $e->milestone_id,
                     'milestone_title' => $e->milestone->milestone_title ?? 'Evaluation',
-                    'teacher_name'    => $e->teacher->user->name ?? 'Teacher',
+                    'teacher_name'    => $e->teacher->teacher_first_name ?? 'Teacher',
                     'evaluation_date' => $e->evaluation_date,
                     'score'           => $e->score,
                     'max_score'       => $e->max_score,
@@ -2247,6 +2298,28 @@ public function updateMilestone(Request $request, $id)
 
     return redirect()->route('admin.page')->with('success', 'Milestone updated successfully.');
 }
+
+public function reorderMilestones(Request $request)
+{
+    $validated = $request->validate([
+        'milestone_ids' => 'required|array',
+        'milestone_ids.*' => 'required|exists:milestones,id',
+    ]);
+
+    $milestones = Milestone::whereIn('id', $validated['milestone_ids'])->get();
+
+    foreach ($milestones as $milestone) {
+        if ($milestone->capstone_stage_id != 1) {
+            return back()->with('error', 'Only milestones in Capstone 1 can be rearranged.');
+        }
+    }
+
+    foreach ($validated['milestone_ids'] as $index => $id) {
+        Milestone::where('id', $id)->update(['step_order' => $index + 1]);
+    }
+
+    return back()->with('success', 'Milestones rearranged successfully.');
+}
 /**
  * Full printable certificate document for a group's earned certificate.
  * Shows capstone title and every team member's name.
@@ -2354,13 +2427,39 @@ public function showCertificate($groupId, $certificateId)
     $validated = $request->validate([
         'room_count'            => 'required|integer|min:1',
         'required_milestone_id' => 'required|exists:milestones,id',
-        'activity_name'         => 'required|string|max:255',
+        'activity_name'         => 'nullable|string|max:255',
         'panelists'             => 'nullable|array',
         'panelists.*'           => 'exists:teachers,id',
     ]);
 
     $panelists = $validated['panelists'] ?? [];
     $roomCount = $validated['room_count'];
+
+    $milestone = \App\Models\Milestone::findOrFail($validated['required_milestone_id']);
+    $activityName = $validated['activity_name'] ?? $milestone->milestone_title;
+
+    $selectedMilestone = \App\Models\Milestone::findOrFail($validated['required_milestone_id']);
+    $stageId = $selectedMilestone->capstone_stage_id;
+
+    $isOralPresentation = in_array(strtoupper($selectedMilestone->milestone_title), [
+        'CAPSTONE ORAL PRESENTATION', 
+        'CAPSTONE PROJECT 2 ORAL PRESENTATION'
+    ]);
+
+    $qualificationMilestoneId = $validated['required_milestone_id'];
+
+    if ($isOralPresentation) {
+        $recomMilestone = \App\Models\Milestone::where('capstone_stage_id', $stageId)
+            ->where(function($q) {
+                $q->where('milestone_title', 'like', '%ISSUANCE OF RECOMMENDATION SHEET%')
+                  ->orWhere('milestone_title', 'like', '%Recommendation Sheet%');
+            })
+            ->first();
+
+        if ($recomMilestone) {
+            $qualificationMilestoneId = $recomMilestone->id;
+        }
+    }
 
     foreach ($panelists as $teacherId) {
         $alreadyAssigned = DB::table('room_panelists')->where('teacher_id', $teacherId)->exists();
@@ -2371,13 +2470,13 @@ public function showCertificate($groupId, $certificateId)
         }
     }
 
-    DB::transaction(function () use ($validated, $panelists, $roomCount) {
+    DB::transaction(function () use ($validated, $panelists, $roomCount, $activityName, $qualificationMilestoneId) {
         $requiredMilestoneId = $validated['required_milestone_id'];
 
-        // Get all groups without a room that have completed the required milestone
+        // Get all groups without a room that have completed the qualification milestone
         $groups = Group::whereNull('room_id')
-            ->whereHas('groupMilestones', function ($query) use ($requiredMilestoneId) {
-                $query->where('milestone_id', $requiredMilestoneId)
+            ->whereHas('groupMilestones', function ($query) use ($qualificationMilestoneId) {
+                $query->where('milestone_id', $qualificationMilestoneId)
                       ->where('status', 'completed');
             })->get();
 
@@ -2398,7 +2497,7 @@ public function showCertificate($groupId, $certificateId)
                 'room_name'             => $roomName,
                 'join_code'             => EvaluationRoom::generateUniqueCode(),
                 'required_milestone_id' => $requiredMilestoneId,
-                'activity_name'         => $validated['activity_name'],
+                'activity_name'         => $activityName,
             ]);
             $rooms[] = $room;
         }
@@ -2661,158 +2760,197 @@ public function showCertificate($groupId, $certificateId)
         }
 
         $request->validate([
-            'stage_id'  => 'required',
             'year'      => 'required|integer|min:2000|max:2099',
             'new_title' => 'nullable|string|max:255',
         ]);
 
         $year = $request->year;
-        $stageId = $request->stage_id;
 
-        if ($stageId === 'all') {
-            // Find all active capstone stages
-            $activeStages = CapstoneStages::where('is_archived', false)->get();
-            $totalCount = 0;
-            
-            foreach ($activeStages as $stage) {
-                // Find and archive active groups pointing to this stage
-                $groupsToArchive = Group::where('capstone_stage_id', $stage->id)->where('is_archived', false)->get();
-                foreach ($groupsToArchive as $g) {
-                    $g->is_archived = true;
-                    $g->archived_year = $year;
-                    $g->save();
+        // Find all active capstone stages
+        $activeStages = CapstoneStages::where('is_archived', false)->get();
+        $totalCount = 0;
+        
+        foreach ($activeStages as $stage) {
+            // Find and archive active groups pointing to this stage
+            $groupsToArchive = Group::where('capstone_stage_id', $stage->id)->where('is_archived', false)->get();
+            foreach ($groupsToArchive as $g) {
+                $g->is_archived = true;
+                $g->archived_year = $year;
+                $g->save();
 
-                    // Check adviser of this archived group
-                    $adviserId = $g->adviser_id;
-                    $hasActiveGroups = Group::where('adviser_id', $adviserId)->where('is_archived', false)->exists();
-                    if (!$hasActiveGroups) {
-                        Teacher::where('id', $adviserId)->update(['is_archived' => true]);
-                    }
-
-                    // Check section of this archived group
-                    $secId = $g->section_id;
-                    $hasActiveGroupsSec = Group::where('section_id', $secId)->where('is_archived', false)->exists();
-                    if (!$hasActiveGroupsSec) {
-                        Section::where('id', $secId)->update(['is_archived' => true]);
-                    }
+                // Check adviser of this archived group
+                $adviserId = $g->adviser_id;
+                $hasActiveGroups = Group::where('adviser_id', $adviserId)->where('is_archived', false)->exists();
+                if (!$hasActiveGroups) {
+                    Teacher::where('id', $adviserId)->update(['is_archived' => true]);
                 }
 
-                // Archive all students in these groups
-                $archivedGroupIds = $groupsToArchive->pluck('id')->toArray();
-                $studentUserIds = TeamMember::whereIn('group_id', $archivedGroupIds)->pluck('user_id')->toArray();
-                Student::whereIn('user_id', $studentUserIds)->update(['is_archived' => true]);
+                // Check section of this archived group
+                $secId = $g->section_id;
+                $hasActiveGroupsSec = Group::where('section_id', $secId)->where('is_archived', false)->exists();
+                if (!$hasActiveGroupsSec) {
+                    Section::where('id', $secId)->update(['is_archived' => true]);
+                }
+            }
 
-                $totalCount += $groupsToArchive->count();
+            // Archive all students in these groups
+            $archivedGroupIds = $groupsToArchive->pluck('id')->toArray();
+            $studentUserIds = TeamMember::whereIn('group_id', $archivedGroupIds)->pluck('user_id')->toArray();
+            Student::whereIn('user_id', $studentUserIds)->update(['is_archived' => true]);
 
-                // Mark the stage as archived
-                $stage->is_archived = true;
-                $stage->archived_year = $year;
-                $stage->is_enabled = false;
-                $stage->save();
+            $totalCount += $groupsToArchive->count();
 
-                // Create new active cycle stage and clone milestones
-                $clonedTitle = "Capstone {$stage->stage_type} - Cycle {$year}";
-                $newStage = CapstoneStages::create([
-                    'stage_title'   => $clonedTitle,
-                    'is_enabled'    => $stage->id == 1 ? true : false, // Enable stage 1 as default
-                    'is_archived'   => false,
-                    'stage_type'    => $stage->stage_type,
+            // Mark the stage as archived
+            $stage->is_archived = true;
+            $stage->archived_year = $year;
+            $stage->is_enabled = false;
+            $stage->save();
+
+            // Create new active cycle stage and clone milestones
+            $clonedTitle = "Capstone {$stage->stage_type} - Cycle {$year}";
+            $newStage = CapstoneStages::create([
+                'stage_title'   => $clonedTitle,
+                'is_enabled'    => $stage->stage_type == 1 ? true : false, // Enable stage 1 as default
+                'is_archived'   => false,
+                'stage_type'    => $stage->stage_type,
+            ]);
+
+            // Duplicate milestones
+            $oldMilestones = Milestone::where('capstone_stage_id', $stage->id)->get();
+
+            // Delete active classrooms associated with the archived milestones of this stage
+            $oldMilestoneIds = $oldMilestones->pluck('id')->toArray();
+            EvaluationRoom::whereIn('required_milestone_id', $oldMilestoneIds)->delete();
+
+            foreach ($oldMilestones as $om) {
+                Milestone::create([
+                    'milestone_title'       => $om->milestone_title,
+                    'milestone_description' => $om->milestone_description,
+                    'capstone_stage_id'     => $newStage->id,
+                    'start_date'            => $om->start_date,
+                    'due_date'              => $om->due_date,
+                    'step_order'            => $om->step_order,
                 ]);
-
-                // Duplicate milestones
-                $oldMilestones = Milestone::where('capstone_stage_id', $stage->id)->get();
-
-                // Delete active classrooms associated with the archived milestones of this stage
-                $oldMilestoneIds = $oldMilestones->pluck('id')->toArray();
-                EvaluationRoom::whereIn('required_milestone_id', $oldMilestoneIds)->delete();
-
-                foreach ($oldMilestones as $om) {
-                    Milestone::create([
-                        'milestone_title'       => $om->milestone_title,
-                        'milestone_description' => $om->milestone_description,
-                        'capstone_stage_id'     => $newStage->id,
-                        'start_date'            => $om->start_date,
-                        'due_date'              => $om->due_date,
-                        'step_order'            => $om->step_order,
-                    ]);
-                }
-            }
-
-            return back()->with('success', "Successfully archived all active Capstone stages and {$totalCount} group(s) for {$year}, and created new cycles with duplicated milestone templates.");
-        }
-
-        // Single stage archival
-        $stage = CapstoneStages::where('id', $stageId)->where('is_archived', false)->first();
-
-        if (!$stage) {
-            return back()->withErrors(['archive' => 'The selected Capstone stage is already archived or does not exist.']);
-        }
-
-        // Find all active groups pointing to this stage
-        $groupsToArchive = Group::where('capstone_stage_id', $stage->id)->where('is_archived', false)->get();
-
-        // Mark the stage as archived
-        $stage->is_archived = true;
-        $stage->archived_year = $year;
-        $stage->is_enabled = false;
-        $stage->save();
-
-        // Archive all groups of this stage and propagate to teachers/sections
-        foreach ($groupsToArchive as $g) {
-            $g->is_archived = true;
-            $g->archived_year = $year;
-            $g->save();
-
-            // Check adviser of this archived group
-            $adviserId = $g->adviser_id;
-            $hasActiveGroups = Group::where('adviser_id', $adviserId)->where('is_archived', false)->exists();
-            if (!$hasActiveGroups) {
-                Teacher::where('id', $adviserId)->update(['is_archived' => true]);
-            }
-
-            // Check section of this archived group
-            $secId = $g->section_id;
-            $hasActiveGroupsSec = Group::where('section_id', $secId)->where('is_archived', false)->exists();
-            if (!$hasActiveGroupsSec) {
-                Section::where('id', $secId)->update(['is_archived' => true]);
             }
         }
 
-        // Archive all students in these groups
-        $archivedGroupIds = $groupsToArchive->pluck('id')->toArray();
-        $studentUserIds = TeamMember::whereIn('group_id', $archivedGroupIds)->pluck('user_id')->toArray();
-        Student::whereIn('user_id', $studentUserIds)->update(['is_archived' => true]);
+        // Also automatically add this year to custom years list
+        $customYears = \App\Models\Setting::get('custom_years', '');
+        $yearsArray = $customYears ? explode(',', $customYears) : [];
+        if (!in_array($year, $yearsArray)) {
+            $yearsArray[] = $year;
+            sort($yearsArray);
+            \App\Models\Setting::set('custom_years', implode(',', $yearsArray));
+        }
 
-        // Create new active cycle stage
-        $clonedTitle = $request->new_title ?: "Capstone {$stage->stage_type} - Cycle {$year}";
-        $newStage = CapstoneStages::create([
-            'stage_title'   => $clonedTitle,
-            'is_enabled'    => true, // Enable the newly created stage
-            'is_archived'   => false,
-            'stage_type'    => $stage->stage_type,
+        return back()->with('success', "Successfully archived all active Capstone stages and {$totalCount} group(s) for year {$year}, and created new active cycles with duplicated milestone templates.");
+    }
+
+    /**
+     * Enable a specific capstone year.
+     */
+    public function enableCapstoneYear(Request $request)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized.');
+        }
+
+        $request->validate([
+            'year' => 'required|integer|min:2000|max:2099',
         ]);
 
-        // Enforce only this stage is enabled (disable all others)
-        CapstoneStages::where('id', '!=', $newStage->id)->update(['is_enabled' => false]);
+        \App\Models\Setting::set('active_year', $request->year);
 
-        // Duplicate milestones
-        $oldMilestones = Milestone::where('capstone_stage_id', $stage->id)->get();
+        return back()->with('success', "Capstone year {$request->year} has been enabled successfully.");
+    }
 
-        // Delete active classrooms associated with the archived milestones of this stage
-        $oldMilestoneIds = $oldMilestones->pluck('id')->toArray();
-        EvaluationRoom::whereIn('required_milestone_id', $oldMilestoneIds)->delete();
-
-        foreach ($oldMilestones as $om) {
-            Milestone::create([
-                'milestone_title'       => $om->milestone_title,
-                'milestone_description' => $om->milestone_description,
-                'capstone_stage_id'     => $newStage->id,
-                'start_date'            => $om->start_date,
-                'due_date'              => $om->due_date,
-                'step_order'            => $om->step_order,
-            ]);
+    /**
+     * Add a new capstone year.
+     */
+    public function addCapstoneYear(Request $request)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized.');
         }
 
-        return back()->with('success', "Successfully archived the cycle under '{$stage->stage_title}' for {$year}, archived " . $groupsToArchive->count() . " group(s), and created a new active cycle '{$newStage->stage_title}' with duplicated milestone templates.");
+        $request->validate([
+            'year' => 'required|integer|min:2000|max:2099',
+        ]);
+
+        $year = $request->year;
+
+        // Add the year to our custom list of years
+        $customYears = \App\Models\Setting::get('custom_years', '');
+        $yearsArray = $customYears ? explode(',', $customYears) : [];
+        
+        if (!in_array($year, $yearsArray)) {
+            $yearsArray[] = $year;
+            sort($yearsArray);
+            \App\Models\Setting::set('custom_years', implode(',', $yearsArray));
+        }
+
+        return back()->with('success', "Capstone year {$year} added successfully.");
+    }
+
+    /**
+     * Request revision for a group.
+     */
+    public function requestGroupRevision(Request $request, $groupId)
+    {
+        $validated = $request->validate([
+            'revision_description' => 'required|string|max:1000',
+        ]);
+
+        $teacher = Teacher::where('user_id', Auth::user()->user_id)->firstOrFail();
+        $group = Group::findOrFail($groupId);
+
+        // Authorization check: Only a panelist of the group's assigned classroom can request a revision.
+        $assignedRoomIds = $teacher->evaluationRooms()->pluck('evaluation_rooms.id')->toArray();
+        if (!in_array($group->room_id, $assignedRoomIds)) {
+            if ($request->ajax()) {
+                return response()->json(['error' => 'You are not authorized to request revision for this group.'], 403);
+            }
+            return back()->with('error', 'You are not authorized to request revision for this group.');
+        }
+
+        $group->update([
+            'revision_status' => 'needs_revision',
+            'revision_description' => $validated['revision_description'],
+        ]);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Revision request submitted successfully!']);
+        }
+        return back()->with('success', 'Revision request submitted successfully!');
+    }
+
+    /**
+     * Mark a group as revised.
+     */
+    public function markGroupRevised(Request $request, $groupId)
+    {
+        $teacher = Teacher::where('user_id', Auth::user()->user_id)->firstOrFail();
+        $group = Group::findOrFail($groupId);
+
+        // Authorization check: Only the group's adviser (or a panelist) can mark it as revised.
+        $assignedRoomIds = $teacher->evaluationRooms()->pluck('evaluation_rooms.id')->toArray();
+        $isPanelist = in_array($group->room_id, $assignedRoomIds);
+        $isAdviser = $group->adviser_id === $teacher->id;
+
+        if (!$isAdviser && !$isPanelist) {
+            if ($request->ajax()) {
+                return response()->json(['error' => 'You are not authorized to mark this group as revised.'], 403);
+            }
+            return back()->with('error', 'You are not authorized to mark this group as revised.');
+        }
+
+        $group->update([
+            'revision_status' => 'revised',
+        ]);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Group successfully marked as revised.']);
+        }
+        return back()->with('success', 'Group successfully marked as revised.');
     }
 }

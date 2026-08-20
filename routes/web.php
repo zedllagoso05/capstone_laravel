@@ -87,6 +87,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/add_milestone', [user_controller::class, 'addMilestone'])->name('admin.add_milestone');
         Route::get('/get-milestone/{id}', [user_controller::class, 'getMilestone'])->name('admin.get_milestone');
         Route::put('/update-milestone/{id}', [user_controller::class, 'updateMilestone'])->name('admin.update_milestone');
+        Route::post('/reorder-milestones', [user_controller::class, 'reorderMilestones'])->name('admin.reorder_milestones');
 
         // Groups & Advisers
         Route::post('/assign-group',  [user_controller::class, 'assignGroups'])->name('admin.assign_group');
@@ -125,6 +126,8 @@ Route::middleware('auth')->group(function () {
         // Capstone management
         Route::post('/capstone/toggle-stage', [user_controller::class, 'toggleCapstoneStage'])->name('admin.toggle_capstone_stage');
         Route::post('/capstone/archive',      [user_controller::class, 'archiveCapstoneByYear'])->name('admin.archive_capstone_by_year');
+        Route::post('/capstone/enable-year',  [user_controller::class, 'enableCapstoneYear'])->name('admin.enable_capstone_year');
+        Route::post('/capstone/add-year',     [user_controller::class, 'addCapstoneYear'])->name('admin.add_capstone_year');
     });
 
     /*
@@ -159,6 +162,10 @@ Route::middleware('auth')->group(function () {
 
         // Join an evaluation room as panelist
         Route::post('/join-room', [user_controller::class, 'joinRoomWithCode'])->name('teacher.join_room');
+
+        // Revision routes
+        Route::post('/group/{group}/request-revision', [user_controller::class, 'requestGroupRevision'])->name('teacher.request_revision');
+        Route::post('/group/{group}/mark-revised',      [user_controller::class, 'markGroupRevised'])->name('teacher.mark_revised');
     });
 
     /*

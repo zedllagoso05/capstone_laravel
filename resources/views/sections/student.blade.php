@@ -1108,6 +1108,9 @@
                 <a href="#" data-section="certificates" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
                     <i class="fa-regular fa-file-lines w-4"></i> <span>Certificates</span>
                 </a>
+                <a href="#" data-section="revisions" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
+                    <i class="fas fa-sync-alt w-4"></i> <span>Revisions & Feedback</span>
+                </a>
             </nav>
         </div>
         <div class="p-4 border-t border-[rgba(214,177,92,0.15)]">
@@ -1141,6 +1144,9 @@
         </a>
         <a href="#" data-section="certificates" class="mobile-nav-link flex flex-col items-center text-[rgba(255,255,255,0.55)] text-xs py-1">
             <i class="fa-regular fa-file-lines text-lg"></i><span class="text-[10px] mt-1">Docs</span>
+        </a>
+        <a href="#" data-section="revisions" class="mobile-nav-link flex flex-col items-center text-[rgba(255,255,255,0.55)] text-xs py-1">
+            <i class="fas fa-sync-alt text-lg"></i><span class="text-[10px] mt-1">Revisions</span>
         </a>
         <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="mobile-nav-link flex flex-col items-center text-red-400 hover:text-red-300 text-xs py-1">
             <i class="fas fa-sign-out-alt text-lg"></i><span class="text-[10px] mt-1">Sign Out</span>
@@ -1678,9 +1684,189 @@
             </div>
         </div>
 
+        <!-- ═══════ REVISIONS & PANEL FEEDBACK ═══════ -->
+        <div id="revisions-section" class="section-container hidden section-card max-w-7xl mx-auto">
+            <div class="mb-8">
+                <h1>Revisions & Panel Feedback</h1>
+                <div class="gold-accent-line"></div>
+                <p class="text-[#5b6375] mt-2 text-sm">View critical feedback, revision instructions, and full evaluation details from your panel and adviser</p>
+            </div>
+
+            @if($groups)
+                <!-- Active Revision Status Card -->
+                <div class="mb-8">
+                    @if($groups->revision_status == 'needs_revision')
+                        <div class="rounded-xl border shadow-sm p-6 flex flex-col md:flex-row gap-5" style="background-color: #fffbeb; border-color: #fef3c7;">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: #fef3c7; color: #d97706;">
+                                <i class="fas fa-exclamation-triangle text-xl"></i>
+                            </div>
+                            <div class="flex-grow">
+                                <h3 class="text-lg font-bold" style="color: #92400e;">Active Revision Request</h3>
+                                <p class="text-sm mt-1" style="color: #b45309;">
+                                    The panel has requested revisions for your group. Review the instructions below, implement the changes, and inform your adviser <strong>{{ $adviser?->user?->name ?? 'your adviser' }}</strong> when ready.
+                                </p>
+                                <div class="bg-white border rounded-lg p-4 mt-4 shadow-sm" style="border-color: #fde68a;">
+                                    <span class="text-xs font-bold uppercase tracking-wider" style="color: #d97706;">Revision Instructions</span>
+                                    <p class="text-[#0a1428] font-medium mt-1 whitespace-pre-line">{{ $groups->revision_description }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    @elseif($groups->revision_status == 'revised')
+                        <div class="rounded-xl border shadow-sm p-6 flex flex-col md:flex-row gap-5" style="background-color: #eff6ff; border-color: #dbeafe;">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: #dbeafe; color: #2563eb;">
+                                <i class="fas fa-info-circle text-xl"></i>
+                            </div>
+                            <div class="flex-grow">
+                                <h3 class="text-lg font-bold" style="color: #1e40af;">Revisions Submitted</h3>
+                                <p class="text-sm mt-1" style="color: #1d4ed8;">
+                                    Your group has addressed the requested revisions! Your adviser has marked this as revised. The panel is currently reviewing your updates.
+                                </p>
+                                @if($groups->revision_description)
+                                    <div class="bg-white border rounded-lg p-4 mt-4 shadow-sm" style="border-color: #bfdbfe;">
+                                        <span class="text-xs font-bold uppercase tracking-wider" style="color: #2563eb;">Revision Notes</span>
+                                        <p class="text-[#0a1428] font-medium mt-1 whitespace-pre-line">{{ $groups->revision_description }}</p>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @else
+                        <div class="rounded-xl border shadow-sm p-6 flex flex-col md:flex-row gap-5" style="background-color: #f0fdf4; border-color: #dcfce7;">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: #dcfce7; color: #16a34a;">
+                                <i class="fas fa-check-circle text-xl"></i>
+                            </div>
+                            <div class="flex-grow">
+                                <h3 class="text-lg font-bold" style="color: #166534;">All Revisions Clear</h3>
+                                <p class="text-sm mt-1" style="color: #15803d;">
+                                    Your group has no pending revision requests at the moment. Keep up the excellent work!
+                                </p>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                <!-- All Milestone Evaluations Section -->
+                <div class="mt-8">
+                    <h2 class="text-xl font-bold text-[#0a1428] mb-4 flex items-center gap-2" style="font-family:'Cormorant Garamond',serif;">
+                        <i class="fas fa-list text-[#d6b15c]"></i> Evaluation History & Feedback
+                    </h2>
+                    
+                    <div class="space-y-6">
+                        @forelse($allEvaluations as $eval)
+                            <div class="content-card">
+                                <div class="card-accent"></div>
+                                <div class="p-6">
+                                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 mb-4" style="border-color: var(--border);">
+                                        <div>
+                                            <h3 class="text-lg font-bold text-[#0a1428]">{{ $eval->milestone->milestone_title ?? 'Evaluation' }}</h3>
+                                            <p class="text-xs text-[#5b6375] mt-1">
+                                                Evaluated by <strong>{{ $eval->teacher->user->name ?? 'Teacher' }}</strong> on {{ \Carbon\Carbon::parse($eval->evaluation_date)->format('M d, Y') }}
+                                            </p>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs text-[#5b6375]">Milestone Grade:</span>
+                                            <span class="eval-score">{{ number_format($eval->score, 1) }} / {{ number_format($eval->max_score, 1) }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="text-xs font-bold uppercase text-[#5b6375] tracking-wider mb-2">Teacher Feedback:</h4>
+                                        <div class="p-4 rounded-lg bg-[#faf8f4] border border-[#ece6db] italic text-sm text-[#171e2c] whitespace-pre-line">
+                                            @if($eval->feedback)
+                                                "{{ $eval->feedback }}"
+                                            @else
+                                                "No general feedback text provided."
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    @if(!empty($eval->rubric_scores))
+                                        <div class="mt-4">
+                                            <button type="button" 
+                                                    onclick="toggleRubricDetails({{ $eval->id }})" 
+                                                    class="text-xs font-semibold text-[#b88d3a] hover:text-[#0a1428] transition flex items-center gap-1 focus:outline-none">
+                                                <i class="fas fa-chevron-down" id="chevron-{{ $eval->id }}"></i> View Rubric Score Breakdown
+                                            </button>
+                                            
+                                            <div id="rubric-details-{{ $eval->id }}" class="hidden mt-3 p-4 bg-[#fcfbfa] border rounded-lg overflow-x-auto" style="border-color: var(--border);">
+                                                <table class="w-full text-left text-xs">
+                                                    <thead>
+                                                        <tr class="border-b" style="border-color: var(--border);">
+                                                            <th class="pb-2 font-bold text-[#0a1428]">Criteria Name</th>
+                                                            <th class="pb-2 text-right font-bold text-[#0a1428]">Score / Max</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody class="divide-y divide-gray-100">
+                                                        @php
+                                                            $rubric = \App\Models\Rubric::where('milestone_id', $eval->milestone_id)->with('criteria')->first();
+                                                        @endphp
+                                                        @if($rubric && $rubric->criteria->count() > 0)
+                                                            @foreach($rubric->criteria as $criterion)
+                                                                <tr>
+                                                                    <td class="py-2 text-[#171e2c]">{{ $criterion->criteria_name }}</td>
+                                                                    <td class="py-2 text-right font-semibold text-[#1e6b3a]">
+                                                                        {{ number_format($eval->rubric_scores[$criterion->id] ?? 0, 1) }} / {{ number_format($criterion->max_score, 1) }}
+                                                                    </td>
+                                                                </tr>
+                                                            @endforeach
+                                                        @else
+                                                            <tr>
+                                                                <td colspan="2" class="py-2 text-center text-[#5b6375]">No rubric criteria details available.</td>
+                                                            </tr>
+                                                        @endif
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @empty
+                            <div class="content-card text-center p-8">
+                                <div class="card-accent"></div>
+                                <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style="background:#f0ece4; color:#b8b0a0;">
+                                    <i class="fa-regular fa-star text-lg"></i>
+                                </div>
+                                <p class="text-[#5b6375] text-sm">No milestone evaluations have been submitted yet.</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            @else
+                <!-- No Group Card -->
+                <div class="content-card text-center">
+                    <div class="card-accent"></div>
+                    <div class="p-8">
+                        <div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background:#f0ece4;">
+                            <i class="fa-regular fa-users text-2xl text-[#b8b0a0]"></i>
+                        </div>
+                        <h2 class="mb-2">Not in a Group</h2>
+                        <p class="text-[#5b6375] text-sm max-w-md mx-auto">
+                            You haven't been assigned to a capstone group yet. Revisions and feedback are only available for groups.
+                        </p>
+                    </div>
+                </div>
+            @endif
+        </div>
+
     </main>
 
     <script>
+        // ── TOGGLE RUBRIC DETAILS ──
+        window.toggleRubricDetails = function(evalId) {
+            const container = document.getElementById('rubric-details-' + evalId);
+            const chevron = document.getElementById('chevron-' + evalId);
+            if (container) {
+                const isHidden = container.classList.toggle('hidden');
+                if (chevron) {
+                    if (isHidden) {
+                        chevron.className = 'fas fa-chevron-down';
+                    } else {
+                        chevron.className = 'fas fa-chevron-up';
+                    }
+                }
+            }
+        };
+
         // ══════════════════════════════════════════════
         // TOAST NOTIFICATIONS
         // ══════════════════════════════════════════════
@@ -1734,7 +1920,8 @@
             const sections = {
                 dashboard: document.getElementById('dashboard-section'),
                 profile: document.getElementById('profile-section'),
-                certificates: document.getElementById('certificates-section')
+                certificates: document.getElementById('certificates-section'),
+                revisions: document.getElementById('revisions-section')
             };
             const navLinks = document.querySelectorAll('.nav-link');
             const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');

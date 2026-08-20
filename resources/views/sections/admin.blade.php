@@ -577,11 +577,7 @@
 }
 #milestones-list.collapsed,
 #rubrics-list.collapsed {
-    max-height: 0;
-    opacity: 0;
-    margin: 0;
-    padding: 0;
-    pointer-events: none;
+    display: none !important;
 }
 #milestones-list:not(.collapsed),
 #rubrics-list:not(.collapsed) {
@@ -709,11 +705,28 @@
 
         <!-- ==================== DASHBOARD ==================== -->
         <div id="dashboard-section" class="section-container section-card max-w-7xl mx-auto">
-            <div class="mb-8">
-                <h1>Dashboard</h1>
-                <div class="gold-accent-line"></div>
-                <p class="text-[#5b6375] mt-2 text-sm">Overview of your capstone tracking system</p>
+            <!-- Unified Professional Full-Width Header Card -->
+            <div class="mb-8 p-6 bg-[#faf8f4] border border-[#e2dacf] rounded-2xl shadow-sm relative overflow-hidden w-full">
+                <!-- Decorative gold ambient lighting on the right -->
+                <div class="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-[#d6b15c]/5 to-transparent pointer-events-none"></div>
+                <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full">
+                    <div>
+                        <h1 class="text-[#0a1428] text-3xl font-bold tracking-tight" style="font-family:'Cormorant Garamond', serif; font-size: 2.2rem; line-height: 1;">Dashboard</h1>
+                        <div class="w-12 h-1 bg-[#d6b15c] my-2"></div>
+                        <p class="text-xs text-[#5b6375]">Overview of your intelligent capstone tracking system</p>
+                    </div>
+                    
+                    <!-- Text occupying the right side -->
+                    <div class="text-left md:text-right mt-4 md:mt-0 md:pl-6 border-l md:border-l-0 md:border-r-0 border-[#e2dacf] pl-4 md:pl-0">
+                        <p class="text-[#b88d3a] text-[10px] tracking-wider uppercase font-bold mb-1">Academic Configuration</p>
+                        <h2 class="text-lg font-semibold flex items-center md:justify-end gap-2 text-[#0a1428]" style="font-family:'Cormorant Garamond',serif; font-size:1.4rem;">
+                            <i class="fa-solid fa-calendar-check text-[#d6b15c]"></i> Active Capstone Year: {{ $enabledYear ?? date('Y') }}
+                        </h2>
+                        <p class="text-[11px] text-[#5b6375] mt-1 max-w-sm md:ml-auto">All student lists, milestones, group evaluations, and performance analytics are locked to this academic period.</p>
+                    </div>
+                </div>
             </div>
+
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <div class="stat-card p-4 md:p-5 flex justify-between items-center" onclick="openDashboardDetailModal('students')">
                     <div>
@@ -1004,6 +1017,7 @@
 
     <!-- Action buttons (no filter here) -->
     <div class="flex flex-wrap items-center justify-end gap-3 mb-5">
+        <button onclick="openModal('rearrange_milestones_modal')" class="btn-primary text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-md"><i class="fas fa-sort mr-1"></i> Rearrange Step Order</button>
         <button onclick="openModal('milestone_modal')" class="btn-primary text-sm"><i class="fas fa-plus mr-1"></i> Add Milestone</button>
     </div>
 
@@ -1013,13 +1027,7 @@
         <div class="p-6">
             <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center gap-4">
-                    <h3>All Milestones</h3>
-                    <!-- Filter dropdown -->
-                    <select id="milestone-stage-filter" class="form-select w-36 py-1.5 text-sm">
-                        <option disabled selected>Select Stage</option>
-                        <option value="1">Capstone 1</option>
-                        <option value="2">Capstone 2</option>
-                    </select>
+                    <h3 class="whitespace-nowrap">All Milestones</h3>
                 </div>
                 <button type="button" class="toggle-section-btn text-[#5b6375] hover:text-[#0a1428] transition-transform duration-200" data-target="milestones-list">
                     <i class="fa-solid fa-chevron-up"></i>
@@ -1372,10 +1380,48 @@
 
         <!-- ==================== CAPSTONES MANAGEMENT ==================== -->
         <div id="capstone-section" class="section-container hidden section-card max-w-7xl mx-auto">
-            <div class="mb-8">
-                <h1>Capstone 1 & 2 Management</h1>
-                <div class="gold-accent-line"></div>
-                <p class="text-[#5b6375] mt-2 text-sm">Configure active Capstone stages, enable/disable stages individually, or archive past group records by year</p>
+            <!-- Unified Professional Full-Width Header Card for Management -->
+            <div class="mb-8 p-6 bg-[#faf8f4] border border-[#e2dacf] rounded-2xl shadow-sm relative overflow-hidden w-full">
+                <!-- Decorative gold ambient lighting on the right -->
+                <div class="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-[#d6b15c]/5 to-transparent pointer-events-none"></div>
+                <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 w-full">
+                    <div class="flex-1">
+                        <h1 class="text-[#0a1428] text-3xl font-bold tracking-tight" style="font-family:'Cormorant Garamond', serif; font-size: 2.2rem; line-height: 1;">Capstone 1 & 2 Management</h1>
+                        <div class="w-12 h-1 bg-[#d6b15c] my-2"></div>
+                        <p class="text-xs text-[#5b6375]">Configure active Capstone stages, enable/disable stages individually, or archive past group records by year</p>
+                    </div>
+                    
+                    <!-- Text/Config occupying the right side -->
+                    <div class="text-left md:text-right mt-4 md:mt-0 flex flex-wrap gap-4 items-end md:justify-end">
+                        <!-- Add New Capstone Year Form -->
+                        <form action="{{ route('admin.add_capstone_year') }}" method="POST" class="flex gap-2 items-center">
+                            @csrf
+                            <div>
+                                <label class="block text-[10px] font-bold text-[#5b6375] uppercase tracking-wide md:text-right">Add Year</label>
+                                <input type="number" name="year" min="2020" max="2099" value="{{ date('Y') + 1 }}" class="form-input text-xs py-1.5 px-2.5 rounded-lg border-[#e2dacf] w-24 bg-white text-[#0a1428]" style="height:34px;" required>
+                            </div>
+                            <button type="submit" class="btn-primary text-xs py-1.5 px-3 rounded-lg bg-[#0a1428] hover:bg-[#12254d] text-white font-bold flex items-center gap-1 border-none shadow-md" style="height:34px;">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </form>
+
+                        <!-- Change Active/Enabled Year Form -->
+                        <form action="{{ route('admin.enable_capstone_year') }}" method="POST" class="flex gap-2 items-center">
+                            @csrf
+                            <div>
+                                <label class="block text-[10px] font-bold text-[#5b6375] uppercase tracking-wide md:text-right">Enable Year</label>
+                                <select name="year" class="form-select text-xs py-1.5 px-2.5 rounded-lg border-[#e2dacf] w-32 bg-white text-[#0a1428]" style="height:34px; line-height: 20px;" required>
+                                    @foreach($allCapstoneYears ?? [date('Y')] as $yearVal)
+                                        <option value="{{ $yearVal }}" {{ ($enabledYear ?? date('Y')) == $yearVal ? 'selected' : '' }}>{{ $yearVal }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-primary text-xs py-1.5 px-3 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold flex items-center gap-1 border-none shadow-md" style="height:34px;">
+                                <i class="fas fa-check"></i> Enable
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
             
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -1422,30 +1468,25 @@
                         <h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-[#0a1428]" style="font-family:'Cormorant Garamond',serif; font-size:1.3rem;">
                             <i class="fa-solid fa-box-archive text-[#d6b15c]"></i> Archive Records by Year
                         </h3>
-                        <p class="text-xs text-[#5b6375] mb-6">Archive the entire chosen active Capstone Stage and its groups for a specific year, and create a brand new active stage duplicating the same milestone templates.</p>
+                        <p class="text-xs text-[#5b6375] mb-6">Archive both Capstone 1 and Capstone 2 stages together as "All Capstone" stages for the chosen academic year, including all of their active groups and student records.</p>
                         
                         <form action="{{ route('admin.archive_capstone_by_year') }}" method="POST" class="space-y-4">
                             @csrf
+                            <div class="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs mb-4">
+                                <span class="font-bold"><i class="fas fa-exclamation-triangle"></i> Complete Archival:</span>
+                                This will archive all stages, active groups, and student records for the selected year. It will automatically duplicate the milestone templates for the next cycle.
+                            </div>
                             <div>
-                                <label class="form-label text-xs font-semibold uppercase text-[#5b6375]">Capstone Stage to Archive</label>
-                                <select name="stage_id" class="form-select mt-1 block w-full rounded-lg border-[#e2dacf] bg-[#faf8f4] p-2" required>
-                                    <option value="all">All Stages (Capstone 1 & 2)</option>
-                                    @foreach($capstoneStages as $stage)
-                                    <option value="{{ $stage->id }}">{{ $stage->stage_title }}</option>
+                                <label class="form-label text-xs font-semibold uppercase text-[#5b6375]">Target Capstone Academic Year to Archive</label>
+                                <select name="year" class="form-select mt-1 block w-full rounded-lg border-[#e2dacf] bg-[#faf8f4] p-2" required>
+                                    @foreach($allCapstoneYears ?? [date('Y')] as $yearVal)
+                                        <option value="{{ $yearVal }}">{{ $yearVal }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div>
-                                <label class="form-label text-xs font-semibold uppercase text-[#5b6375]">Target School Year (Created Year)</label>
-                                <select name="year" class="form-select mt-1 block w-full rounded-lg border-[#e2dacf] bg-[#faf8f4] p-2" required>
-                                    @for($y = date('Y'); $y >= 2024; $y--)
-                                    <option value="{{ $y }}">{{ $y }}</option>
-                                    @endfor
-                                </select>
-                            </div>
-                            <div>
-                                <label class="form-label text-xs font-semibold uppercase text-[#5b6375]">New Cycle Name (For Cloned Stage)</label>
-                                <input type="text" name="new_title" class="form-input mt-1 block w-full rounded-lg border-[#e2dacf] bg-[#faf8f4] p-2" placeholder="e.g. Capstone 1 - 2026-2027" required>
+                                <label class="form-label text-xs font-semibold uppercase text-[#5b6375]">New Cycle Name Suffix (Optional)</label>
+                                <input type="text" name="new_title" class="form-input mt-1 block w-full rounded-lg border-[#e2dacf] bg-[#faf8f4] p-2" placeholder="e.g. Cycle 2026-2027">
                             </div>
                             
                             <div class="pt-2 flex justify-end">
@@ -2017,6 +2058,38 @@
             </form>
         </div>
     </div>
+
+    <!-- REARRANGE MILESTONES MODAL -->
+    <div id="rearrange_milestones_modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-accent"></div>
+            <div class="flex justify-between items-center mb-4">
+                <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">Rearrange Milestone Step Order</h2>
+                <button type="button" onclick="closeModal('rearrange_milestones_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
+            </div>
+            <p class="text-xs text-[#5b6375] mb-4">Rearrange the steps for Capstone 1 milestones. Milestones in Capstone 2 cannot be rearranged.</p>
+            <form action="{{ route('admin.reorder_milestones') }}" method="POST" class="space-y-4">
+                @csrf
+                <div id="reorder_list" class="space-y-2 max-h-80 overflow-y-auto pr-1">
+                    @foreach($milestones->where('capstone_stage_id', 1)->sortBy('step_order') as $m1)
+                    <div class="reorder-item flex items-center justify-between p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg" data-id="{{ $m1->id }}">
+                        <input type="hidden" name="milestone_ids[]" value="{{ $m1->id }}">
+                        <span class="text-sm font-semibold text-[#0a1428]">{{ $m1->milestone_title }}</span>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="moveItemUp(this)" class="p-1 text-[#5b6375] hover:text-[#0a1428] transition" title="Move Up"><i class="fas fa-chevron-up"></i></button>
+                            <button type="button" onclick="moveItemDown(this)" class="p-1 text-[#5b6375] hover:text-[#0a1428] transition" title="Move Down"><i class="fas fa-chevron-down"></i></button>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                <div class="flex justify-end gap-2 pt-3">
+                    <button type="button" onclick="closeModal('rearrange_milestones_modal')" class="btn-ghost">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Step Order</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     {{-- evaluation modal --}}
 <div id="evaluation_modal" class="modal-overlay">
     <div class="modal-box">
@@ -2045,15 +2118,8 @@
                 </select>
             </div>
             <div>
-                <label class="form-label">Required Milestone <span class="text-red-500">*</span></label>
-                <select id="create_room_required_milestone" name="required_milestone_id" class="form-select" required disabled>
-                    <option value="" disabled selected>Please select Capstone Stage first</option>
-                </select>
-                <p class="text-xs text-[#9a9385] mt-1">Only groups/students who have completed this milestone will be added to the room.</p>
-            </div>
-            <div>
-                <label class="form-label">Participate Activity (Milestone) <span class="text-red-500">*</span></label>
-                <select id="create_room_participate_activity" name="activity_name" class="form-select" required disabled>
+                <label class="form-label">Participate Activity (Milestone with Rubrics) <span class="text-red-500">*</span></label>
+                <select id="create_room_participate_activity" name="required_milestone_id" class="form-select" required disabled>
                     <option value="" disabled selected>Please select Capstone Stage first</option>
                 </select>
             </div>
@@ -2611,6 +2677,11 @@
                         if (!target) return;
                         const icon = this.querySelector('i');
                         const isCollapsed = target.classList.toggle('collapsed');
+                        if (isCollapsed) {
+                            target.style.setProperty('display', 'none', 'important');
+                        } else {
+                            target.style.removeProperty('display');
+                        }
                         icon.className = isCollapsed ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up';
                     });
                 });
@@ -2621,23 +2692,6 @@
                     stageFilter.addEventListener('change', function () {
                         const selected = this.value;
                         const items = document.querySelectorAll('.rubric-item');
-                        items.forEach(el => {
-                            const stage = el.dataset.stage;
-                            if (selected === 'all' || String(stage) === selected) {
-                                el.style.display = '';
-                            } else {
-                                el.style.display = 'none';
-                            }
-                        });
-                    });
-                    
-                     }
-                     // ── RUBRICS: Milestone filter ──
-                const milestoneFilter = document.getElementById('milestone-stage-filter');
-                if (milestoneFilter) {
-                    milestoneFilter.addEventListener('change', function () {
-                        const selected = this.value;
-                        const items = document.querySelectorAll('.milestone-item');
                         items.forEach(el => {
                             const stage = el.dataset.stage;
                             if (selected === 'all' || String(stage) === selected) {
@@ -3268,40 +3322,29 @@ const groupsDataJs = @json($groupsData);
 const milestonesDataJs = @json($milestones);
 
 function filterMilestonesByStage(stageId) {
-    const requiredSelect = document.getElementById('create_room_required_milestone');
     const activitySelect = document.getElementById('create_room_participate_activity');
 
     const filteredMilestones = milestonesDataJs.filter(m => String(m.capstone_stage_id) === String(stageId));
 
-    requiredSelect.innerHTML = '';
     activitySelect.innerHTML = '';
 
     if (filteredMilestones.length === 0) {
-        requiredSelect.innerHTML = '<option value="" disabled selected>No milestones for this stage</option>';
-        requiredSelect.disabled = true;
         activitySelect.innerHTML = '<option value="" disabled selected>No milestones for this stage</option>';
         activitySelect.disabled = true;
     } else {
-        requiredSelect.innerHTML = '<option value="" disabled selected>Select Required Milestone</option>';
         activitySelect.innerHTML = '<option value="" disabled selected>Select Participate Activity</option>';
 
         let hasRubrics = false;
         filteredMilestones.forEach(m => {
-            const optRequired = document.createElement('option');
-            optRequired.value = m.id;
-            optRequired.textContent = m.milestone_title;
-            requiredSelect.appendChild(optRequired);
-
             if (m.rubrics && m.rubrics.length > 0) {
                 hasRubrics = true;
                 const optActivity = document.createElement('option');
-                optActivity.value = m.milestone_title;
+                optActivity.value = m.id;
                 optActivity.textContent = m.milestone_title;
                 activitySelect.appendChild(optActivity);
             }
         });
 
-        requiredSelect.disabled = false;
         if (!hasRubrics) {
             activitySelect.innerHTML = '<option value="" disabled selected>No milestones with rubrics for this stage</option>';
             activitySelect.disabled = true;
@@ -3462,7 +3505,7 @@ function addRow(user_id, name) {
         return;
     }
     const row = document.createElement('div');
-    row.className = 'flex items-center gap-2 p-2 bg-[#faf8f4] rounded border border-[#e2dacf]';
+    row.className = 'flex items-center gap-2 p-2 bg-[#faf8f4] rounded border border-[#e2dacf] flex-nowrap whitespace-nowrap';
     row.innerHTML = `<input type="hidden" name="students[${idx}][user_id]" value="${user_id}">
         <span class="flex-1 text-sm">${name}</span>
         <select name="students[${idx}][role]" class="form-select w-32" required>
@@ -3498,7 +3541,7 @@ function editGroupMemberRow(name, userId, role) {
         return;
     }
     const row = document.createElement('div');
-    row.className = 'flex items-center gap-2 p-2 bg-[#faf8f4] rounded border border-[#e2dacf]';
+    row.className = 'flex items-center gap-2 p-2 bg-[#faf8f4] rounded border border-[#e2dacf] flex-nowrap whitespace-nowrap';
     row.innerHTML = `<input type="hidden" name="students[${editGroupIdx}][user_id]" value="${userId}">
         <span class="flex-1 text-sm">${name} <span class="text-[#5b6375]">(${userId})</span></span>
         <select name="students[${editGroupIdx}][role]" class="form-select w-32" required>
@@ -3671,6 +3714,33 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+
+window.moveItemUp = function(btn) {
+    const item = btn.closest('.reorder-item');
+    const prev = item.previousElementSibling;
+    if (prev) {
+        item.parentNode.insertBefore(item, prev);
+    }
+};
+
+window.moveItemDown = function(btn) {
+    const item = btn.closest('.reorder-item');
+    const next = item.nextElementSibling;
+    if (next) {
+        item.parentNode.insertBefore(next, item);
+    }
+};
+
+window.showStage = function(stageId) {
+    document.querySelectorAll('.milestone-item, .rubric-item').forEach(el => {
+        const stage = el.dataset.stage;
+        if (stageId === 'all' || String(stage) === String(stageId)) {
+            el.style.display = '';
+        } else {
+            el.style.display = 'none';
+        }
+    });
+};
     </script>
  
 </body>

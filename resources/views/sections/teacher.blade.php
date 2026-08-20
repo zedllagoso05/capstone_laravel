@@ -913,11 +913,38 @@
                                     <div class="w-24 progress-bar-bg h-1.5"><div class="progress-fill h-1.5" style="width:{{ $progress }}%; background:var(--gold);"></div></div>
                                     <span class="text-xs font-semibold">{{ $progress }}%</span>
                                 </div>
+
+                                @if($group->revision_status == 'needs_revision')
+                                    <div class="mt-2 p-2.5 bg-amber-50/70 border border-amber-200 text-amber-800 rounded-lg text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                        <div>
+                                            <span class="font-bold"><i class="fas fa-exclamation-triangle text-amber-600 mr-1"></i> Revision Requested:</span>
+                                            <span class="block text-xs mt-0.5">{{ $group->revision_description }}</span>
+                                        </div>
+                                        @if($group->adviser_id == $teacher->id)
+                                            <button onclick="window.markGroupAsRevised({{ $group->id }})" class="btn-primary text-[10px] px-2 py-1 rounded bg-amber-600 hover:bg-amber-700 whitespace-nowrap focus:outline-none transition self-end sm:self-auto" style="background-color: #d97706; border-color: #d97706;">
+                                                <i class="fas fa-check mr-1"></i> Mark as Revised
+                                            </button>
+                                        @endif
+                                    </div>
+                                @elseif($group->revision_status == 'revised')
+                                    <div class="mt-2 p-2.5 bg-green-50/70 border border-green-200 text-green-800 rounded-lg text-xs">
+                                        <span class="font-bold"><i class="fas fa-check-circle text-green-600 mr-1"></i> Revised:</span>
+                                        Awaiting panelist evaluation.
+                                    </div>
+                                @endif
                             </div>
+                            @php
+                                $isPanelist = $group->room && $group->room->panelists->contains($teacher->id);
+                            @endphp
                             <div class="mt-3 sm:mt-0 flex gap-2">
-                                <button onclick="window.openEvaluationModal({{ $group->id }})" class="btn-primary text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 focus:outline-none transition shadow-sm evaluate-btn" data-group="{{ $group->id }}">
-                                    <i class="fa-regular fa-pen-to-square"></i> Evaluate Group
+                                <button onclick="window.openViewModal({{ $group->id }})" class="btn-primary text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 focus:outline-none transition shadow-sm font-bold border-none" style="background-color: var(--gold); border-color: var(--gold); color: #0a1428;">
+                                    <i class="fas fa-chart-line"></i> Check
                                 </button>
+                                @if($isPanelist)
+                                    <button onclick="window.openEvaluationModal({{ $group->id }})" class="btn-outline text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 focus:outline-none transition shadow-sm evaluate-btn" style="border-color: #0a1428; color: #0a1428; background: transparent;" data-group="{{ $group->id }}">
+                                        <i class="fa-regular fa-pen-to-square"></i> Evaluate Group
+                                    </button>
+                                @endif
                             </div>
                         </div>
                     @empty
@@ -983,6 +1010,25 @@
                                                 </div>
                                             </div>
                                         </div>
+
+                                        @if($g->revision_status == 'needs_revision')
+                                            <div class="mt-2 p-2.5 bg-amber-50/70 border border-amber-200 text-amber-800 rounded-lg text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                                <div>
+                                                    <span class="font-bold"><i class="fas fa-exclamation-triangle text-amber-600 mr-1"></i> Revision Requested:</span>
+                                                    <span class="block text-xs mt-0.5">{{ $g->revision_description }}</span>
+                                                </div>
+                                                @if($g->adviser_id == $teacher->id)
+                                                    <button onclick="window.markGroupAsRevised({{ $g->id }})" class="btn-primary text-[10px] px-2 py-1 rounded bg-amber-600 hover:bg-amber-700 whitespace-nowrap focus:outline-none transition self-end sm:self-auto" style="background-color: #d97706; border-color: #d97706;">
+                                                        <i class="fas fa-check mr-1"></i> Mark as Revised
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        @elseif($g->revision_status == 'revised')
+                                            <div class="mt-2 p-2.5 bg-green-50/70 border border-green-200 text-green-800 rounded-lg text-xs">
+                                                <span class="font-bold"><i class="fas fa-check-circle text-green-600 mr-1"></i> Revised:</span>
+                                                Awaiting panelist evaluation.
+                                            </div>
+                                        @endif
                                     </div>
                                 @empty
                                     <div class="text-center py-6 text-[#5b6375] text-sm bg-[#faf8f4]/50 border border-[#e2dacf] border-dashed rounded-lg"><i class="fa-regular fa-folder-open mr-1.5"></i> No groups in this section</div>
@@ -1074,15 +1120,34 @@
                                     <div class="flex justify-between items-center">
                                         <div><p class="font-semibold text-sm text-[#0a1428]">{{ $g->group_name }}</p><p class="text-xs text-[#5b6375]">{{ Str::limit($g->capstone_title,25) }}</p></div>
                                         <div class="text-right flex flex-col items-end gap-1">
-                                        <span class="text-xs text-[#5b6375]">{{ $g->students->count()??0 }} students</span>
-                                        <div class="flex gap-2">
-                                            <button onclick="openViewModal({{ $g->id }})" class="text-[#5b6375] hover:text-[#0a1428] text-xs font-medium transition">
-                                                <i class="fa-regular fa-eye mr-1"></i>{{ $g->adviser_id == $teacher->id ? 'Check' : 'Show' }}
-                                            </button>
+                                            <span class="text-xs text-[#5b6375]">{{ $g->students->count()??0 }} students</span>
+                                            <div class="flex gap-2">
+                                                <button onclick="openViewModal({{ $g->id }})" class="text-[#5b6375] hover:text-[#0a1428] text-xs font-medium transition">
+                                                    <i class="fa-regular fa-eye mr-1"></i>{{ $g->adviser_id == $teacher->id ? 'Check' : 'Show' }}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                                </div>
+
+                                    @if($g->revision_status == 'needs_revision')
+                                        <div class="mt-2 p-2.5 bg-amber-50/70 border border-amber-200 text-amber-800 rounded-lg text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                            <div>
+                                                <span class="font-bold"><i class="fas fa-exclamation-triangle text-amber-600 mr-1"></i> Revision Requested:</span>
+                                                <span class="block text-xs mt-0.5">{{ $g->revision_description }}</span>
                                             </div>
+                                            @if($g->adviser_id == $teacher->id)
+                                                <button onclick="window.markGroupAsRevised({{ $g->id }})" class="btn-primary text-[10px] px-2 py-1 rounded bg-amber-600 hover:bg-amber-700 whitespace-nowrap focus:outline-none transition self-end sm:self-auto" style="background-color: #d97706; border-color: #d97706;">
+                                                    <i class="fas fa-check mr-1"></i> Mark as Revised
+                                                </button>
+                                            @endif
+                                        </div>
+                                    @elseif($g->revision_status == 'revised')
+                                        <div class="mt-2 p-2.5 bg-green-50/70 border border-green-200 text-green-800 rounded-lg text-xs">
+                                            <span class="font-bold"><i class="fas fa-check-circle text-green-600 mr-1"></i> Revised:</span>
+                                            Awaiting panelist evaluation.
+                                        </div>
+                                    @endif
+                                </div>
                                         @empty
                                             <div class="text-center py-4 text-[#5b6375] text-sm"><i class="fa-regular fa-folder-open mr-1"></i> No groups in this section</div>
                                         @endforelse
@@ -1138,16 +1203,75 @@
                         </div>
 
                         <div class="mt-4 pt-4 border-t border-[#e2dacf]">
+                            @php
+                                $revisedGroups = $room->groups->where('revision_status', 'revised');
+                                $normalGroups = $room->groups->where('revision_status', '!=', 'revised');
+                            @endphp
+
+                            <!-- REVISED GROUPS SECTION -->
+                            @if($revisedGroups->isNotEmpty())
+                                <div class="mb-4 p-4 bg-green-50/50 border border-green-200 rounded-xl">
+                                    <h4 class="text-sm font-bold text-green-800 mb-3 flex items-center gap-2">
+                                        <i class="fas fa-check-circle text-green-600"></i> Revised Groups (Taps to Evaluate)
+                                    </h4>
+                                    <div class="flex flex-col gap-3 w-full">
+                                        @foreach($revisedGroups as $rg)
+                                            @php
+                                                $rgSection = $rg->students->first()->section ?? 'No Section';
+                                                $searchData = strtolower($rg->group_name . ' ' . ($rg->capstone_title ?? '') . ' ' . $rgSection);
+                                                $teacher = \App\Models\Teacher::where('user_id', Auth::user()->user_id)->first();
+                                                $rgHasEvaluated = $teacher ? \App\Models\Evaluation::where('group_id', $rg->id)
+                                                    ->where('milestone_id', $room->required_milestone_id)
+                                                    ->where('teacher_id', $teacher->id)
+                                                    ->exists() : false;
+                                            @endphp
+                                            <div onclick="window.openEvaluationModal({{ $rg->id }})" class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-white border border-green-200 rounded-xl text-sm group-item transition hover:shadow-md cursor-pointer hover:border-green-400 w-full" data-search="{{ $searchData }}">
+                                                <div class="flex flex-col gap-1">
+                                                    <div class="flex items-center gap-2 flex-wrap">
+                                                        <span class="font-bold text-[#0a1428] text-base">{{ $rg->group_name }}</span>
+                                                        <span class="badge badge-green text-[9px]">{{ $rgSection }}</span>
+                                                        <span class="badge badge-navy text-[9px]">Revised</span>
+                                                        @if($rgHasEvaluated)
+                                                            <span class="badge badge-green text-[9px]"><i class="fas fa-check-circle mr-1"></i> Already Evaluated</span>
+                                                        @endif
+                                                    </div>
+                                                    <span class="text-xs text-[#3d4450]">{{ $rg->capstone_title ?? 'No title' }}</span>
+                                                    @if($rg->revision_description)
+                                                        <span class="text-xs text-[#5b6375] italic block mt-1"><span class="font-semibold">Revision Instructions:</span> "{{ $rg->revision_description }}"</span>
+                                                    @endif
+                                                </div>
+                                                <div class="mt-3 sm:mt-0 flex gap-2">
+                                                    @if($rgHasEvaluated)
+                                                        <button class="btn-outline text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 focus:outline-none transition shadow-sm text-green-700 hover:text-green-800 hover:border-green-800" style="border-color: #15803d; color: #15803d; background: transparent;">
+                                                            <i class="fas fa-check-double"></i> Re-evaluate Revised Group
+                                                        </button>
+                                                    @else
+                                                        <button class="btn-primary text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 focus:outline-none transition shadow-sm bg-green-700 hover:bg-green-800" style="background-color: #15803d; border-color: #15803d;">
+                                                            <i class="fa-regular fa-pen-to-square"></i> Evaluate Revised Group
+                                                        </button>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+
                             <div class="flex justify-between items-center mb-2">
                                 <p class="text-xs font-semibold text-[#5b6375] uppercase tracking-wide">Groups in this room</p>
                                 <input type="text" class="room-group-filter form-input text-xs py-1 px-2 w-48" 
                                        placeholder="Search by group, title, or section…" data-room-id="{{ $room->id }}">
                             </div>
                             <div class="flex flex-col gap-3 w-full room-group-list" data-room-id="{{ $room->id }}">
-                                @forelse($room->groups as $g)
+                                @forelse($normalGroups as $g)
                                     @php
                                         $section = $g->students->first()->section ?? 'No Section';
                                         $searchData = strtolower($g->group_name . ' ' . ($g->capstone_title ?? '') . ' ' . $section);
+                                        $teacher = \App\Models\Teacher::where('user_id', Auth::user()->user_id)->first();
+                                        $hasEvaluated = $teacher ? \App\Models\Evaluation::where('group_id', $g->id)
+                                            ->where('milestone_id', $room->required_milestone_id)
+                                            ->where('teacher_id', $teacher->id)
+                                            ->exists() : false;
                                     @endphp
                                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-[#faf8f4] border border-[#e2dacf] rounded-xl text-sm group-item transition hover:shadow-sm w-full" data-search="{{ $searchData }}">
                                         <div class="flex flex-col gap-1">
@@ -1155,13 +1279,37 @@
                                                 <span class="font-bold text-[#0a1428] text-base">{{ $g->group_name }}</span>
                                                 <span class="badge badge-navy text-[9px]">{{ $section }}</span>
                                                 <span class="text-xs text-[#5b6375]">• {{ $g->students->count() ?? 0 }} members</span>
+                                                @if($g->revision_status == 'needs_revision')
+                                                    <span class="badge badge-yellow text-[9px]"><i class="fas fa-spinner fa-spin mr-1"></i> Awaiting Revision</span>
+                                                @endif
+                                                @if($hasEvaluated)
+                                                    <span class="badge badge-green text-[9px]"><i class="fas fa-check-circle mr-1"></i> Already Evaluated</span>
+                                                @endif
                                             </div>
                                             <span class="text-xs text-[#3d4450]">{{ $g->capstone_title ?? 'No title' }}</span>
+                                            @if($g->revision_status == 'needs_revision' && $g->revision_description)
+                                                <span class="text-xs text-[#5b6375] italic block mt-1"><span class="font-semibold">Revision Instructions:</span> "{{ $g->revision_description }}"</span>
+                                            @endif
                                         </div>
                                         <div class="mt-3 sm:mt-0 flex gap-2">
-                                            <button onclick="window.openEvaluationModal({{ $g->id }})" class="btn-primary text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 focus:outline-none transition shadow-sm evaluate-btn" data-group="{{ $g->id }}">
-                                                <i class="fa-regular fa-pen-to-square"></i> Evaluate Group
-                                            </button>
+                                            @if($g->revision_status == 'needs_revision')
+                                                <button onclick="window.openRevisionModal({{ $g->id }}, '{{ addslashes($g->group_name) }}')" class="btn-outline text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 focus:outline-none transition shadow-sm hover:border-amber-600 hover:text-amber-600" style="border-color: #d97706; color: #d97706;">
+                                                    <i class="fas fa-edit"></i> Edit Revision Notes
+                                                </button>
+                                            @else
+                                                @if($hasEvaluated)
+                                                    <button onclick="window.openEvaluationModal({{ $g->id }})" class="btn-outline text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 focus:outline-none transition shadow-sm evaluate-btn text-green-700 hover:text-green-800 hover:border-green-800" style="border-color: #15803d; color: #15803d; background: transparent;" data-group="{{ $g->id }}">
+                                                        <i class="fas fa-check-double"></i> Re-evaluate Group
+                                                    </button>
+                                                @else
+                                                    <button onclick="window.openEvaluationModal({{ $g->id }})" class="btn-primary text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 focus:outline-none transition shadow-sm evaluate-btn" data-group="{{ $g->id }}">
+                                                        <i class="fa-regular fa-pen-to-square"></i> Evaluate Group
+                                                    </button>
+                                                @endif
+                                                <button onclick="window.openRevisionModal({{ $g->id }}, '{{ addslashes($g->group_name) }}')" class="btn-outline text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 focus:outline-none transition shadow-sm hover:border-amber-600 hover:text-amber-600" style="border-color: #d97706; color: #d97706;">
+                                                    <i class="fas fa-undo-alt"></i> Revision
+                                                </button>
+                                            @endif
                                         </div>
                                     </div>
                                 @empty
@@ -1746,6 +1894,33 @@
         <div class="flex justify-end pt-4 border-t border-[#e2dacf] mt-5">
             <button type="button" onclick="closeModal('dashboard_detail_modal')" class="btn-primary text-xs px-5 py-2">Close Details</button>
         </div>
+    </div>
+</div>
+
+<!-- REVISION MODAL -->
+<div id="revisionModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-accent" style="background-color: #d97706;"></div>
+        <div class="flex justify-between items-center mb-4">
+            <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">Request Group Revision</h2>
+            <button type="button" onclick="closeModal('revisionModal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
+        </div>
+        <form id="revision_form" onsubmit="submitRevisionRequest(event)" class="space-y-4">
+            @csrf
+            <input type="hidden" id="revision_group_id">
+            <div>
+                <label class="form-label">Group Name</label>
+                <input type="text" id="revision_group_name" class="form-input" readonly>
+            </div>
+            <div>
+                <label class="form-label">What needs to be revised? (Instructions/Feedback)</label>
+                <textarea id="revision_description_input" class="form-input h-32" placeholder="Specify clear instructions for the group and their adviser..." required></textarea>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" onclick="closeModal('revisionModal')" class="btn-ghost">Cancel</button>
+                <button type="submit" class="btn-primary" style="background-color: #d97706; border-color: #d97706;">Submit Revision Request</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -2343,7 +2518,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         const row = document.createElement('div');
-        row.className = 'flex items-center gap-2 p-2 bg-[#faf8f4] rounded border border-[#e2dacf]';
+        row.className = 'flex items-center gap-2 p-2 bg-[#faf8f4] rounded border border-[#e2dacf] flex-nowrap whitespace-nowrap';
         row.innerHTML = `<input type="hidden" name="students[${idx}][user_id]" value="${user_id}">
             <span class="flex-1 text-sm">${name}</span>
             <select name="students[${idx}][role]" class="form-select w-32" required>
@@ -2370,6 +2545,78 @@ document.addEventListener('DOMContentLoaded', function () {
         studentSelect.selectedIndex = -1;
     });
 }
+
+    // ── REVISION HELPER FUNCTIONS ────────────────
+    window.openRevisionModal = function (groupId, groupName) {
+        document.getElementById('revision_group_id').value = groupId;
+        document.getElementById('revision_group_name').value = groupName;
+        document.getElementById('revision_description_input').value = '';
+        openModal('revisionModal');
+    };
+
+    window.submitRevisionRequest = function (event) {
+        event.preventDefault();
+        const groupId = document.getElementById('revision_group_id').value;
+        const description = document.getElementById('revision_description_input').value;
+
+        fetch(`/teacher/group/${groupId}/request-revision`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                revision_description: description
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeModal('revisionModal');
+                showToast(data.message || 'Revision request submitted successfully!');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                showToast(data.error || 'Failed to submit revision request.', true);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('An error occurred while submitting revision request.', true);
+        });
+    };
+
+    window.markGroupAsRevised = function (groupId) {
+        if (!confirm('Are you sure you have addressed all revisions and want to mark this group as revised?')) {
+            return;
+        }
+
+        fetch(`/teacher/group/${groupId}/mark-revised`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message || 'Group marked as revised!');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                showToast(data.error || 'Failed to mark group as revised.', true);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('An error occurred.', true);
+        });
+    };
 
     // ── EVALUATION MODAL ────────────────────────
     window.openEvaluationModal = function (groupId, milestoneId = null) {
@@ -2536,7 +2783,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         const row = document.createElement('div');
-        row.className = 'flex items-center gap-2 p-2 bg-[#faf8f4] rounded border border-[#e2dacf]';
+        row.className = 'flex items-center gap-2 p-2 bg-[#faf8f4] rounded border border-[#e2dacf] flex-nowrap whitespace-nowrap';
         row.innerHTML = `<input type="hidden" name="students[${editIdx}][user_id]" value="${userId}">
             <span class="flex-1 text-sm">${name} <span class="text-[#5b6375]">(${userId})</span></span>
             <select name="students[${editIdx}][role]" class="form-select w-32" required>
