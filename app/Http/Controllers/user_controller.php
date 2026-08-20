@@ -25,6 +25,7 @@ use App\Models\Admin;
 use App\Models\EvaluationRoom;
 use App\Models\Section;
 use App\Models\CapstoneStages;
+use App\Models\CapstoneYear;
 use Illuminate\Support\Facades\Hash;
 use App\Imports\StudentsImport;
 use App\Imports\TeachersImport;
@@ -258,7 +259,12 @@ class user_controller extends Controller
                 ->toArray();
         }
 
-        $enabledStageIds = CapstoneStages::where('is_enabled', true)->pluck('id');
+        $activeYear = CapstoneYear::getActiveYear();
+        $groupYearId = $groups ? $groups->capstone_year_id : $activeYear->id;
+
+        $enabledStageIds = CapstoneStages::where('is_enabled', true)
+            ->where('capstone_year_id', $groupYearId)
+            ->pluck('id');
         $milestones = Milestone::whereIn('capstone_stage_id', $enabledStageIds)->orderBy('step_order')->get();
         $overallProgress = 0;
         $nextMilestone = null;
@@ -336,28 +342,61 @@ class user_controller extends Controller
             return $this->redirectByRole();
         }
         $admin = Admin::where('user_id', $user->user_id)->first();
+
+        // ── Active Capstone Year & Auto-population ──
+        $activeYear = CapstoneYear::getActiveYear();
+
+        // Ensure any pre-existing/legacy database rows are mapped to the active year
+        Group::whereNull('capstone_year_id')->update(['capstone_year_id' => $activeYear->id]);
+        Student::whereNull('capstone_year_id')->update(['capstone_year_id' => $activeYear->id]);
+        CapstoneStages::whereNull('capstone_year_id')->update(['capstone_year_id' => $activeYear->id]);
+
+        $capstoneYears = CapstoneYear::withCount(['groups', 'students'])->get();
+
         // ── Core data ──
-        $enabledStageIds = CapstoneStages::where('is_enabled', true)->pluck('id');
+        $enabledStageIds = CapstoneStages::where('is_enabled', true)
+            ->where('capstone_year_id', $activeYear->id)
+            ->pluck('id');
         $milestones = Milestone::whereIn('capstone_stage_id', $enabledStageIds)->with('rubrics')->orderBy('step_order')->get();
         $rubrics = Rubric::whereHas('milestone', function($q) use ($enabledStageIds) {
             $q->whereIn('capstone_stage_id', $enabledStageIds);
         })->with(['milestone', 'criteria'])->latest()->get();
-        $groups = Group::where('is_archived', false)->with(['students', 'groupMilestones'])->get();
-        $archivedGroups = Group::where('is_archived', true)->with(['adviser', 'section', 'team_members'])->get();
+        $groups = Group::where('is_archived', false)
+            ->where('capstone_year_id', $activeYear->id)
+            ->with(['students', 'groupMilestones'])
+            ->get();
+        $archivedGroups = Group::where('is_archived', true)->with(['adviser', 'section', 'team_members', 'capstoneStage'])->get();
         $totalGroups = $groups->count();
 
-        $allTeachers = Teacher::where('is_archived', false)->with(['groups', 'user', 'sections'])->get();
+        $allTeachers = Teacher::where('is_archived', false)->with([
+            'groups' => function ($query) use ($activeYear) {
+                $query->where('is_archived', false)->where('capstone_year_id', $activeYear->id);
+            },
+            'user',
+            'sections' => function ($query) {
+                $query->where('is_archived', false);
+            }
+        ])->get();
         $totalTeachers = $allTeachers->count();
 
         $sections = Section::where('is_archived', false)->get();
         $totalSections = $sections->count();
         $allSections= Section:: all();
         // ── Students with their group (singular) ──
-        $allStudents = Student::where('is_archived', false)->with(['user', 'groups'])->get();
+        $allStudents = Student::where('is_archived', false)
+            ->where('capstone_year_id', $activeYear->id)
+            ->with(['user', 'groups'])
+            ->get();
         $totalStudents = $allStudents->count();
 
         // evaluationroom
-        $evaluationRooms = EvaluationRoom::with(['panelists', 'groups', 'requiredMilestone'])->latest()->get();
+        $evaluationRooms = EvaluationRoom::with([
+            'panelists',
+            'groups' => function ($query) use ($activeYear) {
+                $query->where('is_archived', false)->where('capstone_year_id', $activeYear->id);
+            },
+            'requiredMilestone'
+        ])->latest()->get();
 
         // ── Section Progress ──
         $sectionProgress = [];
@@ -472,7 +511,37 @@ class user_controller extends Controller
             ->select('sections.*', 'teachers.teacher_first_name', 'teachers.teacher_last_name')
             ->get();
 
-        $groupsData = Group::where('is_archived', false)->with(['adviser', 'section', 'team_members', 'room'])->get()->map(function ($group) {
+        $capstone1Milestones = Milestone::whereHas('capstoneStage', function ($q) {
+            $q->where('stage_type', 1)->where('is_archived', false);
+        })->pluck('id')->toArray();
+
+        $capstone2Milestones = Milestone::whereHas('capstoneStage', function ($q) {
+            $q->where('stage_type', 2)->where('is_archived', false);
+        })->pluck('id')->toArray();
+
+        $groupsData = Group::where('is_archived', false)->where('capstone_year_id', $activeYear->id)->with(['adviser', 'section', 'students', 'room', 'groupMilestones', 'team_members'])->get()->map(function ($group) use ($capstone1Milestones, $capstone2Milestones) {
+            $completedMilestoneIds = $group->groupMilestones
+                ->where('status', 'completed')
+                ->pluck('milestone_id')
+                ->toArray();
+
+            $completedC1 = false;
+            if (count($capstone1Milestones) > 0) {
+                $completedC1 = empty(array_diff($capstone1Milestones, $completedMilestoneIds));
+            }
+
+            $completedC2 = false;
+            if (count($capstone2Milestones) > 0) {
+                $completedC2 = empty(array_diff($capstone2Milestones, $completedMilestoneIds));
+            }
+
+            $members = $group->students->map(function ($student) {
+                return [
+                    'name' => $student->student_first_name . ' ' . $student->student_last_name,
+                    'user_id' => $student->user_id,
+                ];
+            })->toArray();
+
             return [
                 'id'                    => $group->id,
                 'name'                  => $group->group_name,
@@ -486,6 +555,9 @@ class user_controller extends Controller
                 'member_count'          => $group->team_members->count(),
                 'room_id'               => $group->room_id,
                 'room_name'             => $group->room->room_name ?? 'Unassigned',
+                'members'               => $members,
+                'completed_c1'          => $completedC1,
+                'completed_c2'          => $completedC2,
             ];
         });
 
@@ -500,7 +572,9 @@ class user_controller extends Controller
             ];
         });
 
-        $capstoneStages = CapstoneStages::where('is_archived', false)->get();
+        $capstoneStages = CapstoneStages::where('is_archived', false)
+            ->where('capstone_year_id', $activeYear->id)
+            ->get();
 
         // ── Recent Activities (real data) ──
         $recentActivities = collect();
@@ -559,18 +633,8 @@ class user_controller extends Controller
         $recentActivities = $recentActivities->sortByDesc('timestamp')->take(8)->values();
 
         // ── Active/Enabled Capstone Year ──
-        $enabledYear = \App\Models\Setting::get('active_year', '2026');
-
-        $customYears = \App\Models\Setting::get('custom_years', '');
-        $customYearsArray = $customYears ? explode(',', $customYears) : [];
-        $allCapstoneYears = array_unique(array_merge(
-            [date('Y'), '2026', '2027'],
-            \App\Models\Group::pluck('archived_year')->filter()->toArray(),
-            \App\Models\CapstoneStages::pluck('archived_year')->filter()->toArray(),
-            [$enabledYear],
-            $customYearsArray
-        ));
-        sort($allCapstoneYears);
+        $enabledYear = $activeYear->year;
+        $allCapstoneYears = CapstoneYear::pluck('year')->toArray();
 
         return view('sections.admin', compact(
             'user',
@@ -599,7 +663,9 @@ class user_controller extends Controller
             'capstoneStages',
             'archivedGroups',
             'enabledYear',
-            'allCapstoneYears'
+            'allCapstoneYears',
+            'activeYear',
+            'capstoneYears'
         ));
     }
 
@@ -663,6 +729,8 @@ class user_controller extends Controller
         return redirect('/')->with('error', 'Teacher profile not found.');
     }
 
+    $activeYear = CapstoneYear::getActiveYear();
+
     $assignedRooms = $teacher->evaluationRooms()->with('groups')->get();
     $assignedRoomIds = $assignedRooms->pluck('id');
 
@@ -670,6 +738,7 @@ class user_controller extends Controller
     $allRooms = EvaluationRoom::with(['panelists', 'groups'])->get();
 
     $groups = Group::where('is_archived', false)
+        ->where('capstone_year_id', $activeYear->id)
         ->where(function($query) use ($teacher, $assignedRoomIds) {
             $query->where('adviser_id', $teacher->id)
                   ->orWhereIn('room_id', $assignedRoomIds);
@@ -683,7 +752,9 @@ class user_controller extends Controller
     $sectionsWithGroups = Section::whereIn('id', $sectionIdsWithGroups)->get();
     $totalStudents = $groups->flatMap(fn($g) => $g->students)->unique('id')->count();
 
-    $enabledStageIds = CapstoneStages::where('is_enabled', true)->pluck('id');
+    $enabledStageIds = CapstoneStages::where('is_enabled', true)
+        ->where('capstone_year_id', $activeYear->id)
+        ->pluck('id');
     $milestones = Milestone::whereIn('capstone_stage_id', $enabledStageIds)->orderBy('step_order')->get();
     $milestoneCount = $milestones->count();
 
@@ -748,6 +819,7 @@ class user_controller extends Controller
 
     $allSections = Section::all();
     $allGroups = Group::where('is_archived', false)
+        ->where('capstone_year_id', $activeYear->id)
         ->where(function($query) use ($teacher, $assignedRoomIds) {
             $query->where('adviser_id', $teacher->id)
                   ->orWhereIn('room_id', $assignedRoomIds);
@@ -766,7 +838,10 @@ class user_controller extends Controller
     // ── GET STUDENTS BY SECTION (unassigned only) ──────────────────
     public function getStudentsBySection($sectionName)
     {
+        $activeYear = CapstoneYear::getActiveYear();
+
         $students = Student::where('section', $sectionName)
+            ->where('capstone_year_id', $activeYear->id)
             ->whereDoesntHave('teamMembers')
             ->with('user')
             ->get(['user_id', 'student_first_name', 'student_last_name']); // include user_id
@@ -795,11 +870,14 @@ class user_controller extends Controller
             }
         }
 
+        $activeYear = CapstoneYear::getActiveYear();
+
         $group = Group::create([
             'group_name'     => $validated['group_name'],
             'capstone_title' => $validated['capstone_title'],
             'adviser_id'     => $validated['adviser'],
             'section_id'     => $validated['section'],
+            'capstone_year_id' => $activeYear->id,
         ]);
 
         foreach ($validated['students'] as $studentData) {
@@ -810,7 +888,9 @@ class user_controller extends Controller
             ]);
         }
 
-        $enabledStageIds = CapstoneStages::where('is_enabled', true)->pluck('id');
+        $enabledStageIds = CapstoneStages::where('is_enabled', true)
+            ->where('capstone_year_id', $activeYear->id)
+            ->pluck('id');
         foreach (Milestone::whereIn('capstone_stage_id', $enabledStageIds)->get() as $milestone) {
             GroupMilestones::firstOrCreate(
                 ['group_id' => $group->id, 'milestone_id' => $milestone->id],
@@ -1762,7 +1842,9 @@ class user_controller extends Controller
             $isPanelist = $isPanelistOfGroup;
         }
 
-        $enabledStageIds = CapstoneStages::where('is_enabled', true)->pluck('id');
+        $enabledStageIds = CapstoneStages::where('is_enabled', true)
+            ->where('capstone_year_id', $group->capstone_year_id)
+            ->pluck('id');
         $milestones = Milestone::whereIn('capstone_stage_id', $enabledStageIds)->with(['capstoneStage', 'rubrics'])->orderBy('step_order')->get();
         $enabledMilestoneIds = $milestones->pluck('id')->toArray();
         $completedMilestoneIds = $group->groupMilestones
@@ -1805,7 +1887,7 @@ class user_controller extends Controller
                 return [
                     'milestone_id'    => $e->milestone_id,
                     'milestone_title' => $e->milestone->milestone_title ?? 'Evaluation',
-                    'teacher_name'    => $e->teacher->teacher_first_name ?? 'Teacher',
+                    'teacher_name'    => $e->teacher ? ($e->teacher->teacher_first_name . ' ' . $e->teacher->teacher_last_name) : 'Teacher',
                     'evaluation_date' => $e->evaluation_date,
                     'score'           => $e->score,
                     'max_score'       => $e->max_score,
@@ -2847,7 +2929,7 @@ public function showCertificate($groupId, $certificateId)
     }
 
     /**
-     * Enable a specific capstone year.
+     * Enable/Activate a specific capstone year.
      */
     public function enableCapstoneYear(Request $request)
     {
@@ -2856,11 +2938,15 @@ public function showCertificate($groupId, $certificateId)
         }
 
         $request->validate([
-            'year' => 'required|integer|min:2000|max:2099',
+            'year' => 'required|string',
         ]);
 
-        \App\Models\Setting::set('active_year', $request->year);
+        $yearModel = CapstoneYear::where('year', $request->year)->first();
+        if ($yearModel) {
+            return $this->activateCapstoneYear($yearModel->id);
+        }
 
+        \App\Models\Setting::set('active_year', $request->year);
         return back()->with('success', "Capstone year {$request->year} has been enabled successfully.");
     }
 
@@ -2873,23 +2959,452 @@ public function showCertificate($groupId, $certificateId)
             abort(403, 'Unauthorized.');
         }
 
-        $request->validate([
-            'year' => 'required|integer|min:2000|max:2099',
+        $validated = $request->validate([
+            'year' => 'required|string|regex:/^\d{4}/',
+            'capstone_1_enabled' => 'nullable|boolean',
+            'capstone_2_enabled' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
         ]);
 
-        $year = $request->year;
+        $year = str_replace('-', '–', $validated['year']);
 
-        // Add the year to our custom list of years
-        $customYears = \App\Models\Setting::get('custom_years', '');
-        $yearsArray = $customYears ? explode(',', $customYears) : [];
-        
-        if (!in_array($year, $yearsArray)) {
-            $yearsArray[] = $year;
-            sort($yearsArray);
-            \App\Models\Setting::set('custom_years', implode(',', $yearsArray));
+        if (CapstoneYear::where('year', $year)->exists()) {
+            return back()->withErrors(['year' => "Capstone year {$year} already exists."]);
         }
 
+        $isActive = !empty($request->is_active);
+
+        DB::transaction(function () use ($year, $isActive, $request) {
+            if ($isActive) {
+                // Deactivate others
+                CapstoneYear::where('is_active', true)->update([
+                    'is_active' => false,
+                    'archived_at' => now(),
+                ]);
+                
+                // Hide/archive groups and students of currently active year
+                Group::where('is_archived', false)->update(['is_archived' => true]);
+                Student::where('is_archived', false)->update(['is_archived' => true]);
+            }
+
+            $newYear = CapstoneYear::create([
+                'year' => $year,
+                'is_active' => $isActive,
+                'capstone_1_enabled' => $request->has('capstone_1_enabled'),
+                'capstone_2_enabled' => $request->has('capstone_2_enabled'),
+                'archived_at' => $isActive ? null : now(),
+            ]);
+
+            // Automatically create Capstone 1 Stage for this new year
+            $c1Stage = CapstoneStages::create([
+                'stage_title' => "Capstone 1 - {$year}",
+                'stage_type' => 1,
+                'is_enabled' => $newYear->capstone_1_enabled,
+                'is_archived' => !$isActive,
+                'archived_year' => $isActive ? null : (int) substr($year, 0, 4),
+                'capstone_year_id' => $newYear->id,
+            ]);
+
+            // Automatically create Capstone 2 Stage for this new year
+            $c2Stage = CapstoneStages::create([
+                'stage_title' => "Capstone 2 - {$year}",
+                'stage_type' => 2,
+                'is_enabled' => $newYear->capstone_2_enabled,
+                'is_archived' => !$isActive,
+                'archived_year' => $isActive ? null : (int) substr($year, 0, 4),
+                'capstone_year_id' => $newYear->id,
+            ]);
+
+            // Clone milestones from the most recent active stage of type 1
+            $latestC1Stage = CapstoneStages::where('stage_type', 1)
+                ->where('id', '!=', $c1Stage->id)
+                ->latest('id')
+                ->first();
+            if ($latestC1Stage) {
+                $milestones = Milestone::where('capstone_stage_id', $latestC1Stage->id)->get();
+                foreach ($milestones as $m) {
+                    Milestone::create([
+                        'milestone_title' => $m->milestone_title,
+                        'milestone_description' => $m->milestone_description,
+                        'capstone_stage_id' => $c1Stage->id,
+                        'step_order' => $m->step_order,
+                        'start_date' => $m->start_date,
+                        'due_date' => $m->due_date,
+                    ]);
+                }
+            } else {
+                // Create default Capstone 1 milestones
+                Milestone::create([
+                    'milestone_title' => 'Proposal hearing',
+                    'milestone_description' => 'Proposal hearing milestone',
+                    'capstone_stage_id' => $c1Stage->id,
+                    'step_order' => 1,
+                    'start_date' => now()->toDateString(),
+                    'due_date' => now()->addDays(14)->toDateString(),
+                ]);
+            }
+
+            // Clone milestones from the most recent active stage of type 2
+            $latestC2Stage = CapstoneStages::where('stage_type', 2)
+                ->where('id', '!=', $c2Stage->id)
+                ->latest('id')
+                ->first();
+            if ($latestC2Stage) {
+                $milestones = Milestone::where('capstone_stage_id', $latestC2Stage->id)->get();
+                foreach ($milestones as $m) {
+                    Milestone::create([
+                        'milestone_title' => $m->milestone_title,
+                        'milestone_description' => $m->milestone_description,
+                        'capstone_stage_id' => $c2Stage->id,
+                        'step_order' => $m->step_order,
+                        'start_date' => $m->start_date,
+                        'due_date' => $m->due_date,
+                    ]);
+                }
+            } else {
+                // Create default Capstone 2 milestones
+                Milestone::create([
+                    'milestone_title' => 'Oral presentation',
+                    'milestone_description' => 'Oral presentation milestone',
+                    'capstone_stage_id' => $c2Stage->id,
+                    'step_order' => 1,
+                    'start_date' => now()->toDateString(),
+                    'due_date' => now()->addDays(14)->toDateString(),
+                ]);
+            }
+
+            // Save year string into Settings custom_years for legacy support
+            $customYears = \App\Models\Setting::get('custom_years', '');
+            $yearsArray = $customYears ? explode(',', $customYears) : [];
+            if (!in_array($year, $yearsArray)) {
+                $yearsArray[] = $year;
+                sort($yearsArray);
+                \App\Models\Setting::set('custom_years', implode(',', $yearsArray));
+            }
+            if ($isActive) {
+                \App\Models\Setting::set('active_year', $year);
+            }
+        });
+
         return back()->with('success', "Capstone year {$year} added successfully.");
+    }
+
+    /**
+     * Activate a capstone year, archiving the current one and restoring groups/students.
+     */
+    public function activateCapstoneYear($id)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized.');
+        }
+
+        $targetYear = CapstoneYear::findOrFail($id);
+
+        DB::transaction(function () use ($targetYear) {
+            // Archive current active years
+            $activeYears = CapstoneYear::where('is_active', true)->get();
+            foreach ($activeYears as $activeYear) {
+                $activeYear->update([
+                    'is_active' => false,
+                    'archived_at' => now(),
+                ]);
+                
+                // Archive groups and students belonging to this previous year
+                Group::where('capstone_year_id', $activeYear->id)->update(['is_archived' => true]);
+                Student::where('capstone_year_id', $activeYear->id)->update(['is_archived' => true]);
+            }
+
+            // Activate target year
+            $targetYear->update([
+                'is_active' => true,
+                'archived_at' => null,
+            ]);
+
+            \App\Models\Setting::set('active_year', $targetYear->year);
+
+            // Restore target year groups and students
+            Group::where('capstone_year_id', $targetYear->id)->update(['is_archived' => false]);
+            Student::where('capstone_year_id', $targetYear->id)->update(['is_archived' => false]);
+        });
+
+        return back()->with('success', "Capstone year {$targetYear->year} has been successfully activated.");
+    }
+
+    /**
+     * Archive a capstone year.
+     */
+    public function archiveCapstoneYear($id)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized.');
+        }
+
+        $targetYear = CapstoneYear::findOrFail($id);
+
+        DB::transaction(function () use ($targetYear) {
+            $targetYear->update([
+                'is_active' => false,
+                'archived_at' => now(),
+            ]);
+
+            Group::where('capstone_year_id', $targetYear->id)->update(['is_archived' => true]);
+            Student::where('capstone_year_id', $targetYear->id)->update(['is_archived' => true]);
+        });
+
+        return back()->with('success', "Capstone year {$targetYear->year} has been archived.");
+    }
+
+    /**
+     * Update an existing capstone year configurations.
+     */
+    public function updateCapstoneYear(Request $request, $id)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized.');
+        }
+
+        $targetYear = CapstoneYear::findOrFail($id);
+
+        $validated = $request->validate([
+            'year' => 'required|string|regex:/^\d{4}/',
+            'capstone_1_enabled' => 'nullable|boolean',
+            'capstone_2_enabled' => 'nullable|boolean',
+        ]);
+
+        $year = str_replace('-', '–', $validated['year']);
+
+        if (CapstoneYear::where('year', $year)->where('id', '!=', $id)->exists()) {
+            return back()->withErrors(['year' => "Capstone year {$year} already exists."]);
+        }
+
+        $targetYear->update([
+            'year' => $year,
+            'capstone_1_enabled' => $request->has('capstone_1_enabled'),
+            'capstone_2_enabled' => $request->has('capstone_2_enabled'),
+        ]);
+
+        return back()->with('success', "Capstone year {$year} updated successfully.");
+    }
+
+    /**
+     * Safely delete a capstone year and all of its associated records (cascading delete).
+     */
+    public function deleteCapstoneYear(Request $request, $id)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized.');
+        }
+
+        $validated = $request->validate([
+            'admin_password' => 'required|string',
+        ]);
+
+        if (!Hash::check($validated['admin_password'], Auth::user()->password)) {
+            return back()->withErrors(['admin_password' => 'Incorrect password. Capstone year was not deleted.'])->withInput();
+        }
+
+        $year = CapstoneYear::findOrFail($id);
+
+        // Prevent deleting the active year
+        if ($year->is_active) {
+            return back()->with('error', 'Cannot delete the currently active capstone year. Please activate another year first.');
+        }
+
+        DB::transaction(function () use ($year) {
+            $groupIds = Group::where('capstone_year_id', $year->id)->pluck('id')->toArray();
+
+            // 1. Delete associated progress and evaluation records
+            Evaluation::whereIn('group_id', $groupIds)->delete();
+            \App\Models\Remarks::whereIn('group_id', $groupIds)->delete();
+            \App\Models\Absence::whereIn('group_id', $groupIds)->delete();
+            TeamMember::whereIn('group_id', $groupIds)->delete();
+            GroupMilestones::whereIn('group_id', $groupIds)->delete();
+            GroupCertificate::whereIn('group_id', $groupIds)->delete();
+
+            // 2. Delete students and their associated user profiles
+            $studentUserIds = Student::where('capstone_year_id', $year->id)->pluck('user_id')->toArray();
+            Student::where('capstone_year_id', $year->id)->delete();
+            User::whereIn('user_id', $studentUserIds)->delete();
+
+            // 3. Delete groups
+            Group::where('capstone_year_id', $year->id)->delete();
+
+            // 4. Delete capstone stages and their milestones
+            $stageIds = CapstoneStages::where('capstone_year_id', $year->id)->pluck('id')->toArray();
+            Milestone::whereIn('capstone_stage_id', $stageIds)->delete();
+            CapstoneStages::whereIn('id', $stageIds)->delete();
+
+            // 5. Finally, delete the capstone year itself
+            $year->delete();
+        });
+
+        return back()->with('success', 'Capstone year and all of its associated groups, students, and progress records have been permanently deleted.');
+    }
+
+    /**
+     * Add a new active capstone stage.
+     */
+    public function addCapstoneStage(Request $request)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized.');
+        }
+
+        $validated = $request->validate([
+            'stage_title' => 'required|string|max:255',
+            'stage_type'  => 'required|integer|in:1,2',
+            'is_enabled'  => 'nullable|boolean',
+        ]);
+
+        $isEnabled = !empty($request->is_enabled);
+
+        if ($isEnabled) {
+            // Disable other stages
+            CapstoneStages::where('is_archived', false)->update(['is_enabled' => 0]);
+        }
+
+        CapstoneStages::create([
+            'stage_title' => $validated['stage_title'],
+            'stage_type'  => $validated['stage_type'],
+            'is_enabled'  => $isEnabled,
+            'is_archived' => false,
+        ]);
+
+        return back()->with('success', 'Capstone stage created successfully.');
+    }
+
+    /**
+     * Update an existing capstone stage.
+     */
+    public function updateCapstoneStage(Request $request, $id)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized.');
+        }
+
+        $stage = CapstoneStages::findOrFail($id);
+
+        $validated = $request->validate([
+            'stage_title' => 'required|string|max:255',
+            'stage_type'  => 'required|integer|in:1,2',
+        ]);
+
+        $stage->update([
+            'stage_title' => $validated['stage_title'],
+            'stage_type'  => $validated['stage_type'],
+        ]);
+
+        return back()->with('success', 'Capstone stage updated successfully.');
+    }
+
+    /**
+     * Delete an active capstone stage.
+     */
+    public function deleteCapstoneStage($id)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized.');
+        }
+
+        $stage = CapstoneStages::findOrFail($id);
+
+        // Check if there are groups assigned to this stage
+        $assignedGroupsCount = Group::where('capstone_stage_id', $stage->id)->count();
+        if ($assignedGroupsCount > 0) {
+            return back()->with('error', "Cannot delete stage: {$assignedGroupsCount} group(s) are assigned to this stage.");
+        }
+
+        // Check if there are milestones assigned to this stage
+        $assignedMilestonesCount = Milestone::where('capstone_stage_id', $stage->id)->count();
+        if ($assignedMilestonesCount > 0) {
+            return back()->with('error', "Cannot delete stage: {$assignedMilestonesCount} milestone(s) are assigned to this stage.");
+        }
+
+        $stage->delete();
+
+        return back()->with('success', 'Capstone stage deleted successfully.');
+    }
+
+    /**
+     * Restore an archived group and its related entities back to active.
+     */
+    public function restoreGroup($id)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized.');
+        }
+
+        $group = Group::findOrFail($id);
+
+        DB::transaction(function () use ($group) {
+            // 1. Restore the group itself
+            $group->is_archived = false;
+            $group->archived_year = null;
+
+            // Associate with active stage of same stage_type if needed
+            if ($group->capstoneStage && $group->capstoneStage->is_archived) {
+                $activeStage = CapstoneStages::where('stage_type', $group->capstoneStage->stage_type)
+                    ->where('is_archived', false)
+                    ->first();
+                if ($activeStage) {
+                    $group->capstone_stage_id = $activeStage->id;
+                }
+            }
+            $group->save();
+
+            // 2. Restore adviser if archived
+            if ($group->adviser_id) {
+                Teacher::where('id', $group->adviser_id)->update(['is_archived' => false]);
+            }
+
+            // 3. Restore section if archived
+            if ($group->section_id) {
+                Section::where('id', $group->section_id)->update(['is_archived' => false]);
+            }
+
+            // 4. Restore students
+            $studentUserIds = TeamMember::where('group_id', $group->id)->pluck('user_id')->toArray();
+            Student::whereIn('user_id', $studentUserIds)->update(['is_archived' => false]);
+        });
+
+        return back()->with('success', 'Group and its associated records have been successfully restored to active status.');
+    }
+
+    /**
+     * Permanently delete an archived group and all its related records.
+     */
+    public function deleteArchivedGroup($id)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized.');
+        }
+
+        $group = Group::findOrFail($id);
+
+        DB::transaction(function () use ($group) {
+            // 1. Delete associated evaluation records
+            Evaluation::where('group_id', $group->id)->delete();
+
+            // 2. Delete associated remarks
+            \App\Models\Remarks::where('group_id', $group->id)->delete();
+
+            // 3. Delete associated absences
+            \App\Models\Absence::where('group_id', $group->id)->delete();
+
+            // 4. Delete group milestones
+            GroupMilestones::where('group_id', $group->id)->delete();
+
+            // 5. Delete group certificates
+            GroupCertificate::where('group_id', $group->id)->delete();
+
+            // 6. Delete team members
+            TeamMember::where('group_id', $group->id)->delete();
+
+            // 7. Delete the group itself
+            $group->delete();
+        });
+
+        return back()->with('success', 'Archived group and all of its related records have been permanently deleted.');
     }
 
     /**

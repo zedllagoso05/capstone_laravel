@@ -720,9 +720,12 @@
                     <div class="text-left md:text-right mt-4 md:mt-0 md:pl-6 border-l md:border-l-0 md:border-r-0 border-[#e2dacf] pl-4 md:pl-0">
                         <p class="text-[#b88d3a] text-[10px] tracking-wider uppercase font-bold mb-1">Academic Configuration</p>
                         <h2 class="text-lg font-semibold flex items-center md:justify-end gap-2 text-[#0a1428]" style="font-family:'Cormorant Garamond',serif; font-size:1.4rem;">
-                            <i class="fa-solid fa-calendar-check text-[#d6b15c]"></i> Active Capstone Year: {{ $enabledYear ?? date('Y') }}
+                            <i class="fa-solid fa-calendar-check text-[#d6b15c]"></i> Active Capstone Year: {{ $activeYear->year }}
                         </h2>
-                        <p class="text-[11px] text-[#5b6375] mt-1 max-w-sm md:ml-auto">All student lists, milestones, group evaluations, and performance analytics are locked to this academic period.</p>
+                        <p class="text-[11px] text-[#5b6375] mt-1 max-w-sm md:ml-auto">
+                            Capstone 1: <strong class="{{ $activeYear->capstone_1_enabled ? 'text-green-600' : 'text-red-500' }}">{{ $activeYear->capstone_1_enabled ? 'Enabled' : 'Disabled' }}</strong> |
+                            Capstone 2: <strong class="{{ $activeYear->capstone_2_enabled ? 'text-green-600' : 'text-red-500' }}">{{ $activeYear->capstone_2_enabled ? 'Enabled' : 'Disabled' }}</strong>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -977,7 +980,7 @@
             </div>
             <div class="overflow-x-auto">
                 <table>
-                    <thead><tr><th>Group</th><th>Capstone Title</th><th>Section</th><th>Adviser</th><th>Members</th><th>Room</th><th class="pr-2">Actions</th></tr></thead>
+                    <thead><tr><th>Group</th><th>Capstone Title</th><th>Section</th><th>Adviser</th><th>Members</th><th>Capstone 1</th><th>Capstone 2</th><th>Room</th><th class="pr-2">Actions</th></tr></thead>
                     <tbody>
                         @forelse($groupsData ?? [] as $group)
                         <tr>
@@ -985,7 +988,33 @@
                             <td class="text-sm text-[#3d4450]">{{ $group['capstone_title'] ?? '—' }}</td>
                             <td class="text-sm text-[#3d4450]">{{ $group['section_name'] }}</td>
                             <td class="text-sm text-[#3d4450]">{{ $group['assigned_teacher_name'] ?? 'Unassigned' }}</td>
-                            <td class="text-sm text-[#3d4450]">{{ $group['member_count'] ?? 0 }}</td>
+                            <td class="text-sm text-[#3d4450]">
+                                <div class="space-y-1">
+                                    @foreach($group['members'] as $m)
+                                        <div class="flex items-center gap-1">
+                                            <span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0"></span>
+                                            <span class="text-xs font-medium text-[#171e2c]">{{ $m['name'] }}</span>
+                                        </div>
+                                    @endforeach
+                                    @if(empty($group['members']))
+                                        <span class="text-[#5b6375] italic text-xs">No members</span>
+                                    @endif
+                                </div>
+                            </td>
+                            <td class="text-xs">
+                                @if($group['completed_c1'])
+                                    <span class="badge badge-green"><i class="fa-solid fa-circle-check mr-0.5"></i> Completed</span>
+                                @else
+                                    <span class="badge badge-amber"><i class="fa-regular fa-clock mr-0.5"></i> In Progress</span>
+                                @endif
+                            </td>
+                            <td class="text-xs">
+                                @if($group['completed_c2'])
+                                    <span class="badge badge-green"><i class="fa-solid fa-circle-check mr-0.5"></i> Completed</span>
+                                @else
+                                    <span class="badge badge-amber"><i class="fa-regular fa-clock mr-0.5"></i> In Progress</span>
+                                @endif
+                            </td>
                             <td class="text-sm text-[#3d4450]">
                                 <span class="badge {{ $group['room_name'] !== 'Unassigned' ? 'badge-gold' : 'badge-muted' }}">
                                     {{ $group['room_name'] }}
@@ -998,7 +1027,7 @@
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="6" class="py-6 text-center text-[#5b6375]">No groups found.</td></tr>
+                        <tr><td colspan="9" class="py-6 text-center text-[#5b6375]">No groups found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -1386,45 +1415,97 @@
                 <div class="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-[#d6b15c]/5 to-transparent pointer-events-none"></div>
                 <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 w-full">
                     <div class="flex-1">
-                        <h1 class="text-[#0a1428] text-3xl font-bold tracking-tight" style="font-family:'Cormorant Garamond', serif; font-size: 2.2rem; line-height: 1;">Capstone 1 & 2 Management</h1>
+                        <h1 class="text-[#0a1428] text-3xl font-bold tracking-tight" style="font-family:'Cormorant Garamond', serif; font-size: 2.2rem; line-height: 1;">Capstone Years</h1>
                         <div class="w-12 h-1 bg-[#d6b15c] my-2"></div>
-                        <p class="text-xs text-[#5b6375]">Configure active Capstone stages, enable/disable stages individually, or archive past group records by year</p>
+                        <p class="text-xs text-[#5b6375]">Manage academic years, capstone stages, and archived capstone records.</p>
                     </div>
                     
-                    <!-- Text/Config occupying the right side -->
-                    <div class="text-left md:text-right mt-4 md:mt-0 flex flex-wrap gap-4 items-end md:justify-end">
-                        <!-- Add New Capstone Year Form -->
-                        <form action="{{ route('admin.add_capstone_year') }}" method="POST" class="flex gap-2 items-center">
-                            @csrf
-                            <div>
-                                <label class="block text-[10px] font-bold text-[#5b6375] uppercase tracking-wide md:text-right">Add Year</label>
-                                <input type="number" name="year" min="2020" max="2099" value="{{ date('Y') + 1 }}" class="form-input text-xs py-1.5 px-2.5 rounded-lg border-[#e2dacf] w-24 bg-white text-[#0a1428]" style="height:34px;" required>
-                            </div>
-                            <button type="submit" class="btn-primary text-xs py-1.5 px-3 rounded-lg bg-[#0a1428] hover:bg-[#12254d] text-white font-bold flex items-center gap-1 border-none shadow-md" style="height:34px;">
-                                <i class="fas fa-plus"></i> Add
-                            </button>
-                        </form>
-
-                        <!-- Change Active/Enabled Year Form -->
-                        <form action="{{ route('admin.enable_capstone_year') }}" method="POST" class="flex gap-2 items-center">
-                            @csrf
-                            <div>
-                                <label class="block text-[10px] font-bold text-[#5b6375] uppercase tracking-wide md:text-right">Enable Year</label>
-                                <select name="year" class="form-select text-xs py-1.5 px-2.5 rounded-lg border-[#e2dacf] w-32 bg-white text-[#0a1428]" style="height:34px; line-height: 20px;" required>
-                                    @foreach($allCapstoneYears ?? [date('Y')] as $yearVal)
-                                        <option value="{{ $yearVal }}" {{ ($enabledYear ?? date('Y')) == $yearVal ? 'selected' : '' }}>{{ $yearVal }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <button type="submit" class="btn-primary text-xs py-1.5 px-3 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold flex items-center gap-1 border-none shadow-md" style="height:34px;">
-                                <i class="fas fa-check"></i> Enable
-                            </button>
-                        </form>
-                    </div>
+                    <button type="button" onclick="openModal('add_year_modal')" class="btn-primary text-xs py-2.5 px-4 rounded-lg bg-[#0a1428] hover:bg-[#12254d] text-white font-bold flex items-center gap-1.5 border-none shadow-md">
+                        <i class="fas fa-plus"></i> Add Capstone Year
+                    </button>
                 </div>
             </div>
             
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Capstone Years Catalog Card -->
+            <div class="content-card w-full mb-8">
+                <div class="card-accent"></div>
+                <div class="p-6">
+                    <h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-[#0a1428]" style="font-family:'Cormorant Garamond',serif; font-size:1.3rem;">
+                        <i class="fa-solid fa-calendar-days text-[#d6b15c]"></i> Academic & Capstone Years
+                    </h3>
+                    <p class="text-xs text-[#5b6375] mb-6">Overview of all registered academic years. Only one capstone year can be active. Activating a year automatically archives the current active year and restores historical records belonging to the selected year.</p>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                                    <th class="p-3 pl-4">Capstone Year</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3">Capstone 1</th>
+                                    <th class="p-3">Capstone 2</th>
+                                    <th class="p-3 text-center">Groups</th>
+                                    <th class="p-3 text-center">Students</th>
+                                    <th class="p-3 pr-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-[#faf1e0] text-sm text-[#171e2c]">
+                                @forelse($capstoneYears as $yr)
+                                <tr class="hover:bg-[#faf8f4]/50 transition">
+                                    <td class="p-3 pl-4 font-bold text-[#0a1428]">{{ $yr->year }}</td>
+                                    <td class="p-3">
+                                        @if($yr->is_active)
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-green-50 text-green-700 border border-green-200">Active</span>
+                                        @else
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-gray-50 text-gray-700 border border-gray-200">Archived</span>
+                                        @endif
+                                    </td>
+                                    <td class="p-3">
+                                        @if($yr->capstone_1_enabled)
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-sky-50 text-sky-700 border border-sky-200">Enabled</span>
+                                        @else
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-red-50 text-red-700 border border-red-200">Disabled</span>
+                                        @endif
+                                    </td>
+                                    <td class="p-3">
+                                        @if($yr->capstone_2_enabled)
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-sky-50 text-sky-700 border border-sky-200">Enabled</span>
+                                        @else
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-red-50 text-red-700 border border-red-200">Disabled</span>
+                                        @endif
+                                    </td>
+                                    <td class="p-3 text-center font-semibold text-[#0a1428]">{{ $yr->groups_count }}</td>
+                                    <td class="p-3 text-center font-semibold text-[#0a1428]">{{ $yr->students_count }}</td>
+                                    <td class="p-3 pr-4 text-right">
+                                        <div class="flex gap-2 justify-end">
+                                            <button type="button" onclick="openEditYearModal({{ $yr->id }}, '{{ $yr->year }}', {{ $yr->capstone_1_enabled ? 1 : 0 }}, {{ $yr->capstone_2_enabled ? 1 : 0 }})" class="px-2.5 py-1 text-xs font-semibold rounded bg-gray-100 hover:bg-gray-200 text-[#0a1428] transition" title="Edit Year Config">
+                                                <i class="fas fa-pen"></i> Edit
+                                            </button>
+                                            @if($yr->is_active)
+                                                <button type="button" onclick="confirmArchiveYear({{ $yr->id }}, '{{ $yr->year }}')" class="px-2.5 py-1 text-xs font-semibold rounded bg-amber-500 text-white hover:bg-amber-600 transition" title="Archive Year">
+                                                    <i class="fas fa-box-archive"></i> Archive
+                                                </button>
+                                            @else
+                                                <button type="button" onclick="confirmActivateYear({{ $yr->id }}, '{{ $yr->year }}')" class="px-2.5 py-1 text-xs font-semibold rounded bg-green-600 text-white hover:bg-green-700 transition" title="Activate Year">
+                                                    <i class="fas fa-check-circle"></i> Activate
+                                                </button>
+                                            @endif
+                                            <!-- Delete Button -->
+                                            <button type="button" onclick="openDeleteYearModal({{ $yr->id }}, '{{ addslashes($yr->year) }}')" class="px-2.5 py-1 text-xs font-semibold rounded bg-red-600 text-white hover:bg-red-700 transition" title="Delete Year">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr><td colspan="7" class="p-8 text-center text-[#5b6375]"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i> No capstone years configured.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-6 mb-6">
                 <!-- Column 1: Config -->
                 <div class="content-card">
                     <div class="card-accent"></div>
@@ -1437,120 +1518,39 @@
                         <div class="space-y-4">
                             @foreach($capstoneStages as $stage)
                             <div class="flex items-center justify-between p-4 bg-[#faf8f4] border border-[#e2dacf] rounded-xl hover:border-[#d6b15c] transition">
-                                <div>
-                                    <h4 class="font-bold text-[#0a1428]">{{ $stage->stage_title }}</h4>
-                                    <p class="text-xs text-[#5b6375] mt-0.5">
-                                        Status: 
-                                        @if($stage->is_enabled)
-                                            <span class="text-green-600 font-semibold uppercase tracking-wider text-[10px]">Active / Enabled</span>
-                                        @else
-                                            <span class="text-red-500 font-semibold uppercase tracking-wider text-[10px]">Disabled</span>
-                                        @endif
-                                    </p>
+                                <div class="flex-1 min-w-0 pr-4">
+                                    <h4 class="font-bold text-[#0a1428] truncate">{{ $stage->stage_title }}</h4>
+                                    <div class="flex flex-wrap gap-2 items-center mt-1">
+                                        <span class="px-2 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider {{ $stage->stage_type == 1 ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-amber-50 text-amber-700 border border-amber-200' }}">
+                                            Capstone {{ $stage->stage_type }}
+                                        </span>
+                                        <p class="text-xs text-[#5b6375]">
+                                            @if($stage->is_enabled)
+                                                <span class="text-green-600 font-semibold uppercase tracking-wider text-[10px]">Active / Enabled</span>
+                                            @else
+                                                <span class="text-red-500 font-semibold uppercase tracking-wider text-[10px]">Disabled</span>
+                                            @endif
+                                        </p>
+                                    </div>
                                 </div>
-                                <form action="{{ route('admin.toggle_capstone_stage') }}" method="POST">
-                                    @csrf
-                                    <input type="hidden" name="stage_id" value="{{ $stage->id }}">
-                                    <button type="submit" class="px-4 py-2 text-xs font-semibold rounded-lg transition {{ $stage->is_enabled ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-green-600 hover:bg-green-700 text-white' }}">
-                                        {{ $stage->is_enabled ? 'Disable' : 'Enable' }}
+                                <div class="flex items-center gap-1.5 flex-shrink-0">
+                                    <!-- Toggle Enable/Disable -->
+                                    <form action="{{ route('admin.toggle_capstone_stage') }}" method="POST" class="inline">
+                                        @csrf
+                                        <input type="hidden" name="stage_id" value="{{ $stage->id }}">
+                                        <button type="submit" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg transition {{ $stage->is_enabled ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-green-600 hover:bg-green-700 text-white' }}">
+                                            {{ $stage->is_enabled ? 'Disable' : 'Enable' }}
+                                        </button>
+                                    </form>
+
+                                    <!-- Edit Button -->
+                                    <button type="button" onclick="openEditStageModal({{ $stage->id }}, '{{ addslashes($stage->stage_title) }}', {{ $stage->stage_type }})" class="p-1.5 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 text-[#0a1428] transition" title="Edit Stage Title">
+                                        <i class="fas fa-pen"></i>
                                     </button>
-                                </form>
+                                </div>
                             </div>
                             @endforeach
                         </div>
-                    </div>
-                </div>
-
-                <!-- Column 2: Archive -->
-                <div class="content-card">
-                    <div class="card-accent"></div>
-                    <div class="p-6">
-                        <h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-[#0a1428]" style="font-family:'Cormorant Garamond',serif; font-size:1.3rem;">
-                            <i class="fa-solid fa-box-archive text-[#d6b15c]"></i> Archive Records by Year
-                        </h3>
-                        <p class="text-xs text-[#5b6375] mb-6">Archive both Capstone 1 and Capstone 2 stages together as "All Capstone" stages for the chosen academic year, including all of their active groups and student records.</p>
-                        
-                        <form action="{{ route('admin.archive_capstone_by_year') }}" method="POST" class="space-y-4">
-                            @csrf
-                            <div class="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs mb-4">
-                                <span class="font-bold"><i class="fas fa-exclamation-triangle"></i> Complete Archival:</span>
-                                This will archive all stages, active groups, and student records for the selected year. It will automatically duplicate the milestone templates for the next cycle.
-                            </div>
-                            <div>
-                                <label class="form-label text-xs font-semibold uppercase text-[#5b6375]">Target Capstone Academic Year to Archive</label>
-                                <select name="year" class="form-select mt-1 block w-full rounded-lg border-[#e2dacf] bg-[#faf8f4] p-2" required>
-                                    @foreach($allCapstoneYears ?? [date('Y')] as $yearVal)
-                                        <option value="{{ $yearVal }}">{{ $yearVal }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label class="form-label text-xs font-semibold uppercase text-[#5b6375]">New Cycle Name Suffix (Optional)</label>
-                                <input type="text" name="new_title" class="form-input mt-1 block w-full rounded-lg border-[#e2dacf] bg-[#faf8f4] p-2" placeholder="e.g. Cycle 2026-2027">
-                            </div>
-                            
-                            <div class="pt-2 flex justify-end">
-                                <button type="submit" class="btn-primary flex items-center gap-2">
-                                    <i class="fa-solid fa-box-archive"></i> Run Archival & Clonation
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Table of Archived Groups (Single Catalog Div) -->
-            <div class="content-card w-full">
-                <div class="card-accent"></div>
-                <div class="p-6">
-                    <h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-[#0a1428]" style="font-family:'Cormorant Garamond',serif; font-size:1.3rem;">
-                        <i class="fa-solid fa-box-archive text-[#d6b15c]"></i> Archived Capstone Groups Catalog
-                    </h3>
-                    <p class="text-xs text-[#5b6375] mb-6">List of all Capstone groups that have been archived. You can click 'View Progress' to see their completed milestones and score records in read-only mode.</p>
-                    
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-[#e2dacf]">
-                            <thead>
-                                <tr class="bg-[#faf8f4] text-left text-[11px] font-semibold uppercase tracking-wider text-[#5b6375]">
-                                    <th class="px-6 py-3">Group Name</th>
-                                    <th class="px-6 py-3">Capstone Stage</th>
-                                    <th class="px-6 py-3">Capstone Title</th>
-                                    <th class="px-6 py-3">Section</th>
-                                    <th class="px-6 py-3">Adviser</th>
-                                    <th class="px-6 py-3">Year</th>
-                                    <th class="px-6 py-3 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-[#e2dacf] text-sm text-[#171e2c]">
-                                @forelse($archivedGroups as $group)
-                                <tr class="hover:bg-[#faf8f4] transition">
-                                    <td class="px-6 py-4 font-bold">{{ $group->group_name }}</td>
-                                    <td class="px-6 py-4">
-                                        <span class="px-2 py-0.5 text-xs font-semibold rounded bg-[#f5f1e8] text-[#0a1428]">
-                                            {{ $group->capstoneStage->stage_title ?? 'Capstone' }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 text-xs text-[#5b6375]">{{ $group->capstone_title }}</td>
-                                    <td class="px-6 py-4">{{ $group->section->section_name ?? 'N/A' }}</td>
-                                    <td class="px-6 py-4">
-                                        {{ $group->adviser ? $group->adviser->teacher_first_name . ' ' . $group->adviser->teacher_last_name : 'No Adviser' }}
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <span class="px-2 py-1 text-xs font-semibold rounded bg-[#e8e3d7] text-[#0a1428]">{{ $group->archived_year }}</span>
-                                    </td>
-                                    <td class="px-6 py-4 text-right">
-                                        <button type="button" onclick="viewArchivedProgress({{ $group->id }}, '{{ addslashes($group->group_name) }}')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#0a1428] text-white hover:bg-opacity-90 transition">
-                                            <i class="fas fa-eye mr-1"></i> View Progress
-                                        </button>
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="7" class="px-6 py-8 text-center text-[#5b6375] text-xs">No archived groups in system yet.</td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
                     </div>
                 </div>
             </div>
@@ -2055,6 +2055,180 @@
                     </div>
                 </div>
                 <div class="flex justify-end gap-2 pt-3"><button type="button" onclick="closeModal('delete_rubric_modal')" class="btn-ghost">Cancel</button><button type="submit" class="btn-primary" style="background:#a12b2b;"><i class="fas fa-trash mr-1"></i> Delete Rubric</button></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- EDIT CAPSTONE STAGE MODAL -->
+    <div id="edit_stage_modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-accent"></div>
+            <div class="flex justify-between items-center mb-4">
+                <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">Edit Capstone Stage</h2>
+                <button type="button" onclick="closeModal('edit_stage_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
+            </div>
+            <form id="edit_stage_form" action="" method="POST" class="space-y-4">
+                @csrf
+                <div>
+                    <label class="form-label text-xs font-semibold uppercase text-[#5b6375]">Stage Title</label>
+                    <input type="text" name="stage_title" id="edit_stage_title" class="form-input mt-1" required>
+                </div>
+                <div>
+                    <label class="form-label text-xs font-semibold uppercase text-[#5b6375]">Stage Type</label>
+                    <select name="stage_type" id="edit_stage_type" class="form-select mt-1" required>
+                        <option value="1">Capstone 1</option>
+                        <option value="2">Capstone 2</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-2 pt-3">
+                    <button type="button" onclick="closeModal('edit_stage_modal')" class="btn-ghost">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD CAPSTONE YEAR MODAL -->
+    <div id="add_year_modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-accent"></div>
+            <div class="flex justify-between items-center mb-4">
+                <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">Add Capstone Year</h2>
+                <button type="button" onclick="closeModal('add_year_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
+            </div>
+            <form action="{{ route('admin.add_capstone_year') }}" method="POST" class="space-y-4">
+                @csrf
+                <div>
+                    <label class="form-label text-xs font-semibold uppercase text-[#5b6375]">Academic / Capstone Year</label>
+                    <input type="text" name="year" class="form-input mt-1" placeholder="e.g. 2025–2026" required>
+                </div>
+                <div class="space-y-2">
+                    <label class="form-label text-xs font-semibold uppercase text-[#5b6375] block">Enable Capstone Stages</label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer mr-4">
+                        <input type="checkbox" name="capstone_1_enabled" id="add_year_c1" value="1" checked class="rounded text-green-600 focus:ring-green-500 border-gray-300">
+                        <span class="text-xs text-[#5b6375] font-semibold">Capstone 1</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="capstone_2_enabled" id="add_year_c2" value="1" class="rounded text-green-600 focus:ring-green-500 border-gray-300">
+                        <span class="text-xs text-[#5b6375] font-semibold">Capstone 2</span>
+                    </label>
+                </div>
+                <div>
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="is_active" value="1" class="rounded text-green-600 focus:ring-green-500 border-gray-300" checked>
+                        <span class="text-xs text-[#5b6375] font-semibold">Activate immediately (archives current active year)</span>
+                    </label>
+                </div>
+                <div class="flex justify-end gap-2 pt-3">
+                    <button type="button" onclick="closeModal('add_year_modal')" class="btn-ghost">Cancel</button>
+                    <button type="submit" class="btn-primary">Add Capstone Year</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- EDIT CAPSTONE YEAR MODAL -->
+    <div id="edit_year_modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-accent"></div>
+            <div class="flex justify-between items-center mb-4">
+                <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">Edit Capstone Year</h2>
+                <button type="button" onclick="closeModal('edit_year_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
+            </div>
+            <form id="edit_year_form" action="" method="POST" class="space-y-4">
+                @csrf
+                <div>
+                    <label class="form-label text-xs font-semibold uppercase text-[#5b6375]">Academic / Capstone Year</label>
+                    <input type="text" name="year" id="edit_year_title" class="form-input mt-1" required>
+                </div>
+                <div class="space-y-2">
+                    <label class="form-label text-xs font-semibold uppercase text-[#5b6375] block">Enable Capstone Stages</label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer mr-4">
+                        <input type="checkbox" name="capstone_1_enabled" id="edit_year_c1" value="1" class="rounded text-green-600 focus:ring-green-500 border-gray-300">
+                        <span class="text-xs text-[#5b6375] font-semibold">Capstone 1</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="capstone_2_enabled" id="edit_year_c2" value="1" class="rounded text-green-600 focus:ring-green-500 border-gray-300">
+                        <span class="text-xs text-[#5b6375] font-semibold">Capstone 2</span>
+                    </label>
+                </div>
+                <div class="flex justify-end gap-2 pt-3">
+                    <button type="button" onclick="closeModal('edit_year_modal')" class="btn-ghost">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ACTIVATE CAPSTONE YEAR MODAL -->
+    <div id="activate_year_modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-accent" style="background: var(--gold);"></div>
+            <div class="flex justify-between items-center mb-4">
+                <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);" id="activate_year_title">Activate Capstone Year?</h2>
+                <button type="button" onclick="closeModal('activate_year_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
+            </div>
+            <form id="activate_year_form" action="" method="POST" class="space-y-4">
+                @csrf
+                <p class="text-sm text-[#5b6375]">
+                    Activating this capstone year will archive the currently active capstone year and restore the groups and students associated with <strong id="activate_year_name" class="text-[#0a1428]"></strong>.
+                </p>
+                <p class="text-sm text-[#5b6375] font-semibold">Continue?</p>
+                <div class="flex justify-end gap-2 pt-3">
+                    <button type="button" onclick="closeModal('activate_year_modal')" class="btn-ghost">Cancel</button>
+                    <button type="submit" class="btn-primary bg-green-600 hover:bg-green-700">Yes, Activate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ARCHIVE CAPSTONE YEAR MODAL -->
+    <div id="archive_year_modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-accent" style="background: #d97706;"></div>
+            <div class="flex justify-between items-center mb-4">
+                <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);" id="archive_year_title_lbl">Archive Capstone Year?</h2>
+                <button type="button" onclick="closeModal('archive_year_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
+            </div>
+            <form id="archive_year_form" action="" method="POST" class="space-y-4">
+                @csrf
+                <p class="text-sm text-[#5b6375]">
+                    This will remove <strong id="archive_year_name" class="text-[#0a1428]"></strong> from the active capstone system, but all students, groups, milestones, evaluations, rooms, and historical records will remain in the system.
+                </p>
+                <p class="text-sm text-[#5b6375] font-semibold">Continue?</p>
+                <div class="flex justify-end gap-2 pt-3">
+                    <button type="button" onclick="closeModal('archive_year_modal')" class="btn-ghost">Cancel</button>
+                    <button type="submit" class="btn-primary bg-amber-500 hover:bg-amber-600">Yes, Archive</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- DELETE CAPSTONE YEAR MODAL -->
+    <div id="delete_year_modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-accent" style="background: #dc2626;"></div>
+            <div class="flex justify-between items-center mb-4">
+                <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">Confirm Year Deletion</h2>
+                <button type="button" onclick="closeModal('delete_year_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
+            </div>
+            <form id="delete_year_form" action="" method="POST" class="space-y-4">
+                @csrf
+                <div class="bg-red-50 border border-red-200 text-red-800 p-3 rounded-xl text-xs">
+                    <span class="font-bold"><i class="fas fa-exclamation-triangle"></i> DANGER: Permanent Cascading Deletion</span>
+                    <p class="mt-1">This will permanently delete the capstone year <strong id="delete_year_name" class="text-red-950"></strong> and ALL of its associated student profiles, user accounts, groups, milestones, evaluations, and progress records. This action is irreversible.</p>
+                </div>
+                <div>
+                    <label class="form-label text-xs font-semibold uppercase text-[#5b6375]">Confirm Your Admin Password</label>
+                    <div class="relative mt-1">
+                        <input type="password" name="admin_password" id="delete_year_admin_password" class="form-input pr-10" placeholder="Enter your password" required>
+                        <button type="button" class="password-toggle absolute right-3 top-1/2 -translate-y-1/2 text-[#5b6375] hover:text-[#0a1428]" onclick="toggleVisibility('delete_year_admin_password', this)"><i class="fa-regular fa-eye"></i></button>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-3">
+                    <button type="button" onclick="closeModal('delete_year_modal')" class="btn-ghost">Cancel</button>
+                    <button type="submit" class="btn-primary bg-red-600 hover:bg-red-700">Yes, Permanently Delete</button>
+                </div>
             </form>
         </div>
     </div>
@@ -3458,6 +3632,167 @@ document.getElementById('ca_group_select').addEventListener('change', function()
             document.getElementById('delete_teacher_name').textContent = name;
             openModal('delete_teacher_modal');
         }
+
+        // ----- EDIT CAPSTONE STAGE MODAL -----
+        window.openEditStageModal = function(id, title, type) {
+            document.getElementById('edit_stage_form').action = `/admin/capstone/update-stage/${id}`;
+            document.getElementById('edit_stage_title').value = title;
+            document.getElementById('edit_stage_type').value = type;
+            openModal('edit_stage_modal');
+        }
+
+        // ----- EDIT CAPSTONE YEAR MODAL -----
+        window.openEditYearModal = function(id, year, c1, c2) {
+            document.getElementById('edit_year_form').action = `/admin/capstone/update-year/${id}`;
+            document.getElementById('edit_year_title').value = year;
+            document.getElementById('edit_year_c1').checked = !!c1;
+            document.getElementById('edit_year_c2').checked = !!c2;
+            document.getElementById('edit_year_form').dataset.originalYear = year;
+            if (typeof window.syncEditYearCheckboxes === 'function') {
+                window.syncEditYearCheckboxes();
+            }
+            openModal('edit_year_modal');
+        }
+
+        // ----- ACTIVATE CAPSTONE YEAR MODAL -----
+        window.confirmActivateYear = function(id, year) {
+            document.getElementById('activate_year_form').action = `/admin/capstone/activate-year/${id}`;
+            document.getElementById('activate_year_name').textContent = year;
+            openModal('activate_year_modal');
+        }
+
+        // ----- ARCHIVE CAPSTONE YEAR MODAL -----
+        window.confirmArchiveYear = function(id, year) {
+            document.getElementById('archive_year_form').action = `/admin/capstone/archive-year/${id}`;
+            document.getElementById('archive_year_name').textContent = year;
+            openModal('archive_year_modal');
+        }
+
+        // ----- DELETE CAPSTONE YEAR MODAL -----
+        window.openDeleteYearModal = function(id, year) {
+            document.getElementById('delete_year_form').action = `/admin/capstone/delete-year/${id}`;
+            document.getElementById('delete_year_name').textContent = year;
+            document.getElementById('delete_year_admin_password').value = '';
+            openModal('delete_year_modal');
+        }
+
+        // ----- CAPSTONE STAGES TOGGLE EXCLUSION & UNIQUE YEAR VALIDATION -----
+        document.addEventListener('DOMContentLoaded', function() {
+            const addC1 = document.getElementById('add_year_c1');
+            const addC2 = document.getElementById('add_year_c2');
+            const editC1 = document.getElementById('edit_year_c1');
+            const editC2 = document.getElementById('edit_year_c2');
+
+            function syncCheckboxStyles(c1, c2) {
+                if (c1 && c2) {
+                    if (c1.checked) {
+                        c1.classList.add('opacity-70', 'cursor-not-allowed');
+                        c1.parentElement.classList.add('opacity-70', 'cursor-not-allowed');
+                        c2.classList.remove('opacity-70', 'cursor-not-allowed');
+                        c2.parentElement.classList.remove('opacity-70', 'cursor-not-allowed');
+                    } else if (c2.checked) {
+                        c2.classList.add('opacity-70', 'cursor-not-allowed');
+                        c2.parentElement.classList.add('opacity-70', 'cursor-not-allowed');
+                        c1.classList.remove('opacity-70', 'cursor-not-allowed');
+                        c1.parentElement.classList.remove('opacity-70', 'cursor-not-allowed');
+                    }
+                }
+            }
+
+            if (addC1 && addC2) {
+                addC1.addEventListener('click', function(e) {
+                    if (addC1.checked) {
+                        addC2.checked = false;
+                    } else {
+                        addC1.checked = true; // prevent unchecking the only checked stage
+                    }
+                    syncCheckboxStyles(addC1, addC2);
+                });
+                addC2.addEventListener('click', function(e) {
+                    if (addC2.checked) {
+                        addC1.checked = false;
+                    } else {
+                        addC2.checked = true; // prevent unchecking the only checked stage
+                    }
+                    syncCheckboxStyles(addC1, addC2);
+                });
+                // Initialize styles
+                syncCheckboxStyles(addC1, addC2);
+            }
+
+            if (editC1 && editC2) {
+                editC1.addEventListener('click', function(e) {
+                    if (editC1.checked) {
+                        editC2.checked = false;
+                    } else {
+                        editC1.checked = true; // prevent unchecking the only checked stage
+                    }
+                    syncCheckboxStyles(editC1, editC2);
+                });
+                editC2.addEventListener('click', function(e) {
+                    if (editC2.checked) {
+                        editC1.checked = false;
+                    } else {
+                        editC2.checked = true; // prevent unchecking the only checked stage
+                    }
+                    syncCheckboxStyles(editC1, editC2);
+                });
+            }
+
+            // Expose sync to global scope so openEditYearModal can call it
+            window.syncEditYearCheckboxes = function() {
+                syncCheckboxStyles(editC1, editC2);
+            };
+
+            // Uniqueness and validation checks on form submission
+            const addForm = document.querySelector('#add_year_modal form');
+            if (addForm) {
+                addForm.addEventListener('submit', function(e) {
+                    const yearInput = addForm.querySelector('input[name="year"]');
+                    const normalizedYear = (yearInput ? yearInput.value : '').replace(/-/g, '–').trim();
+                    const existingYears = @json($capstoneYears->pluck('year'));
+
+                    if (existingYears.includes(normalizedYear)) {
+                        e.preventDefault();
+                        showToast(`Capstone year ${normalizedYear} already exists.`, true);
+                        return false;
+                    }
+
+                    const c1Checked = document.getElementById('add_year_c1').checked;
+                    const c2Checked = document.getElementById('add_year_c2').checked;
+                    if (!c1Checked && !c2Checked) {
+                        e.preventDefault();
+                        showToast('Please enable at least one capstone stage.', true);
+                        return false;
+                    }
+                });
+            }
+
+            const editForm = document.getElementById('edit_year_form');
+            if (editForm) {
+                editForm.addEventListener('submit', function(e) {
+                    const yearInput = editForm.querySelector('#edit_year_title');
+                    const normalizedYear = (yearInput ? yearInput.value : '').replace(/-/g, '–').trim();
+                    const originalYear = editForm.dataset.originalYear;
+                    const existingYears = @json($capstoneYears->pluck('year'));
+
+                    if (normalizedYear !== originalYear && existingYears.includes(normalizedYear)) {
+                        e.preventDefault();
+                        showToast(`Capstone year ${normalizedYear} already exists.`, true);
+                        return false;
+                    }
+
+                    const c1Checked = document.getElementById('edit_year_c1').checked;
+                    const c2Checked = document.getElementById('edit_year_c2').checked;
+                    if (!c1Checked && !c2Checked) {
+                        e.preventDefault();
+                        showToast('Please enable at least one capstone stage.', true);
+                        return false;
+                    }
+                });
+            }
+        });
+
         // ----- CREATE GROUP MODAL (ADMIN) -----
 const sectionSelect = document.getElementById('sectionSelect');
 const studentSelect = document.getElementById('studentSelect');

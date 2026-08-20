@@ -198,7 +198,7 @@ class DashboardRubricsTest extends TestCase
         $evaluation = $data['evaluations'][0];
         $this->assertEquals(90.00, $evaluation['score']);
         $this->assertEquals('Excellent work!', $evaluation['feedback']);
-        $this->assertEquals('Jane', $evaluation['teacher_name']);
+        $this->assertEquals('Jane Smith', $evaluation['teacher_name']);
         $this->assertNotEmpty($evaluation['criteria']);
         
         // Assert criteria scores are returned

@@ -13,6 +13,7 @@ class Group extends Model
         'section_id',
         'room_id',
         'capstone_stage_id',
+        'capstone_year_id',
         'is_archived',
         'archived_year',
         'revision_status',
@@ -22,6 +23,11 @@ class Group extends Model
     protected $casts = [
         'is_archived' => 'boolean',
     ];
+
+    public function capstoneYear()
+    {
+        return $this->belongsTo(CapstoneYear::class, 'capstone_year_id');
+    }
 
     public function capstoneStage()
     {

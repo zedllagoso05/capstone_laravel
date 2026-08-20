@@ -1398,7 +1398,7 @@
                             <div class="eval-item">
                                 <div>
                                     <p class="text-sm font-medium text-[#0a1428]">{{ $eval->milestone->milestone_title ?? 'Evaluation' }}</p>
-                                    <p class="eval-meta">{{ $eval->teacher->user->name ?? 'Teacher' }} • {{ \Carbon\Carbon::parse($eval->evaluation_date)->format('M d, Y') }}</p>
+                                    <p class="eval-meta">{{ $eval->teacher ? $eval->teacher->teacher_first_name . ' ' . $eval->teacher->teacher_last_name : ($eval->teacher->user->name ?? 'Teacher') }} • {{ \Carbon\Carbon::parse($eval->evaluation_date)->format('M d, Y') }}</p>
                                 </div>
                                 <div class="eval-score">{{ $eval->score }}/{{ $eval->max_score }}</div>
                             </div>
@@ -1703,7 +1703,7 @@
                             <div class="flex-grow">
                                 <h3 class="text-lg font-bold" style="color: #92400e;">Active Revision Request</h3>
                                 <p class="text-sm mt-1" style="color: #b45309;">
-                                    The panel has requested revisions for your group. Review the instructions below, implement the changes, and inform your adviser <strong>{{ $adviser?->user?->name ?? 'your adviser' }}</strong> when ready.
+                                    The panel has requested revisions for your group. Review the instructions below, implement the changes, and inform your adviser <strong>{{ $adviser ? $adviser->teacher_first_name . ' ' . $adviser->teacher_last_name : 'your adviser' }}</strong> when ready.
                                 </p>
                                 <div class="bg-white border rounded-lg p-4 mt-4 shadow-sm" style="border-color: #fde68a;">
                                     <span class="text-xs font-bold uppercase tracking-wider" style="color: #d97706;">Revision Instructions</span>
@@ -1759,7 +1759,7 @@
                                         <div>
                                             <h3 class="text-lg font-bold text-[#0a1428]">{{ $eval->milestone->milestone_title ?? 'Evaluation' }}</h3>
                                             <p class="text-xs text-[#5b6375] mt-1">
-                                                Evaluated by <strong>{{ $eval->teacher->user->name ?? 'Teacher' }}</strong> on {{ \Carbon\Carbon::parse($eval->evaluation_date)->format('M d, Y') }}
+                                                Evaluated by <strong>{{ $eval->teacher ? $eval->teacher->teacher_first_name . ' ' . $eval->teacher->teacher_last_name : ($eval->teacher->user->name ?? 'Teacher') }}</strong> on {{ \Carbon\Carbon::parse($eval->evaluation_date)->format('M d, Y') }}
                                             </p>
                                         </div>
                                         <div class="flex items-center gap-2">

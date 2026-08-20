@@ -17,11 +17,17 @@ class Student extends Model
         'course',
         'section',
         'is_archived',
+        'capstone_year_id',
     ];
 
     protected $casts = [
         'is_archived' => 'boolean',
     ];
+
+    public function capstoneYear()
+    {
+        return $this->belongsTo(CapstoneYear::class, 'capstone_year_id');
+    }
 
     public function user()
     {

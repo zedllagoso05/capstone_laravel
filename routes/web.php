@@ -128,6 +128,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/capstone/archive',      [user_controller::class, 'archiveCapstoneByYear'])->name('admin.archive_capstone_by_year');
         Route::post('/capstone/enable-year',  [user_controller::class, 'enableCapstoneYear'])->name('admin.enable_capstone_year');
         Route::post('/capstone/add-year',     [user_controller::class, 'addCapstoneYear'])->name('admin.add_capstone_year');
+        Route::post('/capstone/restore-group/{id}', [user_controller::class, 'restoreGroup'])->name('admin.restore_group');
+        Route::post('/capstone/delete-archived-group/{id}', [user_controller::class, 'deleteArchivedGroup'])->name('admin.delete_archived_group');
+        Route::post('/capstone/add-stage', [user_controller::class, 'addCapstoneStage'])->name('admin.add_capstone_stage');
+        Route::post('/capstone/update-stage/{id}', [user_controller::class, 'updateCapstoneStage'])->name('admin.update_capstone_stage');
+        Route::post('/capstone/delete-stage/{id}', [user_controller::class, 'deleteCapstoneStage'])->name('admin.delete_capstone_stage');
+        Route::post('/capstone/activate-year/{id}', [user_controller::class, 'activateCapstoneYear'])->name('admin.activate_capstone_year');
+        Route::post('/capstone/archive-year/{id}', [user_controller::class, 'archiveCapstoneYear'])->name('admin.archive_capstone_year');
+        Route::post('/capstone/update-year/{id}', [user_controller::class, 'updateCapstoneYear'])->name('admin.update_capstone_year');
+        Route::post('/capstone/delete-year/{id}', [user_controller::class, 'deleteCapstoneYear'])->name('admin.delete_capstone_year');
     });
 
     /*
