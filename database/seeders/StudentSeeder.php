@@ -16,7 +16,7 @@ class StudentSeeder extends Seeder
             [
                 'id'                  => 1,
                 'user_id'             => '2023-1418',
-                'student_first_name'  => 'ZED',
+                'student_first_name'  => 'ZED LAURENCE',
                 'student_last_name'   => 'LLAGOSO',
                 'student_email'       => 'zedllagoso8grapes_student@gmail.com', // changed to avoid duplicate with teacher
                 'student_middle_name' => 'CANALES',

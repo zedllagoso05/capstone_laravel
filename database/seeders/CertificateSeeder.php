@@ -14,9 +14,7 @@ class CertificateSeeder extends Seeder
     public function run(): void
     {
         // 1. Try to find milestone IDs by step_order
-        $m6 = DB::table('milestones')->where('step_order', 6)->value('id');
-        $m12 = DB::table('milestones')->where('step_order', 12)->value('id');
-        $m18 = DB::table('milestones')->where('step_order', 18)->value('id');
+        $m5 = DB::table('milestones')->where('step_order', 5)->value('id');
 
         // 2. If any of them are null, try to fallback to first available milestones in the table
         $allMilestones = DB::table('milestones')->pluck('id')->toArray();
@@ -32,27 +30,16 @@ class CertificateSeeder extends Seeder
             $allMilestones = [$fallbackId];
         }
 
-        $m6 = $m6 ?? $allMilestones[0] ?? null;
-        $m12 = $m12 ?? $allMilestones[1] ?? $allMilestones[0] ?? null;
-        $m18 = $m18 ?? $allMilestones[2] ?? $allMilestones[0] ?? null;
+        $m5 = $m5 ?? $allMilestones[0] ?? null;
 
-        if ($m6 && $m12 && $m18) {
+        if ($m5 !== null) {
             DB::table('certificates')->insert([
                 [
-                    'certificate_title' => 'Certificate of Completion',
-                    'certificate_description' => 'Awarded for successfully completing the course.',
-                    'milestone_id' => $m6,
+                    'certificate_title' => 'Recommendation Sheet',
+                    'certificate_description' => 'partial fulfillment of the requirements for the degree of Bachelor of Science in Information Technology has been examined, accepted, and recommended for Oral Presentation.',
+                    'milestone_id' => $m5,
                 ],
-                [
-                    'certificate_title' => 'Certificate of Achievement',
-                    'certificate_description' => 'Recognizes outstanding performance in the program.',
-                    'milestone_id' => $m12,
-                ],
-                [
-                    'certificate_title' => 'Certificate of Excellence',
-                    'certificate_description' => 'Given to individuals who demonstrate exceptional skills and dedication.',
-                    'milestone_id' => $m18,
-                ],
+
             ]);
         }
     }

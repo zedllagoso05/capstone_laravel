@@ -2448,10 +2448,13 @@ public function showCertificate($groupId, $certificateId)
         );
     })->filter()->values()->all();
 
-    $adviserName = $group->adviser
-        ? trim($group->adviser->teacher_first_name . ' ' . $group->adviser->teacher_last_name)
-        : null;
-
+$adviserName = $group->adviser
+    ? trim(
+        $group->adviser->teacher_first_name . ' ' .
+        ($group->adviser->teacher_middle_name ? substr($group->adviser->teacher_middle_name, 0, 1) . '.' : '') . ' ' .
+        $group->adviser->teacher_last_name
+    )
+    : null;
     return view('certificates.print', [
         'certificate'  => $certificate,
         'group'        => $group,
@@ -2809,30 +2812,32 @@ public function showCertificate($groupId, $certificateId)
     }
 
     // ── TOGGLE CAPSTONE STAGE ───────────────────────────────────────
-    public function toggleCapstoneStage(Request $request)
-    {
-        if (Auth::user()->role !== 'admin') {
-            abort(403, 'Unauthorized.');
-        }
-
-        $request->validate([
-            'stage_id' => 'required|exists:capstone_stages,id',
-        ]);
-
-        $stage = CapstoneStages::findOrFail($request->stage_id);
-        
-        if (!$stage->is_enabled) {
-            // Disable all other active (non-archived) capstone stages
-            CapstoneStages::where('is_archived', false)->update(['is_enabled' => 0]);
-            $stage->is_enabled = 1;
-        } else {
-            $stage->is_enabled = 0;
-        }
-        $stage->save();
-
-        $status = $stage->is_enabled ? 'enabled' : 'disabled';
-        return back()->with('success', "{$stage->stage_title} has been {$status} successfully.");
+   public function toggleCapstoneStage(Request $request)
+{
+    if (Auth::user()->role !== 'admin') {
+        abort(403, 'Unauthorized.');
     }
+ 
+    $request->validate([
+        'stage_id' => 'required|exists:capstone_stages,id',
+    ]);
+ 
+    $stage = CapstoneStages::findOrFail($request->stage_id);
+ 
+    $stage->is_enabled = ! $stage->is_enabled;
+    $stage->save();
+ 
+    // Single source of truth: mirror this stage's status onto its
+    // capstone_years row so the dashboard header and any other reader of
+    // capstone_years.capstone_1_enabled/2_enabled stay correct.
+    if ($stage->capstone_year_id) {
+        $field = $stage->stage_type == 1 ? 'capstone_1_enabled' : 'capstone_2_enabled';
+        CapstoneYear::where('id', $stage->capstone_year_id)->update([$field => $stage->is_enabled]);
+    }
+ 
+    $status = $stage->is_enabled ? 'enabled' : 'disabled';
+    return back()->with('success', "{$stage->stage_title} has been {$status} successfully.");
+}
 
     // ── ARCHIVE CAPSTONE BY YEAR ────────────────────────────────────
     public function archiveCapstoneByYear(Request $request)
@@ -2954,206 +2959,221 @@ public function showCertificate($groupId, $certificateId)
      * Add a new capstone year.
      */
     public function addCapstoneYear(Request $request)
-    {
-        if (Auth::user()->role !== 'admin') {
-            abort(403, 'Unauthorized.');
-        }
-
-        $validated = $request->validate([
-            'year' => 'required|string|regex:/^\d{4}/',
-            'capstone_1_enabled' => 'nullable|boolean',
-            'capstone_2_enabled' => 'nullable|boolean',
-            'is_active' => 'nullable|boolean',
-        ]);
-
-        $year = str_replace('-', '–', $validated['year']);
-
-        if (CapstoneYear::where('year', $year)->exists()) {
-            return back()->withErrors(['year' => "Capstone year {$year} already exists."]);
-        }
-
-        $isActive = !empty($request->is_active);
-
-        DB::transaction(function () use ($year, $isActive, $request) {
-            if ($isActive) {
-                // Deactivate others
-                CapstoneYear::where('is_active', true)->update([
-                    'is_active' => false,
-                    'archived_at' => now(),
-                ]);
-                
-                // Hide/archive groups and students of currently active year
-                Group::where('is_archived', false)->update(['is_archived' => true]);
-                Student::where('is_archived', false)->update(['is_archived' => true]);
-            }
-
-            $newYear = CapstoneYear::create([
-                'year' => $year,
-                'is_active' => $isActive,
-                'capstone_1_enabled' => $request->has('capstone_1_enabled'),
-                'capstone_2_enabled' => $request->has('capstone_2_enabled'),
-                'archived_at' => $isActive ? null : now(),
-            ]);
-
-            // Automatically create Capstone 1 Stage for this new year
-            $c1Stage = CapstoneStages::create([
-                'stage_title' => "Capstone 1 - {$year}",
-                'stage_type' => 1,
-                'is_enabled' => $newYear->capstone_1_enabled,
-                'is_archived' => !$isActive,
-                'archived_year' => $isActive ? null : (int) substr($year, 0, 4),
-                'capstone_year_id' => $newYear->id,
-            ]);
-
-            // Automatically create Capstone 2 Stage for this new year
-            $c2Stage = CapstoneStages::create([
-                'stage_title' => "Capstone 2 - {$year}",
-                'stage_type' => 2,
-                'is_enabled' => $newYear->capstone_2_enabled,
-                'is_archived' => !$isActive,
-                'archived_year' => $isActive ? null : (int) substr($year, 0, 4),
-                'capstone_year_id' => $newYear->id,
-            ]);
-
-            // Clone milestones from the most recent active stage of type 1
-            $latestC1Stage = CapstoneStages::where('stage_type', 1)
-                ->where('id', '!=', $c1Stage->id)
-                ->latest('id')
-                ->first();
-            if ($latestC1Stage) {
-                $milestones = Milestone::where('capstone_stage_id', $latestC1Stage->id)->get();
-                foreach ($milestones as $m) {
-                    Milestone::create([
-                        'milestone_title' => $m->milestone_title,
-                        'milestone_description' => $m->milestone_description,
-                        'capstone_stage_id' => $c1Stage->id,
-                        'step_order' => $m->step_order,
-                        'start_date' => $m->start_date,
-                        'due_date' => $m->due_date,
-                    ]);
-                }
-            } else {
-                // Create default Capstone 1 milestones
-                Milestone::create([
-                    'milestone_title' => 'Proposal hearing',
-                    'milestone_description' => 'Proposal hearing milestone',
-                    'capstone_stage_id' => $c1Stage->id,
-                    'step_order' => 1,
-                    'start_date' => now()->toDateString(),
-                    'due_date' => now()->addDays(14)->toDateString(),
-                ]);
-            }
-
-            // Clone milestones from the most recent active stage of type 2
-            $latestC2Stage = CapstoneStages::where('stage_type', 2)
-                ->where('id', '!=', $c2Stage->id)
-                ->latest('id')
-                ->first();
-            if ($latestC2Stage) {
-                $milestones = Milestone::where('capstone_stage_id', $latestC2Stage->id)->get();
-                foreach ($milestones as $m) {
-                    Milestone::create([
-                        'milestone_title' => $m->milestone_title,
-                        'milestone_description' => $m->milestone_description,
-                        'capstone_stage_id' => $c2Stage->id,
-                        'step_order' => $m->step_order,
-                        'start_date' => $m->start_date,
-                        'due_date' => $m->due_date,
-                    ]);
-                }
-            } else {
-                // Create default Capstone 2 milestones
-                Milestone::create([
-                    'milestone_title' => 'Oral presentation',
-                    'milestone_description' => 'Oral presentation milestone',
-                    'capstone_stage_id' => $c2Stage->id,
-                    'step_order' => 1,
-                    'start_date' => now()->toDateString(),
-                    'due_date' => now()->addDays(14)->toDateString(),
-                ]);
-            }
-
-            // Save year string into Settings custom_years for legacy support
-            $customYears = \App\Models\Setting::get('custom_years', '');
-            $yearsArray = $customYears ? explode(',', $customYears) : [];
-            if (!in_array($year, $yearsArray)) {
-                $yearsArray[] = $year;
-                sort($yearsArray);
-                \App\Models\Setting::set('custom_years', implode(',', $yearsArray));
-            }
-            if ($isActive) {
-                \App\Models\Setting::set('active_year', $year);
-            }
-        });
-
-        return back()->with('success', "Capstone year {$year} added successfully.");
+{
+    if (Auth::user()->role !== 'admin') {
+        abort(403, 'Unauthorized.');
     }
-
+ 
+    $validated = $request->validate([
+        'year' => 'required|string|regex:/^\d{4}/',
+        'capstone_1_enabled' => 'nullable|boolean',
+        'capstone_2_enabled' => 'nullable|boolean',
+        'is_active' => 'nullable|boolean',
+    ]);
+ 
+    $year = str_replace('-', '–', $validated['year']);
+ 
+    if (CapstoneYear::where('year', $year)->exists()) {
+        return back()->withErrors(['year' => "Capstone year {$year} already exists."]);
+    }
+ 
+    $isActive = !empty($request->is_active);
+ 
+    DB::transaction(function () use ($year, $isActive, $request) {
+        if ($isActive) {
+            $previouslyActive = CapstoneYear::where('is_active', true)->get();
+ 
+            foreach ($previouslyActive as $prevYear) {
+                $prevYear->update(['is_active' => false, 'archived_at' => now()]);
+ 
+                Group::where('capstone_year_id', $prevYear->id)->update(['is_archived' => true]);
+                Student::where('capstone_year_id', $prevYear->id)->update(['is_archived' => true]);
+ 
+                // NEW: cascade archive onto the old year's Capstone 1/2 records
+                CapstoneStages::where('capstone_year_id', $prevYear->id)->update([
+                    'is_archived' => true,
+                    'archived_year' => (int) substr($prevYear->year, 0, 4),
+                ]);
+            }
+        }
+ 
+        $newYear = CapstoneYear::create([
+            'year' => $year,
+            'is_active' => $isActive,
+            'capstone_1_enabled' => $request->has('capstone_1_enabled'),
+            'capstone_2_enabled' => $request->has('capstone_2_enabled'),
+            'archived_at' => $isActive ? null : now(),
+        ]);
+ 
+        $c1Stage = CapstoneStages::create([
+            'stage_title' => "Capstone 1 - {$year}",
+            'stage_type' => 1,
+            'is_enabled' => $newYear->capstone_1_enabled,
+            'is_archived' => !$isActive,
+            'archived_year' => $isActive ? null : (int) substr($year, 0, 4),
+            'capstone_year_id' => $newYear->id,
+        ]);
+ 
+        $c2Stage = CapstoneStages::create([
+            'stage_title' => "Capstone 2 - {$year}",
+            'stage_type' => 2,
+            'is_enabled' => $newYear->capstone_2_enabled,
+            'is_archived' => !$isActive,
+            'archived_year' => $isActive ? null : (int) substr($year, 0, 4),
+            'capstone_year_id' => $newYear->id,
+        ]);
+ 
+        $latestC1Stage = CapstoneStages::where('stage_type', 1)
+            ->where('id', '!=', $c1Stage->id)
+            ->latest('id')
+            ->first();
+        if ($latestC1Stage) {
+            $milestones = Milestone::where('capstone_stage_id', $latestC1Stage->id)->get();
+            foreach ($milestones as $m) {
+                Milestone::create([
+                    'milestone_title' => $m->milestone_title,
+                    'milestone_description' => $m->milestone_description,
+                    'capstone_stage_id' => $c1Stage->id,
+                    'step_order' => $m->step_order,
+                    'start_date' => $m->start_date,
+                    'due_date' => $m->due_date,
+                ]);
+            }
+        } else {
+            Milestone::create([
+                'milestone_title' => 'Proposal hearing',
+                'milestone_description' => 'Proposal hearing milestone',
+                'capstone_stage_id' => $c1Stage->id,
+                'step_order' => 1,
+                'start_date' => now()->toDateString(),
+                'due_date' => now()->addDays(14)->toDateString(),
+            ]);
+        }
+ 
+        $latestC2Stage = CapstoneStages::where('stage_type', 2)
+            ->where('id', '!=', $c2Stage->id)
+            ->latest('id')
+            ->first();
+        if ($latestC2Stage) {
+            $milestones = Milestone::where('capstone_stage_id', $latestC2Stage->id)->get();
+            foreach ($milestones as $m) {
+                Milestone::create([
+                    'milestone_title' => $m->milestone_title,
+                    'milestone_description' => $m->milestone_description,
+                    'capstone_stage_id' => $c2Stage->id,
+                    'step_order' => $m->step_order,
+                    'start_date' => $m->start_date,
+                    'due_date' => $m->due_date,
+                ]);
+            }
+        } else {
+            Milestone::create([
+                'milestone_title' => 'Oral presentation',
+                'milestone_description' => 'Oral presentation milestone',
+                'capstone_stage_id' => $c2Stage->id,
+                'step_order' => 1,
+                'start_date' => now()->toDateString(),
+                'due_date' => now()->addDays(14)->toDateString(),
+            ]);
+        }
+ 
+        $customYears = \App\Models\Setting::get('custom_years', '');
+        $yearsArray = $customYears ? explode(',', $customYears) : [];
+        if (!in_array($year, $yearsArray)) {
+            $yearsArray[] = $year;
+            sort($yearsArray);
+            \App\Models\Setting::set('custom_years', implode(',', $yearsArray));
+        }
+        if ($isActive) {
+            \App\Models\Setting::set('active_year', $year);
+        }
+    });
+ 
+    return back()->with('success', "Capstone year {$year} added successfully.");
+}
     /**
      * Activate a capstone year, archiving the current one and restoring groups/students.
      */
     public function activateCapstoneYear($id)
-    {
-        if (Auth::user()->role !== 'admin') {
-            abort(403, 'Unauthorized.');
-        }
-
-        $targetYear = CapstoneYear::findOrFail($id);
-
-        DB::transaction(function () use ($targetYear) {
-            // Archive current active years
-            $activeYears = CapstoneYear::where('is_active', true)->get();
-            foreach ($activeYears as $activeYear) {
-                $activeYear->update([
-                    'is_active' => false,
-                    'archived_at' => now(),
-                ]);
-                
-                // Archive groups and students belonging to this previous year
-                Group::where('capstone_year_id', $activeYear->id)->update(['is_archived' => true]);
-                Student::where('capstone_year_id', $activeYear->id)->update(['is_archived' => true]);
-            }
-
-            // Activate target year
-            $targetYear->update([
-                'is_active' => true,
-                'archived_at' => null,
-            ]);
-
-            \App\Models\Setting::set('active_year', $targetYear->year);
-
-            // Restore target year groups and students
-            Group::where('capstone_year_id', $targetYear->id)->update(['is_archived' => false]);
-            Student::where('capstone_year_id', $targetYear->id)->update(['is_archived' => false]);
-        });
-
-        return back()->with('success', "Capstone year {$targetYear->year} has been successfully activated.");
+{
+    if (Auth::user()->role !== 'admin') {
+        abort(403, 'Unauthorized.');
     }
+ 
+    $targetYear = CapstoneYear::findOrFail($id);
+ 
+    DB::transaction(function () use ($targetYear) {
+        // Archive whatever year(s) are currently active
+        $activeYears = CapstoneYear::where('is_active', true)
+            ->where('id', '!=', $targetYear->id)
+            ->get();
+ 
+        foreach ($activeYears as $activeYear) {
+            $activeYear->update([
+                'is_active' => false,
+                'archived_at' => now(),
+            ]);
+ 
+            Group::where('capstone_year_id', $activeYear->id)->update(['is_archived' => true]);
+            Student::where('capstone_year_id', $activeYear->id)->update(['is_archived' => true]);
+ 
+            // Cascade: Capstone 1 & 2 records under this year are now archived
+            CapstoneStages::where('capstone_year_id', $activeYear->id)->update([
+                'is_archived' => true,
+                'archived_year' => (int) substr($activeYear->year, 0, 4),
+            ]);
+        }
+ 
+        // Activate target year
+        $targetYear->update([
+            'is_active' => true,
+            'archived_at' => null,
+        ]);
+ 
+        \App\Models\Setting::set('active_year', $targetYear->year);
+ 
+        // Restore target year groups, students, and its Capstone 1/2 records
+        Group::where('capstone_year_id', $targetYear->id)->update(['is_archived' => false]);
+        Student::where('capstone_year_id', $targetYear->id)->update(['is_archived' => false]);
+        CapstoneStages::where('capstone_year_id', $targetYear->id)->update([
+            'is_archived' => false,
+            'archived_year' => null,
+        ]);
+    });
+ 
+    return back()->with('success', "Capstone year {$targetYear->year} has been successfully activated.");
+}
+ 
 
     /**
      * Archive a capstone year.
      */
-    public function archiveCapstoneYear($id)
-    {
-        if (Auth::user()->role !== 'admin') {
-            abort(403, 'Unauthorized.');
-        }
-
-        $targetYear = CapstoneYear::findOrFail($id);
-
-        DB::transaction(function () use ($targetYear) {
-            $targetYear->update([
-                'is_active' => false,
-                'archived_at' => now(),
-            ]);
-
-            Group::where('capstone_year_id', $targetYear->id)->update(['is_archived' => true]);
-            Student::where('capstone_year_id', $targetYear->id)->update(['is_archived' => true]);
-        });
-
-        return back()->with('success', "Capstone year {$targetYear->year} has been archived.");
+   public function archiveCapstoneYear($id)
+{
+    if (Auth::user()->role !== 'admin') {
+        abort(403, 'Unauthorized.');
     }
-
+ 
+    $targetYear = CapstoneYear::findOrFail($id);
+ 
+    DB::transaction(function () use ($targetYear) {
+        $targetYear->update([
+            'is_active' => false,
+            'archived_at' => now(),
+        ]);
+ 
+        Group::where('capstone_year_id', $targetYear->id)->update(['is_archived' => true]);
+        Student::where('capstone_year_id', $targetYear->id)->update(['is_archived' => true]);
+ 
+        // Cascade: this year's Capstone 1 & 2 records inherit the archived status
+        CapstoneStages::where('capstone_year_id', $targetYear->id)->update([
+            'is_archived' => true,
+            'archived_year' => (int) substr($targetYear->year, 0, 4),
+        ]);
+    });
+ 
+    return back()->with('success', "Capstone year {$targetYear->year} has been archived.");
+}
     /**
      * Update an existing capstone year configurations.
      */

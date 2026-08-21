@@ -1038,13 +1038,15 @@
 
        <!-- ==================== RUBRICS ==================== -->
 <div id="rubrics-section" class="section-container hidden section-card">
-    <div class="mb-8">
-        <h1>Rubrics</h1>
-        <div class="gold-accent-line"></div>
-        <p class="text-[#5b6375] mt-2 text-sm">Create and manage evaluation rubrics for each capstone stage.</p>
+    <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+            <h1>Rubrics</h1>
+            <div class="gold-accent-line"></div>
+            <p class="text-[#5b6375] mt-2 text-sm">Create and manage evaluation rubrics for each capstone stage.</p>
+        </div>
+        
     </div>
 
-    <!-- Action buttons (no filter here) -->
     <div class="flex flex-wrap items-center justify-end gap-3 mb-5">
         <button onclick="openModal('rearrange_milestones_modal')" class="btn-primary text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-md"><i class="fas fa-sort mr-1"></i> Rearrange Step Order</button>
         <button onclick="openModal('milestone_modal')" class="btn-primary text-sm"><i class="fas fa-plus mr-1"></i> Add Milestone</button>
@@ -1055,25 +1057,29 @@
         <div class="card-accent"></div>
         <div class="p-6">
             <div class="flex justify-between items-center mb-4">
-                <div class="flex items-center gap-4">
-                    <h3 class="whitespace-nowrap">All Milestones</h3>
-                </div>
+                <h3 class="whitespace-nowrap">All Milestones</h3>
                 <button type="button" class="toggle-section-btn text-[#5b6375] hover:text-[#0a1428] transition-transform duration-200" data-target="milestones-list">
                     <i class="fa-solid fa-chevron-up"></i>
                 </button>
             </div>
             <div id="milestones-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                @forelse($milestones as $milestone)
-                <div class="bg-[#faf8f4] border border-[#e2dacf] rounded-xl p-5 hover:border-[#d6b15c] transition cursor-pointer group milestone-item" data-stage="{{ $milestone->capstone_stage_id }}">
+                @forelse($milestones->sortBy([['capstone_stage_id','asc'],['step_order','asc']]) as $milestone)
+                @php $stageType = $milestone->capstoneStage->stage_type ?? null; @endphp
+                <div class="bg-[#faf8f4] border border-[#e2dacf] rounded-xl p-5 hover:border-[#d6b15c] transition cursor-pointer group milestone-item" data-stage-type="{{ $stageType }}">
                     <div class="flex justify-between items-start">
-                        <h4 class="font-semibold text-sm text-[#0a1428]">{{ $milestone->milestone_title }}</h4>
+                        <div>
+                            <span class="text-[10px] font-bold text-[#b88d3a] uppercase tracking-wider">Step {{ $milestone->step_order }}</span>
+                            <h4 class="font-semibold text-sm text-[#0a1428]">{{ $milestone->milestone_title }}</h4>
+                        </div>
                         <div class="flex gap-3 text-[#5b6375] ml-2 opacity-0 group-hover:opacity-100 transition">
                             <button onclick="openEditMilestoneModal({{ $milestone->id }})" class="hover:text-[#0a1428]"><i class="fas fa-pen text-xs"></i></button>
                             <button onclick="openDeleteMilestoneModal({{$milestone->id}})" class="hover:text-red-500"><i class="fas fa-trash text-xs"></i></button>
                         </div>
                     </div>
                     <div class="flex flex-wrap gap-2 mt-3">
-                        <span class="badge badge-gold">{{ $milestone->milestone_title }}</span>
+                        <span class="px-2 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider {{ $stageType == 1 ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-amber-50 text-amber-700 border border-amber-200' }}">
+                            Capstone {{ $stageType ?? '?' }}
+                        </span>
                     </div>
                 </div>
                 @empty
@@ -1094,18 +1100,25 @@
                 </button>
             </div>
             <div id="rubrics-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                @forelse($rubrics as $rubric)
-                @php $stage = $rubric->milestone->capstone_stage_id ?? null; @endphp
-                <div class="bg-[#faf8f4] border border-[#e2dacf] rounded-xl p-5 hover:border-[#d6b15c] transition cursor-pointer group rubric-item" data-stage="{{ $stage }}">
+                @forelse($rubrics->sortBy(fn($r) => $r->milestone->step_order ?? 0) as $rubric)
+                @php $stageType = $rubric->milestone->capstoneStage->stage_type ?? null; @endphp
+                <div class="bg-[#faf8f4] border border-[#e2dacf] rounded-xl p-5 hover:border-[#d6b15c] transition cursor-pointer group rubric-item" data-stage-type="{{ $stageType }}">
                     <div class="flex justify-between items-start">
-                        <h4 class="font-semibold text-sm text-[#0a1428]">{{ $rubric->rubric_name }}</h4>
+                        <div>
+                            @if($rubric->milestone)
+                            <span class="text-[10px] font-bold text-[#b88d3a] uppercase tracking-wider">{{ $rubric->milestone->milestone_title }}</span>
+                            @endif
+                            <h4 class="font-semibold text-sm text-[#0a1428]">{{ $rubric->rubric_name }}</h4>
+                        </div>
                         <div class="flex gap-3 text-[#5b6375] ml-2 opacity-0 group-hover:opacity-100 transition">
                             <button onclick="openEditRubricModal({{ $rubric->id }})" class="hover:text-[#0a1428]"><i class="fas fa-pen text-xs"></i></button>
                             <button onclick="openDeleterubricModal({{$rubric->id}})" class="hover:text-red-500"><i class="fas fa-trash text-xs"></i></button>
                         </div>
                     </div>
                     <div class="flex flex-wrap gap-2 mt-3">
-                        <span class="badge badge-gold">{{ $stage == 1 ? 'Capstone 1' : ($stage == 2 ? 'Capstone 2' : 'No Stage') }}</span>
+                        <span class="px-2 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider {{ $stageType == 1 ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-amber-50 text-amber-700 border border-amber-200' }}">
+                            {{ $stageType == 1 ? 'Capstone 1' : ($stageType == 2 ? 'Capstone 2' : 'No Stage') }}
+                        </span>
                         <span class="badge badge-muted">{{ $rubric->criteria->count() }} Criteria</span>
                     </div>
                     <div class="flex gap-4 mt-3 text-sm text-[#5b6375]">
@@ -1454,21 +1467,21 @@
                                     <td class="p-3 pl-4 font-bold text-[#0a1428]">{{ $yr->year }}</td>
                                     <td class="p-3">
                                         @if($yr->is_active)
-                                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-green-50 text-green-700 border border-green-200">Active</span>
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-green-50 text-green-700 border border-yellow-200">Active</span>
                                         @else
                                             <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-gray-50 text-gray-700 border border-gray-200">Archived</span>
                                         @endif
                                     </td>
                                     <td class="p-3">
                                         @if($yr->capstone_1_enabled)
-                                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-sky-50 text-sky-700 border border-sky-200">Enabled</span>
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-sky-50 text-sky-700 border border-green-200">Enabled</span>
                                         @else
                                             <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-red-50 text-red-700 border border-red-200">Disabled</span>
                                         @endif
                                     </td>
                                     <td class="p-3">
                                         @if($yr->capstone_2_enabled)
-                                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-sky-50 text-sky-700 border border-sky-200">Enabled</span>
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-sky-50 text-sky-700 border border-green-200">Enabled</span>
                                         @else
                                             <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-red-50 text-red-700 border border-red-200">Disabled</span>
                                         @endif
@@ -2116,7 +2129,7 @@
                 <div>
                     <label class="inline-flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" name="is_active" value="1" class="rounded text-green-600 focus:ring-green-500 border-gray-300" checked>
-                        <span class="text-xs text-[#5b6375] font-semibold">Activate immediately (archives current active year)</span>
+                        <span class="text-xs text-[#5b6375] font-semibold">add the Capstone stage(1 and 2) and Activate immediately (archives current active year)</span>
                     </label>
                 </div>
                 <div class="flex justify-end gap-2 pt-3">
@@ -2245,7 +2258,8 @@
             <form action="{{ route('admin.reorder_milestones') }}" method="POST" class="space-y-4">
                 @csrf
                 <div id="reorder_list" class="space-y-2 max-h-80 overflow-y-auto pr-1">
-                    @foreach($milestones->where('capstone_stage_id', 1)->sortBy('step_order') as $m1)
+                    @php $c1StageId = $capstoneStages->firstWhere('stage_type', 1)->id ?? null; @endphp
+                    @foreach($milestones->where('capstone_stage_id', $c1StageId)->sortBy('step_order') as $m1)
                     <div class="reorder-item flex items-center justify-between p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg" data-id="{{ $m1->id }}">
                         <input type="hidden" name="milestone_ids[]" value="{{ $m1->id }}">
                         <span class="text-sm font-semibold text-[#0a1428]">{{ $m1->milestone_title }}</span>
@@ -2842,7 +2856,12 @@
             });
             filterMilestones();
             addCriteriaRow();
-            showStage('1');
+            document.querySelectorAll('.rubric-stage-tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.rubric-stage-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+                    showStage(btn.dataset.stageType);
+                });
+            });
             // ── RUBRICS: Toggle sections ──
                 document.querySelectorAll('.toggle-section-btn').forEach(btn => {
                     btn.addEventListener('click', function () {
@@ -4066,14 +4085,10 @@ window.moveItemDown = function(btn) {
     }
 };
 
-window.showStage = function(stageId) {
+window.showStage = function(stageType) {
     document.querySelectorAll('.milestone-item, .rubric-item').forEach(el => {
-        const stage = el.dataset.stage;
-        if (stageId === 'all' || String(stage) === String(stageId)) {
-            el.style.display = '';
-        } else {
-            el.style.display = 'none';
-        }
+        const type = el.dataset.stageType;
+        el.style.display = (stageType === 'all' || String(type) === String(stageType)) ? '' : 'none';
     });
 };
     </script>

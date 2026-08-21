@@ -15,92 +15,108 @@
             min-height: 100vh;
             padding: 2rem;
         }
-        .certificate {
+        .document {
             background: #fffdf8;
             width: 100%;
             max-width: 900px;
             aspect-ratio: 1.414 / 1; /* A4 landscape ratio */
-            border: 3px solid #d6b15c;
-            outline: 1px solid #d6b15c;
-            outline-offset: -10px;
-            padding: 3.5rem 4rem;
+            border: 2px solid #0a1428;
+            padding: 3rem 4rem;
             display: flex;
             flex-direction: column;
-            align-items: center;
             text-align: center;
             position: relative;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
         }
-        .seal {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #d6b15c, #b88d3a);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #0a1428;
-            font-size: 1.5rem;
-            font-weight: 700;
-            box-shadow: 0 6px 16px rgba(214,177,92,0.35);
+
+        /* ── Header image ── */
+        .header-image {
+            text-align: center;
             margin-bottom: 1rem;
         }
-        .eyebrow {
-            font-size: 0.7rem;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            color: #8b6914;
-            font-weight: 600;
+        .header-image img {
+            max-width: 60%;
+            height: auto;
+            display: inline-block;
         }
-        h1.title {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 2.75rem;
-            color: #0a1428;
+
+        /* ── Document title ── */
+        .doc-title {
+            font-size: 2rem;
             font-weight: 700;
-            margin: 0.5rem 0 0.25rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #0a1428;
+            border-bottom: 2px solid #0a1428;
+            padding-bottom: 0.75rem;
+            margin-bottom: 2rem;
+            font-family: 'Cormorant Garamond', serif;
         }
-        .subtitle {
-            font-size: 0.85rem;
-            color: #5b6375;
-            margin-bottom: 1.75rem;
+
+        .body-text {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: #171e2c;
+            max-width: 680px;
+            margin: 0 auto;
+            flex: 1;
         }
-        .presented-to {
-            font-size: 0.75rem;
+
+        .body-text .capstone-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            font-style: italic;
+            margin: 0.75rem 0 1rem;
+            color: #0a1428;
+        }
+
+        .body-text .members-list {
+            display: inline;
+            font-weight: 600;
+            color: #0a1428;
+        }
+        .body-text .members-list .member {
+            display: inline;
+        }
+        .body-text .members-list .member:not(:last-child)::after {
+            content: ", ";
+        }
+        .body-text .members-list .member:last-child::before {
+            content: " and ";
+        }
+
+        .body-text .degree {
+            font-weight: 600;
+            color: #0a1428;
+        }
+
+        /* ── Adviser signature block ── */
+        .signature-block {
+            width: 100%;
+            max-width: 400px;
+            margin: 2rem auto 0;
+        }
+        .signature-line {
+            border-top: 1.5px solid #0a1428;
+            width: 100%;
+            margin-bottom: 0.3rem;
+        }
+        .signature-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0a1428;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .signature-label {
+            font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            color: #9a9385;
-            margin-bottom: 0.5rem;
-        }
-        .capstone-title {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 1.9rem;
-            font-weight: 600;
-            color: #0a1428;
-            font-style: italic;
-            max-width: 640px;
-            margin-bottom: 1.5rem;
-            line-height: 1.3;
-        }
-        .members {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 0.5rem 1.75rem;
-            margin-bottom: 1.5rem;
-        }
-        .member {
-            font-size: 1.05rem;
-            font-weight: 600;
-            color: #171e2c;
-            padding-bottom: 0.2rem;
-            border-bottom: 1.5px solid #d6b15c;
-        }
-        .description {
-            font-size: 0.9rem;
             color: #5b6375;
-            max-width: 560px;
-            line-height: 1.6;
-            margin-bottom: 2rem;
         }
+
+        /* ── Footer with date & group ── */
         .footer {
             width: 100%;
             display: flex;
@@ -108,16 +124,18 @@
             align-items: flex-end;
             margin-top: auto;
             padding-top: 1.5rem;
+            border-top: 1px solid #e2dacf;
         }
-        .footer-block { text-align: center; min-width: 180px; }
-        .footer-line { border-top: 1px solid #171e2c; margin-bottom: 0.3rem; }
+        .footer-block { text-align: center; min-width: 160px; }
         .footer-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: #9a9385; }
         .footer-value { font-size: 0.85rem; font-weight: 600; color: #171e2c; }
 
+        /* ── Actions ── */
         .actions {
             margin-top: 1.5rem;
             display: flex;
             gap: 0.75rem;
+            justify-content: center;
         }
         .btn {
             padding: 0.6rem 1.4rem;
@@ -135,52 +153,78 @@
 
         @media print {
             body { background: #fff; padding: 0; }
-            .certificate { border: 3px solid #d6b15c; box-shadow: none; }
+            .document { border: 2px solid #0a1428; box-shadow: none; }
             .actions { display: none; }
+        }
+        @media (max-width: 640px) {
+            .document { padding: 2rem 1.5rem; }
+            .doc-title { font-size: 1.5rem; }
+            .body-text { font-size: 0.95rem; }
+            .header-image img { max-width: 80%; }
         }
     </style>
 </head>
 <body>
     <div>
-        <div class="certificate">
-            <div class="seal"><i>★</i></div>
-            <div class="eyebrow">Capstone Tracker</div>
-            <h1 class="title">{{ $certificate->certificate_title }}</h1>
-            <div class="subtitle">{{ $milestone->milestone_title }}</div>
-
-            <div class="presented-to">This certificate is proudly presented to</div>
-            <div class="members">
-                @forelse($members as $member)
-                    <span class="member">{{ $member }}</span>
-                @empty
-                    <span class="member">{{ $group->group_name }}</span>
-                @endforelse
+        <!-- Document -->
+        <div class="document">
+            <!-- Header image -->
+            <div class="header-image">
+            <img src="{{ asset('pictures/mccheader.jpg') }}" alt="MCC Header">
             </div>
 
-            <div class="presented-to">For successfully completing the capstone project</div>
-            <div class="capstone-title">"{{ $group->capstone_title }}"</div>
+            <!-- Main title -->
+            <h1 class="doc-title">{{ $certificate->certificate_title }}</h1>
 
-            <p class="description">{{ $certificate->certificate_description }}</p>
+            <div class="body-text">
+                This <strong>Capstone Project </strong> hereto entitled:
+                <div class="capstone-title">"{{ $group->capstone_title }}"</div>
+                <br>
+                <br>
+                <br>
+                <br>
 
+                prepared and submitted by
+                <span class="members-list">
+                    @forelse($members as $member)
+                        <span class="member">{{ $member }}</span>
+                    @empty
+                        <span class="member">{{ $group->group_name }}</span>
+                    @endforelse
+                </span>
+                <br>
+                in partial fulfillment of the requirements for the degree of
+                <span class="degree">Bachelor of Science in Information Technology</span>
+                <br>
+                has been examined, accepted, and recommended for Oral Presentation.
+            </div>
+                <br>
+                <br>
+
+            <!-- Adviser signature -->
+            <div class="signature-block">
+                <div class="signature-name"><u>{{ $adviserName ?? 'Capstone Adviser' }}</u></div>
+
+                <div class="signature-label">Capstone Adviser</div>
+            </div>
+                <br>
+                <br>
+            <br>
+
+            <!-- Footer -->
             <div class="footer">
                 <div class="footer-block">
-                    <div class="footer-line"></div>
-                    <div class="footer-value">{{ $adviserName ?? 'Capstone Adviser' }}</div>
-                    <div class="footer-label">Adviser</div>
-                </div>
-                <div class="footer-block">
-                    <div class="footer-line"></div>
                     <div class="footer-value">{{ \Carbon\Carbon::parse($issuedDate)->format('F d, Y') }}</div>
                     <div class="footer-label">Date Issued</div>
                 </div>
                 <div class="footer-block">
-                    <div class="footer-line"></div>
                     <div class="footer-value">{{ $group->group_name }}</div>
                     <div class="footer-label">Group</div>
                 </div>
             </div>
         </div>
 
+        <!-- Action buttons -->
         <div class="actions">
             <button class="btn btn-primary" onclick="window.print()">
                 🖨️ Print / Save as PDF
