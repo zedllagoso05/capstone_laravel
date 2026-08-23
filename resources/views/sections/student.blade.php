@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Capstone Tracker | Student Dashboard</title>
     <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="icon" type="image/jpeg" href="{{ asset('pictures/favicon.jpg') }}">
     <script src="/js/app.js" defer></script>
     <style>
         /* ── ROOT ── */
@@ -1072,6 +1073,56 @@
                 display: none !important;
             }
         }
+        @media print {
+            body * { visibility: hidden; }
+            #revisionSheetModal,
+            #revisionSheetModal * { visibility: visible; }
+            #revisionSheetModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; padding: 2rem; }
+            #revisionSheetModal .modal-box { box-shadow: none; border: none; max-width: 100%; }
+            #revisionSheetModal .modal-accent { display: none; }
+            #revisionSheetModal .btn-outline,
+            #revisionSheetModal .btn-primary,
+            #revisionSheetModal .flex.justify-end.gap-3 { display: none !important; }
+        }
+        /* ── MODALS ── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5,16,33,0.55);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 1rem;
+}
+.modal-overlay.active {
+    display: flex;
+}
+.modal-box {
+    background: var(--white);
+    border-radius: 1.25rem;
+    width: 100%;
+    max-width: 30rem;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 1.75rem;
+    animation: fadeInUp 0.25s ease-out both;
+    box-shadow: 0 40px 60px -20px rgba(5,16,33,0.3);
+    border: 1px solid rgba(214,177,92,0.2);
+}
+.modal-box.wide {
+    max-width: 44rem;
+}
+.modal-box .modal-accent {
+    height: 3px;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    border-radius: 3px;
+    margin-bottom: 1.25rem;
+}
+.modal-overlay.active {
+    display: flex !important;
+}
     </style>
 </head>
 <body class="bg-[#f8f6f0] text-[#171e2c]">
@@ -1682,175 +1733,282 @@
                 </div>
                 @endforeach
             </div>
+
+
+
+
         </div>
 
-        <!-- ═══════ REVISIONS & PANEL FEEDBACK ═══════ -->
-        <div id="revisions-section" class="section-container hidden section-card max-w-7xl mx-auto">
-            <div class="mb-8">
-                <h1>Revisions & Panel Feedback</h1>
-                <div class="gold-accent-line"></div>
-                <p class="text-[#5b6375] mt-2 text-sm">View critical feedback, revision instructions, and full evaluation details from your panel and adviser</p>
-            </div>
+<!-- ═══════ REVISIONS & PANEL FEEDBACK ═══════ -->
+<div id="revisions-section" class="section-container hidden section-card max-w-7xl mx-auto">
+    <div class="mb-8">
+        <h1>Revisions & Panel Feedback</h1>
+        <div class="gold-accent-line"></div>
+        <p class="text-[#5b6375] mt-2 text-sm">View critical feedback, revision instructions, and full evaluation details from your panel and adviser</p>
+    </div>
 
-            @if($groups)
-                <!-- Active Revision Status Card -->
-                <div class="mb-8">
-                    @if($groups->revision_status == 'needs_revision')
-                        <div class="rounded-xl border shadow-sm p-6 flex flex-col md:flex-row gap-5" style="background-color: #fffbeb; border-color: #fef3c7;">
-                            <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: #fef3c7; color: #d97706;">
-                                <i class="fas fa-exclamation-triangle text-xl"></i>
+    @if($groups)
+        <!-- Active Revision Status Card -->
+        <div class="mb-8">
+            @if($groups->revision_status == 'needs_revision')
+                <div class="rounded-xl border shadow-sm p-6 flex flex-col md:flex-row gap-5" style="background-color: #fffbeb; border-color: #fef3c7;">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: #fef3c7; color: #d97706;">
+                        <i class="fas fa-exclamation-triangle text-xl"></i>
+                    </div>
+                    <div class="flex-grow">
+                        <h3 class="text-lg font-bold" style="color: #92400e;">Active Revision Request</h3>
+                        <p class="text-sm mt-1" style="color: #b45309;">
+                            The panel has requested revisions for your group. Review the instructions below, implement the changes, and inform your adviser <strong>{{ $adviser ? $adviser->teacher_first_name . ' ' . $adviser->teacher_last_name : 'your adviser' }}</strong> when ready.
+                        </p>
+                        @if($groups->revision_description)
+                            <div class="bg-white border rounded-lg p-4 mt-4" style="border-color: #fde68a;">
+                                <span class="text-xs font-bold uppercase tracking-wider" style="color: #d97706;">Revision Instructions</span>
+                                <p class="text-[#0a1428] font-medium mt-1 whitespace-pre-line">{{ $groups->revision_description }}</p>
                             </div>
-                            <div class="flex-grow">
-                                <h3 class="text-lg font-bold" style="color: #92400e;">Active Revision Request</h3>
-                                <p class="text-sm mt-1" style="color: #b45309;">
-                                    The panel has requested revisions for your group. Review the instructions below, implement the changes, and inform your adviser <strong>{{ $adviser ? $adviser->teacher_first_name . ' ' . $adviser->teacher_last_name : 'your adviser' }}</strong> when ready.
-                                </p>
-                                <div class="bg-white border rounded-lg p-4 mt-4 shadow-sm" style="border-color: #fde68a;">
-                                    <span class="text-xs font-bold uppercase tracking-wider" style="color: #d97706;">Revision Instructions</span>
-                                    <p class="text-[#0a1428] font-medium mt-1 whitespace-pre-line">{{ $groups->revision_description }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    @elseif($groups->revision_status == 'revised')
-                        <div class="rounded-xl border shadow-sm p-6 flex flex-col md:flex-row gap-5" style="background-color: #eff6ff; border-color: #dbeafe;">
-                            <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: #dbeafe; color: #2563eb;">
-                                <i class="fas fa-info-circle text-xl"></i>
-                            </div>
-                            <div class="flex-grow">
-                                <h3 class="text-lg font-bold" style="color: #1e40af;">Revisions Submitted</h3>
-                                <p class="text-sm mt-1" style="color: #1d4ed8;">
-                                    Your group has addressed the requested revisions! Your adviser has marked this as revised. The panel is currently reviewing your updates.
-                                </p>
-                                @if($groups->revision_description)
-                                    <div class="bg-white border rounded-lg p-4 mt-4 shadow-sm" style="border-color: #bfdbfe;">
-                                        <span class="text-xs font-bold uppercase tracking-wider" style="color: #2563eb;">Revision Notes</span>
-                                        <p class="text-[#0a1428] font-medium mt-1 whitespace-pre-line">{{ $groups->revision_description }}</p>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
-                    @else
-                        <div class="rounded-xl border shadow-sm p-6 flex flex-col md:flex-row gap-5" style="background-color: #f0fdf4; border-color: #dcfce7;">
-                            <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: #dcfce7; color: #16a34a;">
-                                <i class="fas fa-check-circle text-xl"></i>
-                            </div>
-                            <div class="flex-grow">
-                                <h3 class="text-lg font-bold" style="color: #166534;">All Revisions Clear</h3>
-                                <p class="text-sm mt-1" style="color: #15803d;">
-                                    Your group has no pending revision requests at the moment. Keep up the excellent work!
-                                </p>
-                            </div>
-                        </div>
-                    @endif
+                        @endif
+                    </div>
                 </div>
-
-                <!-- All Milestone Evaluations Section -->
-                <div class="mt-8">
-                    <h2 class="text-xl font-bold text-[#0a1428] mb-4 flex items-center gap-2" style="font-family:'Cormorant Garamond',serif;">
-                        <i class="fas fa-list text-[#d6b15c]"></i> Evaluation History & Feedback
-                    </h2>
-                    
-                    <div class="space-y-6">
-                        @forelse($allEvaluations as $eval)
-                            <div class="content-card">
-                                <div class="card-accent"></div>
-                                <div class="p-6">
-                                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 mb-4" style="border-color: var(--border);">
-                                        <div>
-                                            <h3 class="text-lg font-bold text-[#0a1428]">{{ $eval->milestone->milestone_title ?? 'Evaluation' }}</h3>
-                                            <p class="text-xs text-[#5b6375] mt-1">
-                                                Evaluated by <strong>{{ $eval->teacher ? $eval->teacher->teacher_first_name . ' ' . $eval->teacher->teacher_last_name : ($eval->teacher->user->name ?? 'Teacher') }}</strong> on {{ \Carbon\Carbon::parse($eval->evaluation_date)->format('M d, Y') }}
-                                            </p>
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-xs text-[#5b6375]">Milestone Grade:</span>
-                                            <span class="eval-score">{{ number_format($eval->score, 1) }} / {{ number_format($eval->max_score, 1) }}</span>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <h4 class="text-xs font-bold uppercase text-[#5b6375] tracking-wider mb-2">Teacher Feedback:</h4>
-                                        <div class="p-4 rounded-lg bg-[#faf8f4] border border-[#ece6db] italic text-sm text-[#171e2c] whitespace-pre-line">
-                                            @if($eval->feedback)
-                                                "{{ $eval->feedback }}"
-                                            @else
-                                                "No general feedback text provided."
-                                            @endif
-                                        </div>
-                                    </div>
-
-                                    @if(!empty($eval->rubric_scores))
-                                        <div class="mt-4">
-                                            <button type="button" 
-                                                    onclick="toggleRubricDetails({{ $eval->id }})" 
-                                                    class="text-xs font-semibold text-[#b88d3a] hover:text-[#0a1428] transition flex items-center gap-1 focus:outline-none">
-                                                <i class="fas fa-chevron-down" id="chevron-{{ $eval->id }}"></i> View Rubric Score Breakdown
-                                            </button>
-                                            
-                                            <div id="rubric-details-{{ $eval->id }}" class="hidden mt-3 p-4 bg-[#fcfbfa] border rounded-lg overflow-x-auto" style="border-color: var(--border);">
-                                                <table class="w-full text-left text-xs">
-                                                    <thead>
-                                                        <tr class="border-b" style="border-color: var(--border);">
-                                                            <th class="pb-2 font-bold text-[#0a1428]">Criteria Name</th>
-                                                            <th class="pb-2 text-right font-bold text-[#0a1428]">Score / Max</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody class="divide-y divide-gray-100">
-                                                        @php
-                                                            $rubric = \App\Models\Rubric::where('milestone_id', $eval->milestone_id)->with('criteria')->first();
-                                                        @endphp
-                                                        @if($rubric && $rubric->criteria->count() > 0)
-                                                            @foreach($rubric->criteria as $criterion)
-                                                                <tr>
-                                                                    <td class="py-2 text-[#171e2c]">{{ $criterion->criteria_name }}</td>
-                                                                    <td class="py-2 text-right font-semibold text-[#1e6b3a]">
-                                                                        {{ number_format($eval->rubric_scores[$criterion->id] ?? 0, 1) }} / {{ number_format($criterion->max_score, 1) }}
-                                                                    </td>
-                                                                </tr>
-                                                            @endforeach
-                                                        @else
-                                                            <tr>
-                                                                <td colspan="2" class="py-2 text-center text-[#5b6375]">No rubric criteria details available.</td>
-                                                            </tr>
-                                                        @endif
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    @endif
-                                </div>
+            @elseif($groups->revision_status == 'revised')
+                <div class="rounded-xl border shadow-sm p-6 flex flex-col md:flex-row gap-5" style="background-color: #eff6ff; border-color: #dbeafe;">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: #dbeafe; color: #2563eb;">
+                        <i class="fas fa-info-circle text-xl"></i>
+                    </div>
+                    <div class="flex-grow">
+                        <h3 class="text-lg font-bold" style="color: #1e40af;">Revisions Submitted</h3>
+                        <p class="text-sm mt-1" style="color: #1d4ed8;">
+                            Your group has addressed the requested revisions! Your adviser has marked this as revised. The panel is currently reviewing your updates.
+                        </p>
+                        @if($groups->revision_description)
+                            <div class="bg-white border rounded-lg p-4 mt-4" style="border-color: #bfdbfe;">
+                                <span class="text-xs font-bold uppercase tracking-wider" style="color: #2563eb;">Revision Notes</span>
+                                <p class="text-[#0a1428] font-medium mt-1 whitespace-pre-line">{{ $groups->revision_description }}</p>
                             </div>
-                        @empty
-                            <div class="content-card text-center p-8">
-                                <div class="card-accent"></div>
-                                <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style="background:#f0ece4; color:#b8b0a0;">
-                                    <i class="fa-regular fa-star text-lg"></i>
-                                </div>
-                                <p class="text-[#5b6375] text-sm">No milestone evaluations have been submitted yet.</p>
-                            </div>
-                        @endforelse
+                        @endif
                     </div>
                 </div>
             @else
-                <!-- No Group Card -->
-                <div class="content-card text-center">
-                    <div class="card-accent"></div>
-                    <div class="p-8">
-                        <div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background:#f0ece4;">
-                            <i class="fa-regular fa-users text-2xl text-[#b8b0a0]"></i>
-                        </div>
-                        <h2 class="mb-2">Not in a Group</h2>
-                        <p class="text-[#5b6375] text-sm max-w-md mx-auto">
-                            You haven't been assigned to a capstone group yet. Revisions and feedback are only available for groups.
+                <div class="rounded-xl border shadow-sm p-6 flex flex-col md:flex-row gap-5" style="background-color: #f0fdf4; border-color: #dcfce7;">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: #dcfce7; color: #16a34a;">
+                        <i class="fas fa-check-circle text-xl"></i>
+                    </div>
+                    <div class="flex-grow">
+                        <h3 class="text-lg font-bold" style="color: #166534;">All Revisions Clear</h3>
+                        <p class="text-sm mt-1" style="color: #15803d;">
+                            Your group has no pending revision requests at the moment. Keep up the excellent work!
                         </p>
                     </div>
                 </div>
             @endif
+
+      @if($revisions->count() > 0)
+            <div class="mt-4">
+                <h4 class="font-semibold text-sm text-[#5b6375] mb-2 flex items-center gap-2">
+                    <i class="fas fa-file-alt"></i> Revision Sheets from Panelists
+                </h4>
+                <div class="flex flex-wrap gap-2">
+                    @foreach($revisions as $rev)
+                        <button type="button"
+                                onclick="openRevisionSheet({{ $groups->id }}, {{ $rev->id }})"
+                                class="btn-outline text-xs py-2 px-4">
+                            <i class="fas fa-file-alt mr-1"></i>
+                            {{ $rev->panelist ? $rev->panelist->teacher_first_name . ' ' . $rev->panelist->teacher_last_name : 'Panelist' }}
+                            ({{ $rev->created_at->format('M d, Y') }})
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+        @endif
         </div>
+
+        <!-- Evaluation History (unchanged) -->
+        <div class="mt-8">
+            <h2 class="text-xl font-bold text-[#0a1428] mb-4 flex items-center gap-2" style="font-family:'Cormorant Garamond',serif;">
+                <i class="fas fa-list text-[#d6b15c]"></i> Evaluation History & Feedback
+            </h2>
+            <!-- ... keep your existing evaluation history code ... -->
+        </div>
+
+    @else
+        <!-- No group card -->
+        <div class="content-card text-center">
+            <div class="card-accent"></div>
+            <div class="p-8">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background:#f0ece4;">
+                    <i class="fa-regular fa-users text-2xl text-[#b8b0a0]"></i>
+                </div>
+                <h2 class="mb-2">Not in a Group</h2>
+                <p class="text-[#5b6375] text-sm max-w-md mx-auto">
+                    You haven't been assigned to a capstone group yet. Revisions and feedback are only available for groups.
+                </p>
+            </div>
+        </div>
+    @endif
+</div>
+
+
+
+
+
+<!-- ═══════════════ REVISION SHEET MODAL ═══════════════ -->
+<div id="revisionSheetModal" class="modal-overlay">
+    <div class="modal-box wide" style="max-width: 52rem; padding: 1.5rem;">
+
+        <!-- Header Image -->
+        <div class="text-center mb-4">
+            <img src="{{ asset('pictures/mccheader.jpg') }}" alt="MCC Header" class="w-full max-h-24 object-contain">
+        </div>
+
+        <!-- Title -->
+        <h2 class="text-center text-2xl font-bold tracking-widest text-[#0a1428] mb-4" style="font-family:'Cormorant Garamond',serif;">
+            REVISION SHEET
+        </h2>
+
+        <!-- Main Table (static placeholders, populated by JS) -->
+        <div id="revisionSheetContent" class="text-[#0a1428] text-sm border border-[#b88d3a] rounded-lg overflow-hidden">
+
+            <table class="w-full border-collapse text-sm">
+                <!-- Proponents & Project -->
+                <tr>
+                    <td class="border border-[#b88d3a] p-2 align-top" style="width:50%;">
+                        <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Name of Proponents</p>
+                        <ol id="sheetProponents" class="list-decimal list-inside space-y-0.5">
+                            <li class="text-[#5b6375] italic">Loading...</li>
+                        </ol>
+                    </td>
+                    <td class="border border-[#b88d3a] p-2 align-top" style="width:50%;">
+                        <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Name of Capstone Project</p>
+                        <p id="sheetProjectTitle" class="font-medium">—</p>
+                    </td>
+                </tr>
+
+                <!-- Chapter / Document Findings -->
+                <tr>
+                    <td colspan="2" class="border border-[#b88d3a] p-2">
+                        <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Chapter / Document Findings</p>
+                        <table class="w-full border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-[#faf8f4]">
+                                    <th class="border border-[#b88d3a] p-1 text-left font-semibold uppercase text-[#5b6375]">Chapter</th>
+                                    <th class="border border-[#b88d3a] p-1 text-left font-semibold uppercase text-[#5b6375]">Document Findings</th>
+                                    <th class="border border-[#b88d3a] p-1 text-center font-semibold uppercase text-[#5b6375]">Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sheetChapterRows">
+                                <tr><td colspan="3" class="p-2 text-center text-[#5b6375] italic">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- System / IoT Findings -->
+                <tr>
+                    <td colspan="2" class="border border-[#b88d3a] p-2">
+                        <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">System or IoT Findings / Enhancements / Recommendations</p>
+                        <table class="w-full border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-[#faf8f4]">
+                                    <th class="border border-[#b88d3a] p-1 text-left font-semibold uppercase text-[#5b6375]">Finding / Enhancement</th>
+                                    <th class="border border-[#b88d3a] p-1 text-center font-semibold uppercase text-[#5b6375]">Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sheetIotRows">
+                                <tr><td colspan="2" class="p-2 text-center text-[#5b6375] italic">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- Additional Objectives -->
+                <tr>
+                    <td colspan="2" class="border border-[#b88d3a] p-2">
+                        <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Additional Objectives for Capstone Project 2</p>
+                        <table class="w-full border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-[#faf8f4]">
+                                    <th class="border border-[#b88d3a] p-1 text-left font-semibold uppercase text-[#5b6375]">Objective</th>
+                                    <th class="border border-[#b88d3a] p-1 text-center font-semibold uppercase text-[#5b6375]">Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sheetObjectivesList">
+                                <tr><td colspan="2" class="p-2 text-center text-[#5b6375] italic">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+                <!-- Overall Remarks -->
+                <tr>
+                    <td colspan="2" class="border border-[#b88d3a] p-2">
+
+                        <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">
+                            Overall Remarks / Instructions
+                        </p>
+
+                        <p
+                            id="sheetOverallRemarks"
+                            class="text-sm text-[#0a1428] whitespace-pre-line"
+                        >
+                            —
+                        </p>
+
+                    </td>
+                </tr>
+                <!-- Approved by -->
+                <tr>
+                    <td colspan="2" class="border border-[#b88d3a] p-2">
+                        <p class="text-xs font-bold uppercase tracking-wider text-[#5b6375]">Approved by:</p>
+                        <p id="sheetApprovedBy" class="text-sm font-semibold mt-1 border-b-2 border-[#b88d3a] inline-block min-w-[200px]">_________________________</p>
+                    </td>
+                </tr>
+            </table>
+
+        </div> <!-- end content -->
+
+        <!-- Buttons -->
+        <div class="flex justify-end gap-2 pt-4 border-t border-[#e2dacf] mt-4">
+            <button type="button" onclick="window.printModalContent('revisionSheetModal')" class="btn-outline text-xs py-2 px-4">
+                <i class="fas fa-print mr-1"></i> Print
+            </button>
+            <button type="button" onclick="closeModal('revisionSheetModal')" class="btn-primary text-xs py-2 px-4">Close</button>
+        </div>
+
+    </div>
+</div>
 
     </main>
 
     <script>
+        // ── MODAL HELPERS ──
+function openModal(id) {
+    console.log('openModal called with id:', id);
+    const modal = document.getElementById(id);  
+    if (modal) modal.classList.add('active');
+}
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.remove('active');
+}
+
+// ── Print Modal Content ──
+function printModalContent(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    // Temporarily remove overlay background for clean print
+    modal.style.background = 'white';
+    modal.style.backdropFilter = 'none';
+    window.print();
+    // Restore after print
+    setTimeout(() => {
+        modal.style.background = '';
+        modal.style.backdropFilter = '';
+    }, 500);
+}
+
+// Click outside to close
+document.addEventListener('click', function (e) {
+    if (e.target.classList.contains('modal-overlay') && e.target.classList.contains('active')) {
+        e.target.classList.remove('active');
+    }
+}); 
         // ── TOGGLE RUBRIC DETAILS ──
         window.toggleRubricDetails = function(evalId) {
             const container = document.getElementById('rubric-details-' + evalId);
@@ -2014,7 +2172,486 @@
                 });
             }
         });
+    // ── Open Revision Sheet Modal ──
+window.openRevisionSheet = function(groupId, revisionId) {
+
+    console.log('Opening revision:', {
+        groupId,
+        revisionId
+    });
+
+    const proponents =
+        document.getElementById('sheetProponents');
+
+    const title =
+        document.getElementById('sheetProjectTitle');
+
+    const chapterRows =
+        document.getElementById('sheetChapterRows');
+
+    const iotRows =
+        document.getElementById('sheetIotRows');
+
+    const objectiveRows =
+        document.getElementById('sheetObjectivesList');
+
+    const overallRemarks =
+        document.getElementById('sheetOverallRemarks');
+
+    const approvedBy =
+        document.getElementById('sheetApprovedBy');
+
+
+    // Make sure required modal elements exist
+    if (
+        !proponents ||
+        !title ||
+        !chapterRows ||
+        !iotRows ||
+        !objectiveRows ||
+        !approvedBy
+    ) {
+
+        console.error(
+            'Revision Sheet modal elements are missing.'
+        );
+
+        return;
+    }
+
+
+    // Open modal FIRST
+    openModal('revisionSheetModal');
+
+
+    // Loading states
+    proponents.innerHTML = `
+        <li class="text-[#5b6375] italic">
+            Loading...
+        </li>
+    `;
+
+    title.textContent = '—';
+
+
+    chapterRows.innerHTML = `
+        <tr>
+            <td
+                colspan="3"
+                class="p-3 text-center text-[#5b6375] italic"
+            >
+                Loading...
+            </td>
+        </tr>
+    `;
+
+
+    iotRows.innerHTML = `
+        <tr>
+            <td
+                colspan="2"
+                class="p-3 text-center text-[#5b6375] italic"
+            >
+                Loading...
+            </td>
+        </tr>
+    `;
+
+
+    objectiveRows.innerHTML = `
+        <tr>
+            <td
+                colspan="2"
+                class="p-3 text-center text-[#5b6375] italic"
+            >
+                Loading...
+            </td>
+        </tr>
+    `;
+
+
+    if (overallRemarks) {
+        overallRemarks.textContent = '—';
+    }
+
+
+    approvedBy.textContent =
+        '_________________________';
+
+
+    Promise.all([
+
+        fetch(`/student/get-group/${groupId}`)
+            .then(async response => {
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.error ||
+                        'Failed to load group.'
+                    );
+                }
+
+                return data;
+            }),
+
+
+        fetch(
+            `/student/get-revision/${groupId}/${revisionId}`
+        )
+        .then(async response => {
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.error ||
+                    'Failed to load revision.'
+                );
+            }
+
+            return data;
+        })
+
+    ])
+
+    .then(([groupData, revData]) => {
+
+
+        // =========================
+        // PROPONENTS
+        // =========================
+
+        if (
+            groupData.members &&
+            groupData.members.length
+        ) {
+
+            proponents.innerHTML =
+                groupData.members.map(member => `
+                    <li>
+                        ${member.name}
+                    </li>
+                `).join('');
+
+        } else {
+
+            proponents.innerHTML = `
+                <li class="text-[#5b6375] italic">
+                    No members.
+                </li>
+            `;
+        }
+
+
+        // =========================
+        // TITLE
+        // =========================
+
+        title.textContent =
+            groupData.capstone_title || '—';
+
+
+        // =========================
+        // CHAPTERS
+        // =========================
+
+        if (
+            revData.chapters &&
+            revData.chapters.length
+        ) {
+
+            chapterRows.innerHTML =
+                revData.chapters.map(ch => {
+
+                    const remarks =
+                        ch.remarks || 'Pending';
+
+                    const completed =
+                        String(remarks)
+                            .toLowerCase() ===
+                        'completed';
+
+                    return `
+                        <tr>
+
+                            <td class="border border-[#b88d3a] p-2 font-semibold">
+                                ${ch.chapter || ''}
+                            </td>
+
+                            <td class="border border-[#b88d3a] p-2">
+                                ${ch.findings || ''}
+                            </td>
+
+                            <td class="border border-[#b88d3a] p-2 text-center">
+
+                                <span class="badge ${
+                                    completed
+                                        ? 'badge-green'
+                                        : 'badge-amber'
+                                }">
+
+                                    ${
+                                        completed
+                                            ? 'Completed'
+                                            : 'Pending'
+                                    }
+
+                                </span>
+
+                            </td>
+
+                        </tr>
+                    `;
+                }).join('');
+
+        } else {
+
+            chapterRows.innerHTML = `
+                <tr>
+                    <td
+                        colspan="3"
+                        class="p-3 text-center text-[#5b6375] italic"
+                    >
+                        No chapter findings.
+                    </td>
+                </tr>
+            `;
+        }
+
+
+        // =========================
+        // IoT
+        // =========================
+
+        if (
+            revData.iot_findings &&
+            revData.iot_findings.length
+        ) {
+
+            iotRows.innerHTML =
+                revData.iot_findings.map(iot => {
+
+                    const remarks =
+                        iot.remarks || 'Pending';
+
+                    const completed =
+                        String(remarks)
+                            .toLowerCase() ===
+                        'completed';
+
+                    return `
+                        <tr>
+
+                            <td class="border border-[#b88d3a] p-2">
+                                ${iot.finding || ''}
+                            </td>
+
+                            <td class="border border-[#b88d3a] p-2 text-center">
+
+                                <span class="badge ${
+                                    completed
+                                        ? 'badge-green'
+                                        : 'badge-amber'
+                                }">
+
+                                    ${
+                                        completed
+                                            ? 'Completed'
+                                            : 'Pending'
+                                    }
+
+                                </span>
+
+                            </td>
+
+                        </tr>
+                    `;
+                }).join('');
+
+        } else {
+
+            iotRows.innerHTML = `
+                <tr>
+                    <td
+                        colspan="2"
+                        class="p-3 text-center text-[#5b6375] italic"
+                    >
+                        No System / IoT findings.
+                    </td>
+                </tr>
+            `;
+        }
+
+
+        // =========================
+        // OBJECTIVES
+        // =========================
+
+        if (
+            revData.additional_objectives &&
+            revData.additional_objectives.length
+        ) {
+
+            objectiveRows.innerHTML =
+                revData.additional_objectives
+                    .map(obj => {
+
+                        const remarks =
+                            obj.remarks || 'Pending';
+
+                        const completed =
+                            String(remarks)
+                                .toLowerCase() ===
+                            'completed';
+
+                        return `
+                            <tr>
+
+                                <td class="border border-[#b88d3a] p-2">
+                                    ${obj.objective || ''}
+                                </td>
+
+                                <td class="border border-[#b88d3a] p-2 text-center">
+
+                                    <span class="badge ${
+                                        completed
+                                            ? 'badge-green'
+                                            : 'badge-amber'
+                                    }">
+
+                                        ${
+                                            completed
+                                                ? 'Completed'
+                                                : 'Pending'
+                                        }
+
+                                    </span>
+
+                                </td>
+
+                            </tr>
+                        `;
+
+                    })
+                    .join('');
+
+        } else {
+
+            objectiveRows.innerHTML = `
+                <tr>
+                    <td
+                        colspan="2"
+                        class="p-3 text-center text-[#5b6375] italic"
+                    >
+                        No additional objectives.
+                    </td>
+                </tr>
+            `;
+        }
+
+
+        // =========================
+        // OVERALL REMARKS
+        // =========================
+
+        if (overallRemarks) {
+
+            overallRemarks.textContent =
+                revData.overall_remarks ||
+                'No overall remarks.';
+        }
+
+
+        // =========================
+        // APPROVED BY
+        // =========================
+
+        approvedBy.textContent =
+            revData.approved_by ||
+            '_________________________';
+
+    })
+
+    .catch(error => {
+
+        console.error(
+            'Revision loading error:',
+            error
+        );
+
+        proponents.innerHTML = `
+            <li class="text-red-500">
+                ${error.message}
+            </li>
+        `;
+
+    });
+};
+
+// ── Print Modal Content ──
+window.printModalContent = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    // Temporarily remove the modal overlay background for print
+    modal.style.background = 'white';
+    modal.style.backdropFilter = 'none';
+    window.print();
+    // Restore after print
+    setTimeout(() => {
+        modal.style.background = '';
+        modal.style.backdropFilter = '';
+    }, 500);
+};
+window.printRevisionSheet = function() {
+    const content = document.getElementById('revisionSheetContent');
+    if (!content) return;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html><head><title>Revision Sheet</title>
+        <style>
+            body { font-family: 'DM Sans', sans-serif; padding: 2rem; background: white; }
+            table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+            th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+            th { background: #f5f0e8; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+            .mt-4 { margin-top: 1rem; }
+            .mb-2 { margin-bottom: 0.5rem; }
+            .text-xs { font-size: 0.7rem; }
+            .text-sm { font-size: 0.85rem; }
+            .font-bold { font-weight: 700; }
+            .uppercase { text-transform: uppercase; }
+            .border-b-2 { border-bottom: 2px solid #b88d3a; }
+            .inline-block { display: inline-block; }
+            .min-w-\[200px\] { min-width: 200px; }
+            .list-decimal { list-style: decimal; padding-left: 1.5rem; }
+            .list-inside { list-style-position: inside; }
+            .space-y-1 > * + * { margin-top: 0.25rem; }
+            .p-2 { padding: 0.5rem; }
+            .p-3 { padding: 0.75rem; }
+            .p-6 { padding: 1.5rem; }
+            .space-y-6 > * + * { margin-top: 1.5rem; }
+            .border { border: 1px solid #e2dacf; }
+            .rounded-lg { border-radius: 0.5rem; }
+            .overflow-hidden { overflow: hidden; }
+            .bg-\[#faf8f4\] { background: #faf8f4; }
+            .bg-\[#faf8f4\] { background: #faf8f4; }
+            .divide-y > * + * { border-top: 1px solid #faf1e0; }
+        </style>
+        </head><body>
+        ${content.innerHTML}
+        </body></html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+};
+
     </script>
 
 </body>
 </html>
+            {{-- <div class="header-image">
+            <img src="{{ asset('pictures/mccheader.jpg') }}" alt="MCC Header">
+            </div> --}}

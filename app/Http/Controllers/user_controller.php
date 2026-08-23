@@ -258,6 +258,20 @@ class user_controller extends Controller
                 ->pluck('milestone_id')
                 ->toArray();
         }
+      // ── Load ALL revisions for this group (if any) ──
+    $revisions = collect();
+    if ($groups) {
+        $revisions = \App\Models\Revision::with([
+            'documentation',
+            'enhancements',
+            'objectives',
+            'panelist'  // eager load the panelist teacher
+        ])
+        ->where('group_id', $groups->id)
+        ->orderBy('created_at', 'desc')
+        ->get();
+    }
+
 
         $activeYear = CapstoneYear::getActiveYear();
         $groupYearId = $groups ? $groups->capstone_year_id : $activeYear->id;
@@ -329,7 +343,7 @@ class user_controller extends Controller
             'user', 'student', 'groups', 'members', 'adviser',
             'milestones', 'overallProgress', 'nextMilestone',
             'evaluations', 'allEvaluations', 'certificates', 'completedMilestoneIds', 'groupcertificates',
-            'remarksByMilestone', 'absencesByMilestone'
+            'remarksByMilestone', 'absencesByMilestone','revisions'
         ));
     }
 
@@ -733,9 +747,9 @@ class user_controller extends Controller
 
     $assignedRooms = $teacher->evaluationRooms()->with('groups')->get();
     $assignedRoomIds = $assignedRooms->pluck('id');
-
+    $teacherId = $teacher->id;
     // ── All evaluation rooms, for the classroom grid ──
-    $allRooms = EvaluationRoom::with(['panelists', 'groups'])->get();
+    $allRooms = EvaluationRoom::with(['panelists', 'groups'])->get();           
 
     $groups = Group::where('is_archived', false)
         ->where('capstone_year_id', $activeYear->id)
@@ -745,6 +759,15 @@ class user_controller extends Controller
         })
         ->with(['students', 'groupMilestones', 'team_members', 'room'])
         ->get();
+    
+    $requestedGroupIds = \App\Models\Revision::where('panelist_id', $teacherId)
+                                        ->whereIn('group_id', $groups->pluck('id'))
+                                        ->pluck('group_id')
+                                        ->toArray();
+
+    foreach ($groups as $group) {
+        $group->has_requested_revision = in_array($group->id, $requestedGroupIds);
+    }
 
     $totalGroups = $groups->count();
     $teacherSections = $teacher->sections;
@@ -1226,7 +1249,52 @@ class user_controller extends Controller
 
         $teacher = Teacher::where('user_id', Auth::user()->user_id)->firstOrFail();
         $group = Group::findOrFail($validated['group_id']);
+        
+        // ==========================================
+// BLOCK EVALUATION IF REVISION IS NOT COMPLETE
+// ==========================================
 
+$revision = \App\Models\Revision::with([
+    'documentation',
+    'enhancements',
+    'objectives'
+])
+->where('group_id', $group->id)
+->where('panelist_id', $teacher->id)
+->first();
+
+if ($revision) {
+
+    $hasPendingDocumentation = $revision->documentation
+        ->contains(function ($item) {
+            return strtolower($item->remarks ?? 'pending') !== 'completed';
+        });
+
+    $hasPendingEnhancements = $revision->enhancements
+        ->contains(function ($item) {
+            return strtolower($item->remarks ?? 'pending') !== 'completed';
+        });
+
+    $hasPendingObjectives = $revision->objectives
+        ->contains(function ($item) {
+            return strtolower($item->remarks ?? 'pending') !== 'completed';
+        });
+
+
+    $hasPendingRevision =
+        $hasPendingDocumentation ||
+        $hasPendingEnhancements ||
+        $hasPendingObjectives;
+
+
+    if ($hasPendingRevision) {
+
+        return back()->with(
+            'error',
+            'You cannot evaluate this group yet. Please verify all revision items as Completed first.'
+        );
+    }
+}
         // Rubric scoring is restricted to panelists assigned to this group's room —
         // adviser status alone does NOT grant access here.
         $assignedRoomIds = $teacher->evaluationRooms()->pluck('evaluation_rooms.id')->toArray();
@@ -3430,34 +3498,87 @@ $adviserName = $group->adviser
     /**
      * Request revision for a group.
      */
-    public function requestGroupRevision(Request $request, $groupId)
-    {
-        $validated = $request->validate([
-            'revision_description' => 'required|string|max:1000',
+/**
+ * Request revision for a group.
+ * Accepts structured revision data (chapters, IoT findings, additional objectives)
+ * and stores it for later display.
+ */
+public function requestGroupRevision(Request $request, $groupId)
+{
+
+    
+    $teacher = Teacher::where('user_id', Auth::user()->user_id)->firstOrFail();
+    $group = Group::findOrFail($groupId);
+        $alreadyRequested = \App\Models\Revision::where('group_id', $groupId)
+                                                ->where('panelist_id', $teacher->id)
+                                                ->exists();
+        if ($alreadyRequested) {
+            if ($request->ajax()) {
+                return response()->json(['error' => 'You have already requested a revision for this group.'], 422);
+            }
+            return back()->with('error', 'You have already requested a revision for this group.');
+        }
+    $assignedRoomIds = $teacher->evaluationRooms()->pluck('evaluation_rooms.id')->toArray();
+    if (!in_array($group->room_id, $assignedRoomIds)) {
+        if ($request->ajax()) {
+            return response()->json(['error' => 'You are not authorized to request revision for this group.'], 403);
+        }
+        return back()->with('error', 'You are not authorized to request revision for this group.');
+    }
+
+    $validated = $request->validate([
+        'revision_description'      => 'required|string|max:2000',
+        'chapters'                  => 'nullable|array',
+        'chapters.*.chapter'        => 'required|string|max:255',
+        'chapters.*.findings'       => 'required|string|max:1000',
+        'chapters.*.remarks'        => 'nullable|string|max:1000',
+        'iot_findings'               => 'nullable|array',
+        'iot_findings.*.finding'    => 'required|string|max:1000',
+        'iot_findings.*.remarks'    => 'nullable|string|max:1000',
+        'additional_objectives'     => 'nullable|array',
+        'additional_objectives.*'   => 'required|string|max:500',
+    ]);
+
+    DB::transaction(function () use ($validated, $teacher, $group) {
+        $revision = \App\Models\Revision::create([
+            'group_id'        => $group->id,
+            'panelist_id'     => $teacher->id,
+            'overall_remarks' => $validated['revision_description'],
         ]);
 
-        $teacher = Teacher::where('user_id', Auth::user()->user_id)->firstOrFail();
-        $group = Group::findOrFail($groupId);
+        foreach ($validated['chapters'] ?? [] as $ch) {
+            $revision->documentation()->create([
+                'chapter'  => $ch['chapter'],
+                'findings' => $ch['findings'],
+                'remarks'  => $ch['remarks'] ?? null,
+            ]);
+        }
 
-        // Authorization check: Only a panelist of the group's assigned classroom can request a revision.
-        $assignedRoomIds = $teacher->evaluationRooms()->pluck('evaluation_rooms.id')->toArray();
-        if (!in_array($group->room_id, $assignedRoomIds)) {
-            if ($request->ajax()) {
-                return response()->json(['error' => 'You are not authorized to request revision for this group.'], 403);
-            }
-            return back()->with('error', 'You are not authorized to request revision for this group.');
+        foreach ($validated['iot_findings'] ?? [] as $iot) {
+            $revision->enhancements()->create([
+                'enhancement' => $iot['finding'],
+                'remarks'     => $iot['remarks'] ?? null,
+            ]);
+        }
+
+        foreach ($validated['additional_objectives'] ?? [] as $obj) {
+            $revision->objectives()->create([
+                'objective' => $obj,
+            ]);
         }
 
         $group->update([
-            'revision_status' => 'needs_revision',
+            'revision_status'      => 'needs_revision',
             'revision_description' => $validated['revision_description'],
+            'revision_id'          => $revision->id,
         ]);
+    });
 
-        if ($request->ajax()) {
-            return response()->json(['success' => true, 'message' => 'Revision request submitted successfully!']);
-        }
-        return back()->with('success', 'Revision request submitted successfully!');
+    if ($request->ajax()) {
+        return response()->json(['success' => true, 'message' => 'Revision request submitted successfully!']);
     }
+    return back()->with('success', 'Revision request submitted successfully!');
+}
 
     /**
      * Mark a group as revised.
@@ -3488,4 +3609,624 @@ $adviserName = $group->adviser
         }
         return back()->with('success', 'Group successfully marked as revised.');
     }
+   public function getRevisionDetails($groupId)
+{
+    $teacher = Teacher::where(
+        'user_id',
+        Auth::user()->user_id
+    )->firstOrFail();
+
+    $group = Group::findOrFail($groupId);
+
+    // Must be a panelist assigned to this group's room
+    $assignedRoomIds = $teacher->evaluationRooms()
+        ->pluck('evaluation_rooms.id')
+        ->toArray();
+
+    if (!in_array($group->room_id, $assignedRoomIds)) {
+        return response()->json([
+            'error' => 'You are not authorized to verify this group.'
+        ], 403);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | GET ONLY THIS TEACHER'S REVISION
+    |--------------------------------------------------------------------------
+    |
+    | Teacher A -> Teacher A revision
+    | Teacher B -> Teacher B revision
+    |
+    | Other revisions for this group DO NOT affect this query.
+    |
+    */
+
+    $revision = \App\Models\Revision::with([
+        'documentation',
+        'enhancements',
+        'objectives'
+    ])
+    ->where('group_id', $groupId)
+    ->where('panelist_id', $teacher->id)
+    ->first();
+
+    if (!$revision) {
+        return response()->json([
+            'error' => 'You have not requested a revision for this group.'
+        ], 404);
+    }
+
+    return response()->json([
+
+        'revision_id' => $revision->id,
+
+        'chapters' => $revision->documentation
+            ->map(function ($item) {
+                return [
+                    'id'       => $item->id,
+                    'chapter'  => $item->chapter,
+                    'findings' => $item->findings,
+                    'remarks'  => $item->remarks ?: 'Pending',
+                ];
+            })
+            ->values(),
+
+        'iot_findings' => $revision->enhancements
+            ->map(function ($item) {
+                return [
+                    'id'      => $item->id,
+                    'finding' => $item->enhancement,
+                    'remarks' => $item->remarks ?: 'Pending',
+                ];
+            })
+            ->values(),
+
+        'additional_objectives' => $revision->objectives
+            ->map(function ($item) {
+                return [
+                    'id'        => $item->id,
+                    'objective' => $item->objective,
+                    'remarks'   => $item->remarks ?: 'Pending',
+                ];
+            })
+            ->values(),
+
+        'overall_remarks' => $revision->overall_remarks,
+
+        'approved_by' => $revision->approved_by ?? null,
+    ]);
+}
+
+public function verifyRevision(Request $request, $groupId)
+{
+    $teacher = Teacher::where(
+        'user_id',
+        Auth::user()->user_id
+    )->firstOrFail();
+
+    $group = Group::findOrFail($groupId);
+
+
+    // ==========================================
+    // CHECK IF TEACHER IS A PANELIST
+    // ==========================================
+
+    $assignedRoomIds = $teacher->evaluationRooms()
+        ->pluck('evaluation_rooms.id')
+        ->toArray();
+
+    if (!in_array($group->room_id, $assignedRoomIds)) {
+
+        return response()->json([
+            'success' => false,
+            'error' => 'You are not authorized to verify this group.'
+        ], 403);
+    }
+
+
+    // ==========================================
+    // GET ONLY THIS TEACHER'S REVISION
+    // ==========================================
+
+    $revision = \App\Models\Revision::with([
+        'documentation',
+        'enhancements',
+        'objectives'
+    ])
+    ->where('group_id', $groupId)
+    ->where('panelist_id', $teacher->id)
+    ->first();
+
+
+    if (!$revision) {
+
+        return response()->json([
+            'success' => false,
+            'error' => 'You have not requested a revision for this group.'
+        ], 404);
+    }
+
+
+    // ==========================================
+    // VALIDATION
+    // ==========================================
+
+    $validated = $request->validate([
+
+        'chapters' => 'nullable|array',
+
+        'chapters.*.chapter' =>
+            'nullable|string',
+
+        'chapters.*.findings' =>
+            'nullable|string',
+
+        'chapters.*.completed' =>
+            'nullable|boolean',
+
+        'chapters.*.remarks' =>
+            'nullable|string',
+
+
+        'iot' => 'nullable|array',
+
+        'iot.*.finding' =>
+            'nullable|string',
+
+        'iot.*.completed' =>
+            'nullable|boolean',
+
+        'iot.*.remarks' =>
+            'nullable|string',
+
+
+        'objectives' => 'nullable|array',
+
+        'objectives.*.objective' =>
+            'nullable|string',
+
+        'objectives.*.completed' =>
+            'nullable|boolean',
+
+        'objectives.*.remarks' =>
+            'nullable|string',
+
+    ]);
+
+
+    try {
+
+        DB::transaction(function () use (
+            $revision,
+            $validated
+        ) {
+
+
+            // =====================================
+            // CHAPTERS
+            // =====================================
+
+            foreach (
+                $validated['chapters'] ?? []
+                as $chapter
+            ) {
+
+                if (
+                    empty($chapter['chapter']) ||
+                    !isset($chapter['findings'])
+                ) {
+                    continue;
+                }
+
+
+                $status =
+                    !empty($chapter['completed'])
+                        ? 'Completed'
+                        : 'Pending';
+
+
+                $revision->documentation()
+                    ->where(
+                        'chapter',
+                        $chapter['chapter']
+                    )
+                    ->where(
+                        'findings',
+                        $chapter['findings']
+                    )
+                    ->update([
+                        'remarks' => $status
+                    ]);
+            }
+
+
+
+            // =====================================
+            // SYSTEM / IoT
+            // =====================================
+
+            foreach (
+                $validated['iot'] ?? []
+                as $iot
+            ) {
+
+                if (empty($iot['finding'])) {
+                    continue;
+                }
+
+
+                $status =
+                    !empty($iot['completed'])
+                        ? 'Completed'
+                        : 'Pending';
+
+
+                $revision->enhancements()
+                    ->where(
+                        'enhancement',
+                        $iot['finding']
+                    )
+                    ->update([
+                        'remarks' => $status
+                    ]);
+            }
+
+
+
+            // =====================================
+            // ADDITIONAL OBJECTIVES
+            // =====================================
+
+            foreach (
+                $validated['objectives'] ?? []
+                as $objective
+            ) {
+
+                if (empty($objective['objective'])) {
+                    continue;
+                }
+
+
+                $status =
+                    !empty($objective['completed'])
+                        ? 'Completed'
+                        : 'Pending';
+
+
+                $revision->objectives()
+                    ->where(
+                        'objective',
+                        $objective['objective']
+                    )
+                    ->update([
+                        'remarks' => $status
+                    ]);
+            }
+
+        });
+
+
+        return response()->json([
+
+            'success' => true,
+
+            'revision_id' => $revision->id,
+
+            'message' =>
+                'Revision verification submitted successfully!'
+
+        ]);
+
+    } catch (\Throwable $e) {
+
+        Log::error(
+            'Revision verification failed',
+            [
+                'group_id' => $groupId,
+                'teacher_id' => $teacher->id,
+                'revision_id' => $revision->id,
+                'error' => $e->getMessage()
+            ]
+        );
+
+
+        return response()->json([
+
+            'success' => false,
+
+            'error' =>
+                'Verification could not be saved.',
+
+            // Remove this after debugging if desired.
+            'debug' => $e->getMessage()
+
+        ], 500);
+    }
+}
+public function getStudentGroup($groupId)
+{
+    $user = Auth::user();
+
+    if (!$user || $user->role !== 'student') {
+        return response()->json([
+            'error' => 'Unauthorized.'
+        ], 403);
+    }
+
+
+    $student = Student::where(
+        'user_id',
+        $user->user_id
+    )->firstOrFail();
+
+
+    $group = Group::with([
+        'team_members.student.user'
+    ])
+    ->findOrFail($groupId);
+
+
+    // Make sure this student belongs to this group
+    $belongsToGroup = $group->team_members
+        ->contains('user_id', $student->user_id);
+
+
+    if (!$belongsToGroup) {
+
+        return response()->json([
+            'error' => 'You are not a member of this group.'
+        ], 403);
+
+    }
+
+
+    return response()->json([
+
+        'id' => $group->id,
+
+        'group_name' => $group->group_name,
+
+        'capstone_title' => $group->capstone_title,
+
+        'members' => $group->team_members
+            ->map(function ($member) {
+
+                $student = $member->student;
+
+                return [
+
+                    'user_id' => $member->user_id,
+
+                    'name' => $student
+                        ? trim(
+                            $student->student_first_name . ' ' .
+                            $student->student_last_name
+                        )
+                        : $member->user_id
+
+                ];
+
+            })
+            ->values()
+
+    ]);
+}
+public function getStudentRevision($groupId)
+{
+    $user = Auth::user();
+
+    if (!$user || $user->role !== 'student') {
+
+        return response()->json([
+            'error' => 'Unauthorized.'
+        ], 403);
+
+    }
+
+
+    $student = Student::where(
+        'user_id',
+        $user->user_id
+    )->firstOrFail();
+
+
+    $group = Group::with([
+        'team_members'
+    ])
+    ->findOrFail($groupId);
+
+
+    // Student must belong to this group
+    $belongsToGroup = $group->team_members
+        ->contains('user_id', $student->user_id);
+
+
+    if (!$belongsToGroup) {
+
+        return response()->json([
+            'error' => 'You are not a member of this group.'
+        ], 403);
+
+    }
+
+
+    // =====================================
+    // GET CURRENT REVISION
+    // =====================================
+
+    $revision = null;
+
+
+    if ($group->revision_id) {
+
+        $revision = \App\Models\Revision::with([
+            'documentation',
+            'enhancements',
+            'objectives'
+        ])
+        ->where('id', $group->revision_id)
+        ->where('group_id', $groupId)
+        ->first();
+
+    }
+
+
+    // Fallback
+    if (!$revision) {
+
+        $revision = \App\Models\Revision::with([
+            'documentation',
+            'enhancements',
+            'objectives'
+        ])
+        ->where('group_id', $groupId)
+        ->latest('id')
+        ->first();
+
+    }
+
+
+    if (!$revision) {
+
+        return response()->json([
+
+            'chapters' => [],
+
+            'iot_findings' => [],
+
+            'additional_objectives' => [],
+
+            'overall_remarks' => null,
+
+            'approved_by' => null,
+
+        ]);
+
+    }
+
+
+    return response()->json([
+
+        'revision_id' => $revision->id,
+
+
+        // =====================================
+        // CHAPTER FINDINGS
+        // =====================================
+
+        'chapters' => $revision->documentation
+            ->map(function ($item) {
+
+                return [
+
+                    'id' => $item->id,
+
+                    'chapter' => $item->chapter,
+
+                    'findings' => $item->findings,
+
+                    'remarks' => $item->remarks ?: 'Pending',
+
+                ];
+
+            })
+            ->values(),
+
+
+        // =====================================
+        // SYSTEM / IoT
+        // =====================================
+
+        'iot_findings' => $revision->enhancements
+            ->map(function ($item) {
+
+                return [
+
+                    'id' => $item->id,
+
+                    'finding' => $item->enhancement,
+
+                    'remarks' => $item->remarks ?: 'Pending',
+
+                ];
+
+            })
+            ->values(),
+
+
+        // =====================================
+        // ADDITIONAL OBJECTIVES
+        // =====================================
+
+        'additional_objectives' => $revision->objectives
+            ->map(function ($item) {
+
+                return [
+
+                    'id' => $item->id,
+
+                    'objective' => $item->objective,
+
+                    'remarks' => $item->remarks ?: 'Pending',
+
+                ];
+
+            })
+            ->values(),
+
+
+        'overall_remarks' =>
+            $revision->overall_remarks,
+
+
+        'approved_by' =>
+            $revision->approved_by ?? null,
+
+    ]);
+}
+public function getStudentRevisionById($groupId, $revisionId)
+{
+    $user = Auth::user();
+    if (!$user || $user->role !== 'student') {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+
+    $student = Student::where('user_id', $user->user_id)->firstOrFail();
+    $group = Group::with('team_members')->findOrFail($groupId);
+
+    // Ensure student belongs to this group
+    if (!$group->team_members->contains('user_id', $student->user_id)) {
+        return response()->json(['error' => 'You are not a member of this group.'], 403);
+    }
+
+    $revision = \App\Models\Revision::with([
+        'documentation',
+        'enhancements',
+        'objectives'
+    ])->where('group_id', $groupId)
+      ->where('id', $revisionId)
+      ->first();
+
+    if (!$revision) {
+        return response()->json(['error' => 'Revision not found.'], 404);
+    }
+
+    return response()->json([
+        'chapters' => $revision->documentation->map(fn($d) => [
+            'chapter'  => $d->chapter,
+            'findings' => $d->findings,
+            'remarks'  => $d->remarks ?: 'Pending',
+        ]),
+        'iot_findings' => $revision->enhancements->map(fn($e) => [
+            'finding' => $e->enhancement,
+            'remarks' => $e->remarks ?: 'Pending',
+        ]),
+        'additional_objectives' => $revision->objectives->map(fn($o) => [
+            'objective' => $o->objective,
+            'remarks'   => $o->remarks ?: 'Pending',
+        ]),
+        'overall_remarks' => $revision->overall_remarks,
+        'approved_by'     => $revision->approved_by,
+    ]);
+}
 }

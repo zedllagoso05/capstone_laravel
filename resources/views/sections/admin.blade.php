@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Capstone Tracker | Admin Dashboard</title>
     <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="icon" type="image/jpeg" href="{{ asset('pictures/favicon.jpg') }}">
     <script src="/js/app.js" defer></script>
     <style>
         :root {

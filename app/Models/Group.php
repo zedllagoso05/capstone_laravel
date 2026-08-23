@@ -18,6 +18,7 @@ class Group extends Model
         'archived_year',
         'revision_status',
         'revision_description',
+          'revision_id',
     ];
 
     protected $casts = [
@@ -68,5 +69,17 @@ public function groupMilestones()
 public function section()
 {
     return $this->belongsTo(Section::class, 'section_id');
+}
+public function revision()
+{
+    return $this->belongsTo(Revision::class, 'revision_id');
+}
+
+/**
+ * Get all revisions for this group.
+ */
+public function revisions()
+{
+    return $this->hasMany(Revision::class);
 }
 }

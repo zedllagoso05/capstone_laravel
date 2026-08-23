@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Capstone Tracker | Teacher Dashboard</title>
     <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="icon" type="image/jpeg" href="{{ asset('pictures/favicon.jpg') }}">
     <script src="/js/app.js" defer></script>
  <style>
     :root {
@@ -893,7 +894,45 @@
             <div class="p-6">
                 <div class="flex justify-between items-center mb-5"><h3>All Assigned Groups</h3><span class="text-xs text-[#5b6375]">{{ $totalGroups ?? 0 }} groups</span></div>
                 <div class="space-y-3">
+                    
                     @forelse($groups ?? [] as $group)
+                    @php
+                        $teacherRevision = \App\Models\Revision::with([
+                            'documentation',
+                            'enhancements',
+                            'objectives'
+                        ])
+                        ->where('group_id', $group->id)
+                        ->where('panelist_id', $teacher->id)
+                        ->first();
+
+                        $revisionComplete = false;
+                        if ($teacherRevision) {
+                            $allDocumentationComplete = $teacherRevision->documentation
+                                ->every(fn($item) => strtolower(trim($item->remarks ?? '')) === 'completed');
+                            $allEnhancementsComplete = $teacherRevision->enhancements
+                                ->every(fn($item) => strtolower(trim($item->remarks ?? '')) === 'completed');
+                            $allObjectivesComplete = $teacherRevision->objectives
+                                ->every(fn($item) => strtolower(trim($item->remarks ?? '')) === 'completed');
+
+                            $hasRevisionItems = $teacherRevision->documentation->isNotEmpty()
+                                || $teacherRevision->enhancements->isNotEmpty()
+                                || $teacherRevision->objectives->isNotEmpty();
+
+                            $revisionComplete = $hasRevisionItems
+                                && $allDocumentationComplete
+                                && $allEnhancementsComplete
+                                && $allObjectivesComplete;
+                        }
+
+                        $hasEvaluated = false;
+                        if ($teacherRevision && $group->room && $group->room->required_milestone_id) {
+                            $hasEvaluated = \App\Models\Evaluation::where('group_id', $group->id)
+                                ->where('milestone_id', $group->room->required_milestone_id)
+                                ->where('teacher_id', $teacher->id)
+                                ->exists();
+                        }
+                    @endphp
                         @php 
                             $completed = $group->groupMilestones->where('status','completed')->count(); 
                             $total = $milestones->count()??1; 
@@ -933,17 +972,40 @@
                                     </div>
                                 @endif
                             </div>
-                            @php
+                           @php
                                 $isPanelist = $group->room && $group->room->panelists->contains($teacher->id);
                             @endphp
                             <div class="mt-3 sm:mt-0 flex gap-2">
                                 <button onclick="window.openViewModal({{ $group->id }})" class="btn-primary text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 focus:outline-none transition shadow-sm font-bold border-none" style="background-color: var(--gold); border-color: var(--gold); color: #0a1428;">
                                     <i class="fas fa-chart-line"></i> Check
                                 </button>
-                                @if($isPanelist)
-                                    <button onclick="window.openEvaluationModal({{ $group->id }})" class="btn-outline text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 focus:outline-none transition shadow-sm evaluate-btn" style="border-color: #0a1428; color: #0a1428; background: transparent;" data-group="{{ $group->id }}">
-                                        <i class="fa-regular fa-pen-to-square"></i> Evaluate Group
-                                    </button>
+
+                                @if($teacherRevision)
+                                    @if($revisionComplete)
+                                        <button
+                                            type="button"
+                                            onclick="window.openEvaluationModal({{ $group->id }})"
+                                            class="btn-primary text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5"
+                                            style="background-color:#15803d; border-color:#15803d;"
+                                        >
+                                            <i class="fa-regular fa-pen-to-square"></i>
+                                            {{ $hasEvaluated ? 'Re-evaluate' : 'Evaluate' }}
+                                        </button>
+                                    @else
+                                        <button
+                                            type="button"
+                                            onclick="openRevisionCheckModal(
+                                                {{ $group->id }},
+                                                '{{ addslashes($group->group_name) }}',
+                                                '{{ addslashes($group->capstone_title) }}'
+                                            )"
+                                            class="btn-primary text-xs px-3 py-1.5 rounded-lg bg-green-700 hover:bg-green-800"
+                                            style="background-color:#15803d;"
+                                        >
+                                            <i class="fas fa-check-double"></i>
+                                            Verify
+                                        </button>
+                                    @endif
                                 @endif
                             </div>
                         </div>
@@ -953,6 +1015,7 @@
                 </div>
             </div>
         </div>
+                
     </div>
  <!-- ==================== ASSIGNED SECTIONS ==================== -->
     <div id="assignedsections-section" class="section-container hidden section-card max-w-7xl mx-auto">
@@ -1265,14 +1328,117 @@
                             <div class="flex flex-col gap-3 w-full room-group-list" data-room-id="{{ $room->id }}">
                                 @forelse($normalGroups as $g)
                                     @php
-                                        $section = $g->students->first()->section ?? 'No Section';
-                                        $searchData = strtolower($g->group_name . ' ' . ($g->capstone_title ?? '') . ' ' . $section);
-                                        $teacher = \App\Models\Teacher::where('user_id', Auth::user()->user_id)->first();
-                                        $hasEvaluated = $teacher ? \App\Models\Evaluation::where('group_id', $g->id)
-                                            ->where('milestone_id', $room->required_milestone_id)
-                                            ->where('teacher_id', $teacher->id)
-                                            ->exists() : false;
-                                    @endphp
+                                    $section = $g->students->first()->section ?? 'No Section';
+
+                                    $searchData = strtolower(
+                                        $g->group_name . ' ' .
+                                        ($g->capstone_title ?? '') . ' ' .
+                                        $section
+                                    );
+
+                                    $teacher = \App\Models\Teacher::where(
+                                        'user_id',
+                                        Auth::user()->user_id
+                                    )->first();
+
+
+                                    // ==========================================
+                                    // HAS THIS PANELIST ALREADY EVALUATED?
+                                    // ==========================================
+
+                                    $hasEvaluated = $teacher
+                                        ? \App\Models\Evaluation::where(
+                                            'group_id',
+                                            $g->id
+                                        )
+                                        ->where(
+                                            'milestone_id',
+                                            $room->required_milestone_id
+                                        )
+                                        ->where(
+                                            'teacher_id',
+                                            $teacher->id
+                                        )
+                                        ->exists()
+                                        : false;
+
+
+                                    // ==========================================
+                                    // GET THIS PANELIST'S OWN REVISION
+                                    // ==========================================
+
+                                    $teacherRevision = $teacher
+                                        ? \App\Models\Revision::with([
+                                            'documentation',
+                                            'enhancements',
+                                            'objectives'
+                                        ])
+                                        ->where('group_id', $g->id)
+                                        ->where('panelist_id', $teacher->id)
+                                        ->first()
+                                        : null;
+
+
+                                    // ==========================================
+                                    // CHECK IF ALL REVISION ITEMS ARE COMPLETED
+                                    // ==========================================
+
+                                    $revisionComplete = false;
+
+
+                                    if ($teacherRevision) {
+
+                                        $allDocumentationComplete =
+                                            $teacherRevision->documentation
+                                                ->every(function ($item) {
+
+                                                    return strtolower(
+                                                        trim($item->remarks ?? '')
+                                                    ) === 'completed';
+
+                                                });
+
+
+                                        $allEnhancementsComplete =
+                                            $teacherRevision->enhancements
+                                                ->every(function ($item) {
+
+                                                    return strtolower(
+                                                        trim($item->remarks ?? '')
+                                                    ) === 'completed';
+
+                                                });
+
+
+                                        $allObjectivesComplete =
+                                            $teacherRevision->objectives
+                                                ->every(function ($item) {
+
+                                                    return strtolower(
+                                                        trim($item->remarks ?? '')
+                                                    ) === 'completed';
+
+                                                });
+
+
+                                        /*
+                                        * At least one revision item must exist.
+                                        * This prevents an empty revision from becoming
+                                        * automatically completed.
+                                        */
+                                        $hasRevisionItems =
+                                            $teacherRevision->documentation->isNotEmpty() ||
+                                            $teacherRevision->enhancements->isNotEmpty() ||
+                                            $teacherRevision->objectives->isNotEmpty();
+
+
+                                        $revisionComplete =
+                                            $hasRevisionItems &&
+                                            $allDocumentationComplete &&
+                                            $allEnhancementsComplete &&
+                                            $allObjectivesComplete;
+                                    }
+                                @endphp
                                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-[#faf8f4] border border-[#e2dacf] rounded-xl text-sm group-item transition hover:shadow-sm w-full" data-search="{{ $searchData }}">
                                         <div class="flex flex-col gap-1">
                                             <div class="flex items-center gap-2 flex-wrap">
@@ -1292,24 +1458,211 @@
                                             @endif
                                         </div>
                                         <div class="mt-3 sm:mt-0 flex gap-2">
-                                            @if($g->revision_status == 'needs_revision')
-                                                <button onclick="window.openRevisionModal({{ $g->id }}, '{{ addslashes($g->group_name) }}')" class="btn-outline text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 focus:outline-none transition shadow-sm hover:border-amber-600 hover:text-amber-600" style="border-color: #d97706; color: #d97706;">
-                                                    <i class="fas fa-edit"></i> Edit Revision Notes
-                                                </button>
-                                            @else
-                                                @if($hasEvaluated)
-                                                    <button onclick="window.openEvaluationModal({{ $g->id }})" class="btn-outline text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 focus:outline-none transition shadow-sm evaluate-btn text-green-700 hover:text-green-800 hover:border-green-800" style="border-color: #15803d; color: #15803d; background: transparent;" data-group="{{ $g->id }}">
-                                                        <i class="fas fa-check-double"></i> Re-evaluate Group
-                                                    </button>
-                                                @else
-                                                    <button onclick="window.openEvaluationModal({{ $g->id }})" class="btn-primary text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 focus:outline-none transition shadow-sm evaluate-btn" data-group="{{ $g->id }}">
-                                                        <i class="fa-regular fa-pen-to-square"></i> Evaluate Group
-                                                    </button>
-                                                @endif
-                                                <button onclick="window.openRevisionModal({{ $g->id }}, '{{ addslashes($g->group_name) }}')" class="btn-outline text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 focus:outline-none transition shadow-sm hover:border-amber-600 hover:text-amber-600" style="border-color: #d97706; color: #d97706;">
-                                                    <i class="fas fa-undo-alt"></i> Revision
-                                                </button>
-                                            @endif
+                                            <div class="mt-3 sm:mt-0 flex gap-2">
+
+    {{-- ========================================= --}}
+    {{-- THIS PANELIST HAS A REVISION --}}
+    {{-- ========================================= --}}
+
+    @if($teacherRevision)
+
+
+        {{-- ALL REVISION ITEMS COMPLETED --}}
+        @if($revisionComplete)
+
+
+            @if($hasEvaluated)
+
+                <button
+                    type="button"
+                    onclick="window.openEvaluationModal({{ $g->id }})"
+                    class="
+                        btn-outline
+                        text-xs
+                        px-4
+                        py-2
+                        rounded-lg
+                        flex
+                        items-center
+                        gap-1.5
+                        focus:outline-none
+                        transition
+                        shadow-sm
+                        evaluate-btn
+                    "
+                    style="
+                        border-color:#15803d;
+                        color:#15803d;
+                        background:transparent;
+                    "
+                    data-group="{{ $g->id }}"
+                 disabled>
+                    <i class="fas fa-check-double"></i>
+
+                    already evaluated 
+                </button>
+
+
+            @else
+
+                <button
+                    type="button"
+                    onclick="window.openEvaluationModal({{ $g->id }})"
+                    class="
+                        btn-primary
+                        text-xs
+                        px-4
+                        py-2
+                        rounded-lg
+                        flex
+                        items-center
+                        gap-1.5
+                        focus:outline-none
+                        transition
+                        shadow-sm
+                        evaluate-btn
+                    "
+                    style="
+                        background-color:#15803d;
+                        border-color:#15803d;
+                    "
+                    data-group="{{ $g->id }}"
+                >
+                    <i class="fa-regular fa-pen-to-square"></i>
+
+                    Evaluate Group
+                </button>
+
+            @endif
+
+
+        {{-- STILL HAS PENDING REVISION ITEMS --}}
+        @else
+
+            <button
+                type="button"
+                onclick="openRevisionCheckModal(
+                    {{ $g->id }},
+                    '{{ addslashes($g->group_name) }}',
+                    '{{ addslashes($g->capstone_title) }}'
+                )"
+                class="
+                    btn-outline
+                    text-xs
+                    px-3
+                    py-1.5
+                    rounded-lg
+                    flex
+                    items-center
+                    gap-1
+                    focus:outline-none
+                    transition
+                    shadow-sm
+                "
+                style="
+                    border-color:#d97706;
+                    color:#d97706;
+                "
+            >
+                <i class="fas fa-edit"></i>
+
+                Edit Revision Notes
+            </button>
+
+        @endif
+
+
+    {{-- ========================================= --}}
+    {{-- THIS PANELIST DID NOT REQUEST A REVISION --}}
+    {{-- ========================================= --}}
+
+    @else
+
+
+        @if($hasEvaluated)
+
+            <button
+                type="button"
+                onclick="window.openEvaluationModal({{ $g->id }})"
+                class="
+                    btn-outline
+                    text-xs
+                    px-4
+                    py-2
+                    rounded-lg
+                    flex
+                    items-center
+                    gap-1.5
+                    evaluate-btn
+                "
+                style="
+                    border-color:#15803d;
+                    color:#15803d;
+                "
+                data-group="{{ $g->id }}"
+            >
+                <i class="fas fa-check-double"></i>
+
+                Re-evaluate Group
+            </button>
+
+
+        @else
+
+            <button
+                type="button"
+                onclick="window.openEvaluationModal({{ $g->id }})"
+                class="
+                    btn-primary
+                    text-xs
+                    px-4
+                    py-2
+                    rounded-lg
+                    flex
+                    items-center
+                    gap-1.5
+                    evaluate-btn
+                "
+                data-group="{{ $g->id }}"
+            >
+                <i class="fa-regular fa-pen-to-square"></i>
+
+                Evaluate Group
+            </button>
+
+        @endif
+
+
+        <button
+            type="button"
+            onclick="window.openRevisionModal(
+                {{ $g->id }},
+                '{{ addslashes($g->group_name) }}',
+                '{{ addslashes($g->capstone_title) }}'
+            )"
+            class="
+                btn-outline
+                text-xs
+                px-4
+                py-2
+                rounded-lg
+                flex
+                items-center
+                gap-1.5
+            "
+            style="
+                border-color:#d97706;
+                color:#d97706;
+            "
+        >
+            <i class="fas fa-undo-alt"></i>
+
+            Revision
+        </button>
+
+    @endif
+
+</div>
                                         </div>
                                     </div>
                                 @empty
@@ -1530,6 +1883,103 @@
 </main>
 
 <!-- ==================== MODALS ==================== -->
+<!-- REVISION CHECKING MODAL (verification) -->
+<div id="revisionCheckModal" class="modal-overlay">
+    <div class="modal-box wide">
+        <div class="modal-accent" style="background-color: #15803d;"></div>
+        <div class="flex justify-between items-center mb-4">
+            <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">Revision Verification</h2>
+            <button type="button" onclick="closeModal('revisionCheckModal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
+        </div>
+
+        <form id="revision_check_form" onsubmit="submitRevisionCheck(event)" class="space-y-5">
+            @csrf
+            <input type="hidden" id="check_group_id">
+
+            <!-- Header: Proponents & Project -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="form-label">Name of Proponents</label>
+                    <div id="check_proponents_list" class="flex flex-wrap gap-2 mt-1">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Name of Capstone Project</label>
+                    <input type="text" id="check_capstone_title" class="form-input" readonly>
+                </div>
+            </div>
+
+            <!-- Chapter / Document Findings -->
+            <div class="border-t border-[#e2dacf] pt-4">
+                <p class="form-fieldset-title"><i class="fa-solid fa-book"></i> Chapter / Document Findings</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                                <th class="p-2 pl-3" style="width:20%">Chapter</th>
+                                <th class="p-2" style="width:45%">Document Findings</th>
+                                <th class="p-2 text-center" style="width:15%">Completed?</th>
+                                <th class="p-2 pr-3 text-center" style="width:20%">Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="check_chapters_tbody" class="divide-y divide-[#faf1e0] text-xs">
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- System / IoT Findings -->
+            <div class="border-t border-[#e2dacf] pt-4">
+                <p class="form-fieldset-title"><i class="fa-solid fa-microchip"></i> System / IoT Findings / Enhancements / Recommendations</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                                <th class="p-2 pl-3" style="width:65%">Finding / Enhancement</th>
+                                <th class="p-2 text-center" style="width:15%">Completed?</th>
+                                <th class="p-2 pr-3 text-center" style="width:20%">Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="check_iot_tbody" class="divide-y divide-[#faf1e0] text-xs">
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Additional Objectives -->
+<div class="border-t border-[#e2dacf] pt-3">
+    <p class="form-fieldset-title mb-2">
+        <i class="fa-solid fa-list-check"></i>
+        Additional Objectives for Capstone Project 2
+    </p>
+
+    <div class="border border-[#e2dacf] rounded-lg overflow-hidden">
+        <div id="check_objectives_list"></div>
+    </div>
+</div>
+
+            <!-- Overall Remarks (read-only) -->
+            <div>
+                <label class="form-label">Overall Remarks / Instructions</label>
+                <p id="check_overall_remarks" class="p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg text-sm text-[#5b6375] italic"></p>
+            </div>
+
+            <!-- Approved by -->
+            <div class="border-t border-[#e2dacf] pt-4">
+                <label class="form-label">Approved by (Panelist Name / Signature)</label>
+                <input type="text" name="approved_by" class="form-input" placeholder="Enter your name" value="{{ strtoupper(($teacher->teacher_first_name)) . ' . ' . strtoupper($teacher->teacher_last_name) }}" readonly>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2 border-t border-[#e2dacf]">
+                <button type="button" onclick="closeModal('revisionCheckModal')" class="btn-ghost">Cancel</button>
+                <button type="submit" class="btn-primary" style="background-color: #15803d; border-color: #15803d;">Submit Verification</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- VIEW PROGRESS MODAL -->
 <div id="viewModal" class="modal-overlay">
@@ -1606,8 +2056,8 @@
                     <label class="form-label">Milestone</label>
                     <select id="milestone_select" class="form-select" required>
                         <option value="">-- Select Milestone --</option>
-                        @foreach($milestones as $milestone)
-                            <option value="{{ $milestone->id }}">{{ $milestone->milestone_title }}</option>
+                        @foreach($allRooms as $milestone)
+                            <option value="{{ $milestone->required_milestone_id }}">{{ $milestone->activity_name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -1897,32 +2347,88 @@
     </div>
 </div>
 
-<!-- REVISION MODAL -->
+<!-- REVISION MODAL (matching Revision-Sheet-2026 PDF) -->
 <div id="revisionModal" class="modal-overlay">
-    <div class="modal-box">
+    <div class="modal-box wide">
         <div class="modal-accent" style="background-color: #d97706;"></div>
         <div class="flex justify-between items-center mb-4">
             <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">Request Group Revision</h2>
             <button type="button" onclick="closeModal('revisionModal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
         </div>
-        <form id="revision_form" onsubmit="submitRevisionRequest(event)" class="space-y-4">
+
+        <form id="revision_form" onsubmit="submitRevisionRequest(event)" class="space-y-5">
             @csrf
             <input type="hidden" id="revision_group_id">
-            <div>
-                <label class="form-label">Group Name</label>
-                <input type="text" id="revision_group_name" class="form-input" readonly>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="form-label">Group Name</label>
+                    <input type="text" id="revision_group_name" class="form-input" readonly>
+                </div>
+                <div>
+                    <label class="form-label">Name of Capstone Project</label>
+                    <input type="text" id="revision_capstone_title" class="form-input" readonly>
+                </div>  
             </div>
+
+            <!-- Proponents (loaded from group members) -->
             <div>
-                <label class="form-label">What needs to be revised? (Instructions/Feedback)</label>
-                <textarea id="revision_description_input" class="form-input h-32" placeholder="Specify clear instructions for the group and their adviser..." required></textarea>
+                <label class="form-label">Proponents</label>
+                <div id="revision_proponents_list" class="flex flex-wrap gap-2 mt-1">
+                    <span class="text-xs text-[#5b6375] italic">Loading team members…</span>
+                </div>
             </div>
-            <div class="flex justify-end gap-3 pt-2">
+
+            <!-- Chapter Findings & Remarks -->
+            <div class="border-t border-[#e2dacf] pt-4">
+                <p class="form-fieldset-title"><i class="fa-solid fa-book"></i> Chapter / Document Findings & Remarks</p>
+                <div id="revision_chapter_rows" class="space-y-2">
+                    <!-- Dynamic rows -->
+                </div>
+                <button type="button" onclick="addRevisionChapterRow()" class="btn-outline text-xs mt-2">
+                    <i class="fas fa-plus mr-1"></i> Add Chapter Finding
+                </button>
+            </div>
+
+            <!-- System / IoT Findings -->
+            <div class="border-t border-[#e2dacf] pt-4">
+                <p class="form-fieldset-title"><i class="fa-solid fa-microchip"></i> System / IoT Findings / Enhancements / Recommendations</p>
+                <div id="revision_iot_rows" class="space-y-2">
+                    <!-- Dynamic rows -->
+                </div>
+                <button type="button" onclick="addRevisionIotRow()" class="btn-outline text-xs mt-2">
+                    <i class="fas fa-plus mr-1"></i> Add System / IoT Finding
+                </button>
+            </div>
+
+            <!-- Additional Objectives for Capstone 2 -->
+            <div class="border-t border-[#e2dacf] pt-4">
+                <p class="form-fieldset-title"><i class="fa-solid fa-list-check"></i> Additional Objectives for Capstone Project 2</p>
+                <div id="revision_objectives_list" class="space-y-2">
+                    <!-- Dynamic list -->
+                </div>
+                <button type="button" onclick="addRevisionObjective()" class="btn-outline text-xs mt-2">
+                    <i class="fas fa-plus mr-1"></i> Add Objective
+                </button>
+            </div>
+
+            <!-- Overall Remarks -->
+            <div>
+                <label class="form-label">Overall Remarks / Instructions</label>
+                <textarea id="revision_description_input" class="form-input h-24" placeholder="Provide clear instructions for the group and their adviser..." required></textarea>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2 border-t border-[#e2dacf]">
                 <button type="button" onclick="closeModal('revisionModal')" class="btn-ghost">Cancel</button>
                 <button type="submit" class="btn-primary" style="background-color: #d97706; border-color: #d97706;">Submit Revision Request</button>
             </div>
         </form>
     </div>
 </div>
+{{-- documents modal --}}
+{{-- revision sheet  modal--}}
+
+
 
 <script>
 // ══════════════════════════════════════════════
@@ -2547,46 +3053,171 @@ document.addEventListener('DOMContentLoaded', function () {
 }
 
     // ── REVISION HELPER FUNCTIONS ────────────────
-    window.openRevisionModal = function (groupId, groupName) {
-        document.getElementById('revision_group_id').value = groupId;
-        document.getElementById('revision_group_name').value = groupName;
-        document.getElementById('revision_description_input').value = '';
-        openModal('revisionModal');
-    };
+ window.openRevisionModal = function (groupId, groupName, capstoneTitle) {
+    document.getElementById('revision_group_id').value = groupId;
+    document.getElementById('revision_group_name').value = groupName || '';
+    document.getElementById('revision_capstone_title').value = capstoneTitle || '';
+    document.getElementById('revision_description_input').value = '';
 
-    window.submitRevisionRequest = function (event) {
-        event.preventDefault();
-        const groupId = document.getElementById('revision_group_id').value;
-        const description = document.getElementById('revision_description_input').value;
+    // Reset dynamic rows from any previous open
+    document.getElementById('revision_chapter_rows').innerHTML = '';
+    document.getElementById('revision_iot_rows').innerHTML = '';
+    document.getElementById('revision_objectives_list').innerHTML = '';
 
-        fetch(`/teacher/group/${groupId}/request-revision`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({
-                revision_description: description
-            })
-        })
-        .then(response => response.json())
+    const proponentsContainer = document.getElementById('revision_proponents_list');
+    proponentsContainer.innerHTML = '<span class="text-xs text-[#5b6375] italic">Loading team members…</span>';
+
+    openModal('revisionModal');
+
+    fetch(`/teacher/get-group/${groupId}`)
+        .then(r => r.json())
         .then(data => {
-            if (data.success) {
-                closeModal('revisionModal');
-                showToast(data.message || 'Revision request submitted successfully!');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            } else {
-                showToast(data.error || 'Failed to submit revision request.', true);
+            proponentsContainer.innerHTML = '';
+            if (data.error || !data.members || data.members.length === 0) {
+                proponentsContainer.innerHTML = '<span class="text-xs text-[#5b6375] italic">No team members found.</span>';
+                return;
             }
+            data.members.forEach(m => {
+                const badge = document.createElement('span');
+                badge.className = 'badge badge-navy';
+                badge.innerHTML = `<i class="fa-regular fa-user mr-1"></i> ${m.name}${m.role ? ` (${m.role})` : ''}`;
+                proponentsContainer.appendChild(badge);
+            });
         })
-        .catch(err => {
-            console.error(err);
-            showToast('An error occurred while submitting revision request.', true);
+        .catch(() => {
+            proponentsContainer.innerHTML = '<span class="text-xs text-red-500 italic">Failed to load team members.</span>';
         });
-    };
+};  
+window.submitRevisionCheck = function (event) {
+    event.preventDefault();
+    const groupId = document.getElementById('check_group_id').value;
+    const approvedBy = document.querySelector('#revision_check_form input[name="approved_by"]').value;
+
+    const chapters = [];
+    document.querySelectorAll('#check_chapters_tbody tr').forEach(row => {
+        if (!row.dataset.chapter) return;
+        chapters.push({
+            chapter:   row.dataset.chapter,
+            findings:  row.dataset.findings,
+            completed: row.querySelector('[data-role="chapter-completed"]')?.checked || false,
+            remarks:   row.querySelector('[data-role="chapter-remarks"]')?.value || '',
+        });
+    });
+
+    const iot = [];
+    document.querySelectorAll('#check_iot_tbody tr').forEach(row => {
+        if (!row.dataset.finding) return;
+        iot.push({
+            finding:   row.dataset.finding,
+            completed: row.querySelector('[data-role="iot-completed"]')?.checked || false,
+            remarks:   row.querySelector('[data-role="iot-remarks"]')?.value || '',
+        });
+    });
+
+    // FIXED: objectives now live in a table, not bare divs
+    const objectives = [];
+    document.querySelectorAll('#check_objectives_list tbody tr').forEach(row => {
+        if (!row.dataset.objective) return;
+        objectives.push({
+            objective: row.dataset.objective,
+            completed: row.querySelector('[data-role="objective-completed"]')?.checked || false,
+            remarks:   row.querySelector('[data-role="objective-remarks"]')?.value || '',
+        });
+    });
+
+    // ...rest unchanged
+
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalHtml = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Submitting...';
+
+    fetch(`/teacher/group/${groupId}/verify-revision`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ approved_by: approvedBy, chapters, iot, objectives })
+    })
+    .then(async r => {
+        const data = await r.json().catch(() => null);
+        if (!r.ok) throw new Error(data?.error || 'Failed to submit verification.');
+        return data;
+    })
+    .then(data => {
+        closeModal('revisionCheckModal');
+        showToast(data.message || 'Revision verified successfully!');
+        setTimeout(() => window.location.reload(), 1000);
+    })
+    .catch(err => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHtml;
+        showToast(err.message || 'Failed to submit verification.', true);
+    });
+};
+    window.submitRevisionRequest = function (event) {
+    event.preventDefault();
+    const groupId = document.getElementById('revision_group_id').value;
+    const description = document.getElementById('revision_description_input').value;
+
+    // Collect chapter findings
+    const chapters = [];
+    document.querySelectorAll('#revision_chapter_rows > div').forEach(row => {
+        const inputs = row.querySelectorAll('input[type="text"]');
+        if (inputs[0]?.value) {
+            chapters.push({ chapter: inputs[0].value, findings: inputs[1]?.value || '' });
+        }
+    });
+
+    // Collect IoT/system findings
+    const iotFindings = [];
+    document.querySelectorAll('#revision_iot_rows > div').forEach(row => {
+        const input = row.querySelector('input[type="text"]');
+        if (input?.value) {
+            iotFindings.push({ finding: input.value });
+        }
+    });
+
+    // Collect additional objectives
+    const objectives = [];
+    document.querySelectorAll('#revision_objectives_list > div').forEach(row => {
+        const input = row.querySelector('input[type="text"]');
+        if (input?.value) {
+            objectives.push(input.value);
+        }
+    });
+
+    fetch(`/teacher/group/${groupId}/request-revision`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            revision_description: description,
+            chapters: chapters,
+            iot_findings: iotFindings,
+            additional_objectives: objectives
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeModal('revisionModal');
+            showToast(data.message || 'Revision request submitted successfully!');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showToast(data.error || 'Failed to submit revision request.', true);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showToast('An error occurred while submitting revision request.', true);
+    });
+};
 
     window.markGroupAsRevised = function (groupId) {
         if (!confirm('Are you sure you have addressed all revisions and want to mark this group as revised?')) {
@@ -2965,6 +3596,361 @@ if (newPasswordInput && strengthBar) {
         strengthBar.style.background = level.color;
     });
 }
+// ── Dynamic row adders for revision modal ──
+function addRevisionChapterRow() {
+    const container = document.getElementById('revision_chapter_rows');
+    const row = document.createElement('div');
+    row.className = 'flex flex-col md:flex-row gap-2 p-2 bg-[#faf8f4] rounded-lg border border-[#e2dacf]';
+    row.innerHTML = `
+        <input type="text" name="chapters[][chapter]" class="form-input flex-1 text-sm" placeholder="Chapter (e.g., Chapter 1, Chapter 2)" required>
+        <input type="text" name="chapters[][findings]" class="form-input flex-1 text-sm" placeholder="Document Findings" required>
+        <button type="button" onclick="this.parentElement.remove()" class="text-[#5b6375] hover:text-red-500 px-2"><i class="fas fa-times"></i></button>
+    `;
+    container.appendChild(row);
+}
+
+function addRevisionIotRow() {
+    const container = document.getElementById('revision_iot_rows');
+    const row = document.createElement('div');
+    row.className = 'flex flex-col md:flex-row gap-2 p-2 bg-[#faf8f4] rounded-lg border border-[#e2dacf]';
+    row.innerHTML = `
+        <input type="text" name="iot[][finding]" class="form-input flex-1 text-sm" placeholder="Findings / Enhancements / Recommendations" required>
+        <button type="button" onclick="this.parentElement.remove()" class="text-[#5b6375] hover:text-red-500 px-2"><i class="fas fa-times"></i></button>
+    `;
+    container.appendChild(row);
+}
+
+function addRevisionObjective() {
+    const container = document.getElementById('revision_objectives_list');
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2 p-2 bg-[#faf8f4] rounded-lg border border-[#e2dacf]';
+    row.innerHTML = `
+        <input type="text" name="objectives[]" class="form-input flex-1 text-sm" placeholder="Enter objective" required>
+        <button type="button" onclick="this.parentElement.remove()" class="text-[#5b6375] hover:text-red-500 px-2"><i class="fas fa-times"></i></button>
+    `;
+    container.appendChild(row);
+}
+window.openRevisionCheckModal = function(groupId, groupName, capstoneTitle) {
+    document.getElementById('check_group_id').value = groupId;
+    document.getElementById('check_capstone_title').value = capstoneTitle || '';
+
+    // Reset previous data
+    document.getElementById('check_chapters_tbody').innerHTML = '';
+    document.getElementById('check_iot_tbody').innerHTML = '';
+    document.getElementById('check_objectives_list').innerHTML = '';
+    document.getElementById('check_overall_remarks').textContent = '';
+
+    const proponentsEl = document.getElementById('check_proponents_list');
+
+    proponentsEl.innerHTML =
+        '<span class="text-xs text-[#5b6375] italic">Loading...</span>';
+
+    openModal('revisionCheckModal');
+
+    Promise.all([
+        fetch(`/teacher/get-group/${groupId}`)
+            .then(r => r.json()),
+
+        fetch(`/teacher/get-revision-details/${groupId}`)
+            .then(async r => {
+                const data = await r.json();
+
+                if (!r.ok) {
+                    throw new Error(
+                        data.error || 'Failed to load revision.'
+                    );
+                }
+
+                return data;
+            })
+    ])
+    .then(([groupData, revData]) => {
+
+        // ===========================
+        // PROPONENTS
+        // ===========================
+        if (groupData.members && groupData.members.length) {
+
+            proponentsEl.innerHTML = groupData.members.map(m => `
+                <span class="badge badge-navy">
+                    <i class="fa-regular fa-user mr-1"></i>
+                    ${m.name}
+                </span>
+            `).join('');
+
+        } else {
+
+            proponentsEl.innerHTML =
+                '<span class="text-xs text-[#5b6375]">No members</span>';
+        }
+
+
+        // ===========================
+        // OVERALL REMARKS
+        // ===========================
+        document.getElementById('check_overall_remarks').textContent =
+            revData.overall_remarks || 'No overall remarks.';
+
+
+        // ===========================
+        // CHAPTER FINDINGS
+        // ===========================
+        const chaptersTbody =
+            document.getElementById('check_chapters_tbody');
+
+        if (revData.chapters && revData.chapters.length) {
+
+            revData.chapters.forEach((ch, idx) => {
+
+                const remarks = ch.remarks || 'Pending';
+
+                const isCompleted =
+                    remarks.toLowerCase() === 'completed';
+
+                const tr = document.createElement('tr');
+
+                tr.dataset.chapter = ch.chapter;
+                tr.dataset.findings = ch.findings;
+
+                tr.innerHTML = `
+                    <td class="p-2 pl-3 font-semibold">
+                        ${ch.chapter}
+                    </td>
+
+                    <td class="p-2">
+                        ${ch.findings}
+                    </td>
+
+                    <td class="p-2 text-center">
+
+                        <input
+                            type="checkbox"
+                            data-role="chapter-completed"
+                            class="form-checkbox text-green-600"
+                            value="1"
+                            ${isCompleted ? 'checked' : ''}
+                        >
+
+                    </td>
+
+                    <td class="p-2 pr-3">
+
+                        <input
+                            type="text"
+                            data-role="chapter-remarks"
+                            class="form-input text-xs py-1
+                            ${isCompleted
+                                ? 'bg-green-50 text-green-700'
+                                : 'bg-[#f0ece4]'} cursor-not-allowed"
+                            value="${isCompleted ? 'Completed' : 'Pending'}"
+                            readonly
+                        >
+
+                    </td>
+                `;
+
+                chaptersTbody.appendChild(tr);
+            });
+
+        } else {
+
+            chaptersTbody.innerHTML = `
+                <tr>
+                    <td colspan="4"
+                        class="p-4 text-center text-[#5b6375]">
+                        No chapter findings.
+                    </td>
+                </tr>
+            `;
+        }
+
+
+        // ===========================
+        // IoT / SYSTEM FINDINGS
+        // ===========================
+        const iotTbody =
+            document.getElementById('check_iot_tbody');
+
+        if (revData.iot_findings &&
+            revData.iot_findings.length) {
+
+            revData.iot_findings.forEach((iot, idx) => {
+
+                const remarks = iot.remarks || 'Pending';
+
+                const isCompleted =
+                    remarks.toLowerCase() === 'completed';
+
+                const tr = document.createElement('tr');
+
+                tr.dataset.finding = iot.finding;
+
+                tr.innerHTML = `
+                    <td class="p-2 pl-3">
+                        ${iot.finding}
+                    </td>
+
+                    <td class="p-2 text-center">
+
+                        <input
+                            type="checkbox"
+                            data-role="iot-completed"
+                            class="form-checkbox text-green-600"
+                            value="1"
+                            ${isCompleted ? 'checked' : ''}
+                        >
+
+                    </td>
+
+                    <td class="p-2 pr-3">
+
+                        <input
+                            type="text"
+                            data-role="iot-remarks"
+                            class="form-input text-xs py-1
+                            ${isCompleted
+                                ? 'bg-green-50 text-green-700'
+                                : 'bg-[#f0ece4]'} cursor-not-allowed"
+                            value="${isCompleted ? 'Completed' : 'Pending'}"
+                            readonly
+                        >
+
+                    </td>
+                `;
+
+                iotTbody.appendChild(tr);
+            });
+
+        } else {
+
+            iotTbody.innerHTML = `
+                <tr>
+                    <td colspan="3"
+                        class="p-4 text-center text-[#5b6375]">
+                        No IoT findings.
+                    </td>
+                </tr>
+            `;
+        }
+
+
+         // ===========================
+// ADDITIONAL OBJECTIVES
+// ===========================
+const objectivesList = document.getElementById('check_objectives_list');
+objectivesList.innerHTML = '';
+
+// Build a table identical to the others
+const table = document.createElement('table');
+table.className = 'w-full text-left border-collapse';
+
+const thead = document.createElement('thead');
+thead.innerHTML = `
+    <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+        <th class="p-2 pl-3" style="width:65%">Objective</th>
+        <th class="p-2 text-center" style="width:15%">Completed?</th>
+        <th class="p-2 pr-3 text-center" style="width:20%">Remarks</th>
+    </tr>
+`;
+table.appendChild(thead);
+
+const tbody = document.createElement('tbody');
+tbody.className = 'divide-y divide-[#faf1e0] text-xs';
+
+if (revData.additional_objectives && revData.additional_objectives.length > 0) {
+    revData.additional_objectives.forEach((obj) => {
+        const objectiveText = typeof obj === 'object' ? obj.objective : obj;
+        const remarks = typeof obj === 'object' ? (obj.remarks || 'Pending') : 'Pending';
+        const isCompleted = String(remarks).toLowerCase() === 'completed';
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-[#faf8f4]/50';
+        tr.dataset.objective = objectiveText;
+
+        tr.innerHTML = `
+            <td class="p-2 pl-3 font-medium text-[#171e2c]">${objectiveText}</td>
+            <td class="p-2 text-center">
+                <input type="checkbox" data-role="objective-completed" class="form-checkbox text-green-600" value="1" ${isCompleted ? 'checked' : ''}>
+            </td>
+            <td class="p-2 pr-3">
+                <input type="text" data-role="objective-remarks" class="form-input text-xs py-1 text-center ${isCompleted ? 'bg-green-50 text-green-700' : 'bg-[#f0ece4]'} cursor-not-allowed w-full" value="${isCompleted ? 'Completed' : 'Pending'}" readonly>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+} else {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="3" class="p-4 text-center text-[#5b6375]">No objectives.</td>`;
+    tbody.appendChild(tr);
+}
+
+table.appendChild(tbody);
+objectivesList.appendChild(table);
+
+
+        // ===========================
+        // COMPLETED / PENDING TOGGLE
+        // ===========================
+        document.querySelectorAll(
+            '#check_chapters_tbody [data-role="chapter-completed"], ' +
+            '#check_iot_tbody [data-role="iot-completed"], ' +
+            '#check_objectives_list [data-role="objective-completed"]'
+        )
+        .forEach(cb => {
+
+            cb.addEventListener('change', function () {
+
+                const row = this.closest('tr, div');
+
+                const remarksField =
+                    row?.querySelector(
+                        '[data-role$="-remarks"]'
+                    );
+
+                if (!remarksField) return;
+
+                if (this.checked) {
+
+                    remarksField.value = 'Completed';
+
+                    remarksField.classList.remove(
+                        'bg-[#f0ece4]'
+                    );
+
+                    remarksField.classList.add(
+                        'bg-green-50',
+                        'text-green-700'
+                    );
+
+                } else {
+
+                    remarksField.value = 'Pending';
+
+                    remarksField.classList.remove(
+                        'bg-green-50',
+                        'text-green-700'
+                    );
+
+                    remarksField.classList.add(
+                        'bg-[#f0ece4]'
+                    );
+                }
+            });
+        });
+
+    })
+    .catch(error => {
+
+        console.error(error);
+
+        proponentsEl.innerHTML = `
+            <span class="text-red-500">
+                ${error.message || 'Failed to load revision data.'}
+            </span>
+        `;
+    });
+};
 </script>
 </body>
 </html>

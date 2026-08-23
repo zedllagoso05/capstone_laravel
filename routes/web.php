@@ -175,6 +175,11 @@ Route::middleware('auth')->group(function () {
         // Revision routes
         Route::post('/group/{group}/request-revision', [user_controller::class, 'requestGroupRevision'])->name('teacher.request_revision');
         Route::post('/group/{group}/mark-revised',      [user_controller::class, 'markGroupRevised'])->name('teacher.mark_revised');
+        // Fetch revision details for a group (used by the verification modal)
+        Route::get('/get-revision-details/{group}', [user_controller::class, 'getRevisionDetails'])->name('teacher.get_revision_details');
+
+        // Submit revision verification (checklist + approval)
+        Route::post('/group/{group}/verify-revision', [user_controller::class, 'verifyRevision'])->name('teacher.verify_revision');
     });
 
     /*
@@ -182,14 +187,17 @@ Route::middleware('auth')->group(function () {
     | Student Routes – Role: student
     |--------------------------------------------------------------------------
     */
-    Route::prefix('sections')->middleware(['role:student'])->group(function () {
-        Route::get('/student', [user_controller::class, 'dashboard'])->name('student.page');
-    });
+    // Dashboard
+    Route::get('/sections/student', [user_controller::class, 'dashboard'])->name('student.page');
 
     Route::prefix('student')->middleware(['role:student'])->group(function () {
         Route::post('/update',               [user_controller::class, 'update'])->name('student.profile.update');
         Route::post('/update-password',      [user_controller::class, 'updatePassword'])->name('student.profile.update_password');
         Route::get('/get-group-progress/{group}', [user_controller::class, 'getGroupProgress'])->name('student.group_progress');
+
+        // Revision sheet endpoints
+        Route::get('/get-group/{groupId}', [user_controller::class, 'getStudentGroup'])->name('student.group.details');
+        Route::get('/get-revision/{groupId}/{revisionId}', [user_controller::class, 'getStudentRevisionById'])->name('student.revision.details');
     });
 
     /*

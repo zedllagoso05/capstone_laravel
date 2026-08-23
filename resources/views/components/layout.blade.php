@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Capstone Tracker — MCC | Intelligent Student Tracking System</title>
     <link rel="stylesheet" href="/css/app.css">
-    <script src="/js/app.js" defer></script>
+    <link rel="icon" type="image/jpeg" href="{{ asset('pictures/favicon.jpg') }}"> 
+       <script src="/js/app.js" defer></script>
     {{ $styles ?? '' }}
 </head>
 <body>
@@ -96,8 +97,8 @@
     <footer id="contact">
         <p>© 2026 Capstone Tracker — MCC &nbsp;|&nbsp; Designed for excellence</p>
         <div class="footer-links">
-            <a href="mailto:contact@mcc.edu" aria-label="Email support">📧 zedlaurence.llagoso@mcc.edu</a>
-            <a href="https://www.facebook.com/mcc" target="_blank" rel="noopener noreferrer" aria-label="Facebook page">🌐 Facebook</a>
+            <a href="mailto:mcccapstonetracker@gmail.com" aria-label="Email support">mcccapstonetracker@gmail.com</a>
+            <a href="https://www.facebook.com/myroe.26" target="_blank" rel="noopener noreferrer" aria-label="Facebook page">🌐 Facebook</a>
         </div>
     </footer>
 
