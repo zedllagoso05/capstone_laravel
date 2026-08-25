@@ -751,7 +751,7 @@
 <!-- ======================= MAIN CONTENT ======================= -->
 <main class="ml-0 md:ml-64 p-4 md:p-8 overflow-y-auto max-h-screen pb-20">
 
-    <!-- ==================== DASHBOARD ==================== -->
+<!-- ==================== DASHBOARD ==================== -->
     <div id="dashboard-section" class="section-container section-card max-w-7xl mx-auto">
         <div class="mb-8">
             <h1>Teacher Dashboard</h1>
@@ -892,10 +892,10 @@
         <div class="content-card">
             <div class="card-accent"></div>
             <div class="p-6">
-                <div class="flex justify-between items-center mb-5"><h3>All Assigned Groups</h3><span class="text-xs text-[#5b6375]">{{ $totalGroups ?? 0 }} groups</span></div>
+                <div class="flex justify-between items-center mb-5"><h3>All Assigned Groups</h3><span class="text-xs text-[#5b6375]">{{ $adviserGroups->count() ?? 0 }} groups</span></div>
                 <div class="space-y-3">
                     
-                    @forelse($groups ?? [] as $group)
+                    @forelse($adviserGroups ?? [] as $group)
                     @php
                         $teacherRevision = \App\Models\Revision::with([
                             'documentation',
@@ -989,7 +989,7 @@
                                             style="background-color:#15803d; border-color:#15803d;"
                                         >
                                             <i class="fa-regular fa-pen-to-square"></i>
-                                            {{ $hasEvaluated ? 'Re-evaluate' : 'Evaluate' }}
+                                            {{ $hasEvaluated ? 'Evaluated' : 'Evaluate' }}
                                         </button>
                                     @else
                                         <button
@@ -1158,7 +1158,8 @@
             @endforelse
         </div>
     </div>
-    <!-- ==================== ASSIGNED GROUPS ==================== -->
+    
+<!-- ==================== ASSIGNED GROUPS ==================== -->
     <div id="sections-section" class="section-container hidden section-card max-w-7xl mx-auto">
         <div class="mb-8 flex flex-wrap justify-between items-center gap-4">
             <div><h1>Assigned Groups</h1><div class="gold-accent-line"></div><p class="text-[#5b6375] mt-2 text-sm">Manage handled sections</p></div>
@@ -1166,8 +1167,7 @@
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             @forelse($sectionsWithGroups ?? [] as $section)
-                @php $groupsInSection = $groups->where('section_id', $section->id);
-                @endphp
+                @php $groupsInSection = $adviserGroups->where('section_id', $section->id); @endphp
                 <div class="content-card">
                     <div class="card-accent"></div>
                     <div class="p-6">
@@ -1229,7 +1229,7 @@
         <div class="gold-accent-line"></div>
         <p class="text-[#5b6375] mt-2 text-sm">Your assigned evaluation classroom, and other classrooms you can join with a code from the admin.</p>
     </div>
-
+    
     @php
         $assignedRoomIds = $assignedRooms->pluck('id')->toArray();
         $unassignedRooms = $allRooms->reject(fn($r) => in_array($r->id, $assignedRoomIds));
@@ -1439,7 +1439,9 @@
                                             $allObjectivesComplete;
                                     }
                                 @endphp
-                                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-[#faf8f4] border border-[#e2dacf] rounded-xl text-sm group-item transition hover:shadow-sm w-full" data-search="{{ $searchData }}">
+                                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-[#faf8f4] border border-[#e2dacf] rounded-xl text-sm group-item transition hover:shadow-sm w-full" data-search="{{ $searchData }}"
+                                             data-group-id="{{ $g->id }}" 
+                                              data-group-name="{{ addslashes($g->group_name) }}">
                                         <div class="flex flex-col gap-1">
                                             <div class="flex items-center gap-2 flex-wrap">
                                                 <span class="font-bold text-[#0a1428] text-base">{{ $g->group_name }}</span>
@@ -1471,69 +1473,27 @@
         @if($revisionComplete)
 
 
-            @if($hasEvaluated)
-
-                <button
-                    type="button"
-                    onclick="window.openEvaluationModal({{ $g->id }})"
-                    class="
-                        btn-outline
-                        text-xs
-                        px-4
-                        py-2
-                        rounded-lg
-                        flex
-                        items-center
-                        gap-1.5
-                        focus:outline-none
-                        transition
-                        shadow-sm
-                        evaluate-btn
-                    "
-                    style="
-                        border-color:#15803d;
-                        color:#15803d;
-                        background:transparent;
-                    "
-                    data-group="{{ $g->id }}"
-                 disabled>
-                    <i class="fas fa-check-double"></i>
-
-                    already evaluated 
+           @if($hasEvaluated)
+                <button type="button" onclick="window.openMyEvaluationModal({{ $g->id }})"
+                    class="btn-outline text-xs px-4 py-2 rounded-lg flex items-center gap-1.5"
+                    style="border-color:#15803d; color:#15803d;">
+                    <i class="fas fa-eye"></i> View Evaluation
                 </button>
 
-
+                <button onclick="window.openViewRevisionModal({{ $g->id }})" 
+                        class="btn-outline text-xs px-3 py-1.5 rounded-lg border-[#d6b15c] text-[#8b6914]">
+                    <i class="fas fa-file-alt mr-1"></i> View Revision
+                </button>
+                
             @else
-
-                <button
-                    type="button"
-                    onclick="window.openEvaluationModal({{ $g->id }})"
-                    class="
-                        btn-primary
-                        text-xs
-                        px-4
-                        py-2
-                        rounded-lg
-                        flex
-                        items-center
-                        gap-1.5
-                        focus:outline-none
-                        transition
-                        shadow-sm
-                        evaluate-btn
-                    "
-                    style="
-                        background-color:#15803d;
-                        border-color:#15803d;
-                    "
-                    data-group="{{ $g->id }}"
-                >
-                    <i class="fa-regular fa-pen-to-square"></i>
-
-                    Evaluate Group
+                <button type="button" onclick="window.openEvaluationModal({{ $g->id }})"
+                    class="btn-primary text-xs px-4 py-2 rounded-lg flex items-center gap-1.5"
+                    style="background-color:#15803d; border-color:#15803d;">
+                    <i class="fa-regular fa-pen-to-square"></i> Evaluate Group
                 </button>
-
             @endif
+
+           
 
 
         {{-- STILL HAS PENDING REVISION ITEMS --}}
@@ -1662,7 +1622,7 @@
 
     @endif
 
-</div>
+    </div>
                                         </div>
                                     </div>
                                 @empty
@@ -1741,6 +1701,72 @@
             <p class="text-[#5b6375] text-sm">Ask the admin to create evaluation classrooms.</p>
         </div>
     @endif
+
+
+    <div  class="section-container hidden section-card max-w-7xl mx-auto">
+        <div class="mb-8 flex flex-wrap justify-between items-center gap-4">
+            <div><h1>Assigned Groups</h1><div class="gold-accent-line"></div><p class="text-[#5b6375] mt-2 text-sm">Manage handled sections</p></div>
+            {{--    <button onclick="openCreateGroupModal()" class="btn-primary"><i class="fas fa-plus mr-1"></i> Create Group</button> --}}
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            @forelse($sectionsWithGroups ?? [] as $section)
+                @php $groupsInSection = $groups->where('section_id', $section->id);
+                @endphp
+                <div class="content-card">
+                    <div class="card-accent"></div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3>{{ $section->section_name }}</h3>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-[#5b6375]">{{ $groupsInSection->count() }} groups</span>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            @forelse($groupsInSection as $g)
+                                <div class="p-3 bg-[#faf8f4] rounded-lg border border-[#e2dacf]">
+                                    <div class="flex justify-between items-center">
+                                        <div><p class="font-semibold text-sm text-[#0a1428]">{{ $g->group_name }}</p><p class="text-xs text-[#5b6375]">{{ Str::limit($g->capstone_title,25) }}</p></div>
+                                        <div class="text-right flex flex-col items-end gap-1">
+                                            <span class="text-xs text-[#5b6375]">{{ $g->students->count()??0 }} students</span>
+                                            <div class="flex gap-2">
+                                                <button onclick="openViewModal({{ $g->id }})" class="text-[#5b6375] hover:text-[#0a1428] text-xs font-medium transition">
+                                                    <i class="fa-regular fa-eye mr-1"></i>{{ $g->adviser_id == $teacher->id ? 'Check' : 'Show' }}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @if($g->revision_status == 'needs_revision')
+                                        <div class="mt-2 p-2.5 bg-amber-50/70 border border-amber-200 text-amber-800 rounded-lg text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                            <div>
+                                                <span class="font-bold"><i class="fas fa-exclamation-triangle text-amber-600 mr-1"></i> Revision Requested:</span>
+                                                <span class="block text-xs mt-0.5">{{ $g->revision_description }}</span>
+                                            </div>
+                                            @if($g->adviser_id == $teacher->id)
+                                                <button onclick="window.markGroupAsRevised({{ $g->id }})" class="btn-primary text-[10px] px-2 py-1 rounded bg-amber-600 hover:bg-amber-700 whitespace-nowrap focus:outline-none transition self-end sm:self-auto" style="background-color: #d97706; border-color: #d97706;">
+                                                    <i class="fas fa-check mr-1"></i> Mark as Revised
+                                                </button>
+                                            @endif
+                                        </div>
+                                    @elseif($g->revision_status == 'revised')
+                                        <div class="mt-2 p-2.5 bg-green-50/70 border border-green-200 text-green-800 rounded-lg text-xs">
+                                            <span class="font-bold"><i class="fas fa-check-circle text-green-600 mr-1"></i> Revised:</span>
+                                            Awaiting panelist evaluation.
+                                        </div>
+                                    @endif
+                                </div>
+                                        @empty
+                                            <div class="text-center py-4 text-[#5b6375] text-sm"><i class="fa-regular fa-folder-open mr-1"></i> No groups in this section</div>
+                                        @endforelse
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="content-card col-span-2 p-8 text-center"><i class="fa-regular fa-folder-open text-4xl text-[#b8b0a0] mb-3"></i><h3>No Groups Assigned</h3><p class="text-[#5b6375] text-sm">Contact the admin to get sections assigned.</p></div>
+                        @endforelse
+                    </div>
+    </div>
+
 </div>
     <!-- ==================== PROFILE ==================== -->
 <div id="profile-section" class="section-container hidden section-card max-w-7xl mx-auto">
@@ -1883,6 +1909,26 @@
 </main>
 
 <!-- ==================== MODALS ==================== -->
+<!-- VIEW-ONLY REVISION SHEET MODAL -->
+<div id="viewRevisionModal" class="modal-overlay">
+    <div class="modal-box wide">
+        <div class="modal-accent" style="background-color: #d6b15c;"></div>
+        <div class="flex justify-between items-center mb-4">
+            <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">
+                Revision Sheet
+            </h2>
+            <button type="button" onclick="closeModal('viewRevisionModal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
+        </div>
+
+        <div id="viewRevisionContent">
+            <p class="text-sm text-[#5b6375]">Loading…</p>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 mt-4 border-t border-[#e2dacf]">
+            <button type="button" onclick="closeModal('viewRevisionModal')" class="btn-ghost">Close</button>
+        </div>
+    </div>
+</div>
 <!-- REVISION CHECKING MODAL (verification) -->
 <div id="revisionCheckModal" class="modal-overlay">
     <div class="modal-box wide">
@@ -2428,7 +2474,18 @@
 {{-- documents modal --}}
 {{-- revision sheet  modal--}}
 
-
+<div id="myEvaluationModal" class="modal-overlay">
+    <div class="modal-box wide">
+        <div class="modal-accent" style="background-color:#15803d;"></div>
+        <div class="flex justify-between items-center mb-4">
+            <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">My Evaluation</h2>
+            <button type="button" onclick="closeModal('myEvaluationModal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
+        </div>
+        <div id="myEvaluationContent">
+            <p class="text-sm text-[#5b6375]">Loading…</p>
+        </div>
+    </div>
+</div>
 
 <script>
 // ══════════════════════════════════════════════
@@ -3069,24 +3126,55 @@ document.addEventListener('DOMContentLoaded', function () {
 
     openModal('revisionModal');
 
-    fetch(`/teacher/get-group/${groupId}`)
-        .then(r => r.json())
-        .then(data => {
-            proponentsContainer.innerHTML = '';
-            if (data.error || !data.members || data.members.length === 0) {
-                proponentsContainer.innerHTML = '<span class="text-xs text-[#5b6375] italic">No team members found.</span>';
-                return;
-            }
-            data.members.forEach(m => {
-                const badge = document.createElement('span');
-                badge.className = 'badge badge-navy';
-                badge.innerHTML = `<i class="fa-regular fa-user mr-1"></i> ${m.name}${m.role ? ` (${m.role})` : ''}`;
-                proponentsContainer.appendChild(badge);
-            });
-        })
-        .catch(() => {
-            proponentsContainer.innerHTML = '<span class="text-xs text-red-500 italic">Failed to load team members.</span>';
+   fetch(`/teacher/get-group/${groupId}`)
+    .then(r => r.json())
+    .then(data => {
+
+        // SET GROUP NAME FROM DATABASE
+        const groupNameInput = document.getElementById('eval_group_name');
+
+        if (groupNameInput) {
+            groupNameInput.value = data.group_name || 'Unknown Group';
+        }
+
+        checklist.innerHTML = '';
+
+        if (data.error || !data.members || data.members.length === 0) {
+            checklist.innerHTML =
+                '<p class="text-xs text-[#5b6375] col-span-2 text-center py-2">No members found.</p>';
+            return;
+        }
+
+        data.members.forEach(m => {
+            const label = document.createElement('label');
+
+            label.className =
+                'flex items-center gap-2 cursor-pointer text-sm text-[#171e2c]';
+
+            label.innerHTML = `
+                <input
+                    type="checkbox"
+                    name="absent_students[]"
+                    value="${m.user_id}"
+                    class="form-checkbox text-[#d6b15c] focus:ring-[#d6b15c]"
+                >
+                <span>
+                    ${m.name}
+                    <span class="text-[#5b6375] text-xs">
+                        (${m.user_id})
+                    </span>
+                </span>
+            `;
+
+            checklist.appendChild(label);
         });
+    })
+    .catch(error => {
+        console.error('Failed to load group:', error);
+
+        checklist.innerHTML =
+            '<p class="text-xs text-red-500 col-span-2 text-center py-2">Failed to load students.</p>';
+    });
 };  
 window.submitRevisionCheck = function (event) {
     event.preventDefault();
@@ -3254,17 +3342,19 @@ window.submitRevisionCheck = function (event) {
     // ── Set the hidden group ID ──
     document.getElementById('eval_group_id').value = groupId;
 
-    // ── Try to set a nice group name, but don't crash if it fails ──
-    try {
-        const groupEl = document.querySelector(`[data-group="${groupId}"]`);
-        if (groupEl) {
-            const nameEl = groupEl.closest('.content-card, tr, .group-item')?.querySelector('.font-bold, .font-semibold, h4');
+     const container = document.querySelector(`.group-item[data-group-id="${groupId}"]`);
+    const groupNameField = document.getElementById('eval_group_name');
+    if (container) {
+        const name = container.dataset.groupName;
+        if (name) {
+            groupNameField.value = name;
+        } else {
+            // Fallback: try to find name from inner text
+            const nameEl = container.querySelector('.font-bold, .font-semibold, h4');
             if (nameEl) {
-                document.getElementById('eval_group_name').value = nameEl.textContent.trim();
+                groupNameField.value = nameEl.textContent.trim();
             }
         }
-    } catch (e) {
-        console.warn('Could not set group name', e);
     }
 
     // ── Reset the form ──
@@ -3950,6 +4040,234 @@ objectivesList.appendChild(table);
             </span>
         `;
     });
+};
+
+window.openMyEvaluationModal = function (groupId) {
+    openModal('myEvaluationModal');
+    const content = document.getElementById('myEvaluationContent');
+    content.innerHTML = '<p class="text-sm text-[#5b6375]">Loading…</p>';
+
+    fetch(`/teacher/get-my-evaluation/${groupId}`)
+        .then(async response => {
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                const text = await response.text();
+                throw new Error(`Server returned ${response.status} (not JSON). First 100 chars: ${text.slice(0,100)}`);
+            }
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to load evaluation.');
+            }
+            return data;
+        })
+        .then(data => {
+            const criteriaRows = (data.criteria || []).map(c => `
+                <tr class="border-b border-[#e2dacf]">
+                    <td class="py-2">${c.criteria_name}</td>
+                    <td class="text-center">${c.weight}%</td>
+                    <td class="text-center">${c.max_score}</td>
+                    <td class="text-center font-bold text-[#1e6b3a]">${c.given_score}</td>
+                </tr>`).join('');
+
+            content.innerHTML = `
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg">
+                        <div>
+                            <p class="font-semibold text-sm text-[#0a1428]">${data.group_name}</p>
+                            <p class="text-xs text-[#5b6375]">${data.milestone_title}</p>
+                        </div>
+                        <span class="text-lg font-bold text-[#1e6b3a]">${data.score} / ${data.max_score}</span>
+                    </div>
+                    ${criteriaRows ? `
+                        <table class="w-full text-sm">
+                            <thead><tr class="text-[#5b6375] border-b border-[#e2dacf]"><th class="text-left py-2">Criteria</th><th class="text-center py-2">Weight</th><th class="text-center py-2">Max</th><th class="text-center py-2">Score</th></tr></thead>
+                            <tbody>${criteriaRows}</tbody>
+                        </table>` : ''}
+                    ${data.feedback ? `<div class="p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg text-sm italic text-[#5b6375]">"${data.feedback}"</div>` : ''}
+                </div>
+            `;
+        })
+        .catch(err => {
+            content.innerHTML = `<p class="text-sm text-red-500">❌ ${err.message}</p>`;
+            console.error('MyEvaluation error:', err);
+        });
+};
+window.openViewRevisionModal = function (groupId) {
+    const modal = document.getElementById('viewRevisionModal');
+    const content = document.getElementById('viewRevisionContent');
+
+    // Show loading
+    content.innerHTML = '<p class="text-sm text-[#5b6375]">Loading revision data…</p>';
+    modal.classList.add('active');
+
+    // Fetch the same revision data (teacher panelist only) – or use student endpoint if needed
+    fetch(`/teacher/get-revision-details/${groupId}`)
+        .then(async response => {
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Server returned ${response.status}: ${text.slice(0,100)}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // If there's an error message in the response
+            if (data.error) {
+                content.innerHTML = `<p class="text-sm text-red-500">${data.error}</p>`;
+                return;
+            }
+
+            // Build the read‑only view
+            let html = '';
+
+            // --- Overall remarks ---
+            html += `
+                <div class="mb-4">
+                    <label class="form-label">Overall Remarks / Instructions</label>
+                    <p class="p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg text-sm text-[#5b6375] italic">
+                        ${data.overall_remarks || 'No remarks provided.'}
+                    </p>
+                </div>
+            `;
+
+            // --- Chapters ---
+            html += `
+                <div class="border-t border-[#e2dacf] pt-4 mt-4">
+                    <p class="form-fieldset-title"><i class="fa-solid fa-book"></i> Chapter / Document Findings</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                                    <th class="p-2 pl-3" style="width:20%">Chapter</th>
+                                    <th class="p-2" style="width:45%">Findings</th>
+                                    <th class="p-2 pr-3 text-center" style="width:35%">Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-[#faf1e0]">
+            `;
+
+            if (data.chapters && data.chapters.length) {
+                data.chapters.forEach(ch => {
+                    html += `
+                        <tr>
+                            <td class="p-2 pl-3 font-semibold">${ch.chapter}</td>
+                            <td class="p-2">${ch.findings}</td>
+                            <td class="p-2 pr-3 text-center">
+                                <span class="badge ${ch.remarks.toLowerCase() === 'completed' ? 'badge-green' : 'badge-muted'}">
+                                    ${ch.remarks || 'Pending'}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                html += `<tr><td colspan="3" class="p-4 text-center text-[#5b6375]">No chapter findings.</td></tr>`;
+            }
+
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            // --- IoT / System findings ---
+            html += `
+                <div class="border-t border-[#e2dacf] pt-4 mt-4">
+                    <p class="form-fieldset-title"><i class="fa-solid fa-microchip"></i> System / IoT Findings / Enhancements</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                                    <th class="p-2 pl-3" style="width:65%">Finding / Enhancement</th>
+                                    <th class="p-2 pr-3 text-center" style="width:35%">Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-[#faf1e0]">
+            `;
+
+            if (data.iot_findings && data.iot_findings.length) {
+                data.iot_findings.forEach(iot => {
+                    html += `
+                        <tr>
+                            <td class="p-2 pl-3">${iot.finding}</td>
+                            <td class="p-2 pr-3 text-center">
+                                <span class="badge ${iot.remarks.toLowerCase() === 'completed' ? 'badge-green' : 'badge-muted'}">
+                                    ${iot.remarks || 'Pending'}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                html += `<tr><td colspan="2" class="p-4 text-center text-[#5b6375]">No IoT findings.</td></tr>`;
+            }
+
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            // --- Additional objectives ---
+            html += `
+                <div class="border-t border-[#e2dacf] pt-4 mt-4">
+                    <p class="form-fieldset-title"><i class="fa-solid fa-list-check"></i> Additional Objectives for Capstone 2</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                                    <th class="p-2 pl-3" style="width:65%">Objective</th>
+                                    <th class="p-2 pr-3 text-center" style="width:35%">Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-[#faf1e0]">
+            `;
+
+            if (data.additional_objectives && data.additional_objectives.length) {
+                data.additional_objectives.forEach(obj => {
+                    const objText = typeof obj === 'object' ? obj.objective : obj;
+                    const remarks = typeof obj === 'object' ? (obj.remarks || 'Pending') : 'Pending';
+                    html += `
+                        <tr>
+                            <td class="p-2 pl-3">${objText}</td>
+                            <td class="p-2 pr-3 text-center">
+                                <span class="badge ${remarks.toLowerCase() === 'completed' ? 'badge-green' : 'badge-muted'}">
+                                    ${remarks}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                html += `<tr><td colspan="2" class="p-4 text-center text-[#5b6375]">No additional objectives.</td></tr>`;
+            }
+
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            // --- Approved by (if available) ---
+            if (data.approved_by) {
+                html += `
+                    <div class="border-t border-[#e2dacf] pt-4 mt-4">
+                        <label class="form-label">Approved by</label>
+                        <p class="p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg text-sm font-semibold text-[#0a1428]">
+                            ${data.approved_by}
+                        </p>
+                    </div>
+                `;
+            }
+
+            content.innerHTML = html;
+        })
+        .catch(err => {
+            content.innerHTML = `<p class="text-sm text-red-500">❌ ${err.message}</p>`;
+            console.error('ViewRevision error:', err);
+        });
 };
 </script>
 </body>

@@ -98,7 +98,7 @@ class user_controller extends Controller
 
     // ── VERIFICATION ─────────────────────────────────────────────
     public function sendVerificationCode(Request $request)
-    {
+    {   
         $request->validate(['email' => 'required|email']);
 
         $user = User::where('user_id', session('user_id'))->first();
@@ -273,6 +273,7 @@ class user_controller extends Controller
     }
 
 
+ 
         $activeYear = CapstoneYear::getActiveYear();
         $groupYearId = $groups ? $groups->capstone_year_id : $activeYear->id;
 
@@ -338,12 +339,36 @@ class user_controller extends Controller
                 return $cert;
             });
 
+               // ── Check if capstone is fully completed ──
+            $isCapstoneComplete = false;
+            if ($groups) {
+                $totalMilestones = $milestones->count();
+                $completedMilestones = count($completedMilestoneIds);
+                $isCapstoneComplete = ($totalMilestones > 0 && $completedMilestones == $totalMilestones);
+            }
+            // ── Check if Capstone 2 is fully completed ──
+$isCapstone2Complete = false;
+if ($groups) {
+    $capstone2Milestones = $milestones->filter(function($m) {
+        return $m->capstoneStage && $m->capstoneStage->stage_type == 2;
+    });
+    $capstone2Total = $capstone2Milestones->count();
+    if ($capstone2Total > 0) {
+        $capstone2MilestoneIds = $capstone2Milestones->pluck('id')->toArray();
+        $capstone2Completed = $groups->groupMilestones
+            ->where('status', 'completed')
+            ->whereIn('milestone_id', $capstone2MilestoneIds)
+            ->count();
+        $isCapstone2Complete = ($capstone2Completed == $capstone2Total);
+    }
+}
+
 
         return view('sections.student', compact(
             'user', 'student', 'groups', 'members', 'adviser',
             'milestones', 'overallProgress', 'nextMilestone',
             'evaluations', 'allEvaluations', 'certificates', 'completedMilestoneIds', 'groupcertificates',
-            'remarksByMilestone', 'absencesByMilestone','revisions'
+            'remarksByMilestone', 'absencesByMilestone','revisions','isCapstoneComplete','isCapstone2Complete'
         ));
     }
 
@@ -760,6 +785,8 @@ class user_controller extends Controller
         ->with(['students', 'groupMilestones', 'team_members', 'room'])
         ->get();
     
+        $adviserGroups = $groups->where('adviser_id', $teacher->id)->values();
+
     $requestedGroupIds = \App\Models\Revision::where('panelist_id', $teacherId)
                                         ->whereIn('group_id', $groups->pluck('id'))
                                         ->pluck('group_id')
@@ -769,11 +796,11 @@ class user_controller extends Controller
         $group->has_requested_revision = in_array($group->id, $requestedGroupIds);
     }
 
-    $totalGroups = $groups->count();
+    $totalGroups = $adviserGroups->count();
     $teacherSections = $teacher->sections;
-    $sectionIdsWithGroups = $groups->pluck('section_id')->filter()->unique();
+    $sectionIdsWithGroups = $adviserGroups->pluck('section_id')->filter()->unique();
     $sectionsWithGroups = Section::whereIn('id', $sectionIdsWithGroups)->get();
-    $totalStudents = $groups->flatMap(fn($g) => $g->students)->unique('id')->count();
+    $totalStudents = $adviserGroups->flatMap(fn($g) => $g->students)->unique('id')->count();
 
     $enabledStageIds = CapstoneStages::where('is_enabled', true)
         ->where('capstone_year_id', $activeYear->id)
@@ -784,7 +811,7 @@ class user_controller extends Controller
     $groupProgress = [];
     $enabledMilestoneIds = $milestones->pluck('id')->toArray();
 
-    foreach ($groups as $group) {
+    foreach ($adviserGroups as $group) {
         $completed = $group->groupMilestones
             ->where('status', 'completed')
             ->whereIn('milestone_id', $enabledMilestoneIds)
@@ -854,7 +881,7 @@ class user_controller extends Controller
         'user', 'teacher', 'groups', 'totalGroups', 'totalStudents',
         'milestones', 'groupProgress', 'evaluations', 'totalEvaluations',
         'pendingEvaluations', 'sections', 'teacherSections', 'allSections',
-        'allGroups', 'sectionsWithGroups', 'assignedRooms', 'allRooms'
+        'allGroups', 'sectionsWithGroups', 'assignedRooms', 'allRooms','adviserGroups'
     ));
 }
 
@@ -1559,6 +1586,57 @@ if ($revision) {
                 ->pluck('milestone_id')
         );
     }
+    public function getMyEvaluation($groupId)
+{
+    $teacher = Teacher::where('user_id', Auth::user()->user_id)->firstOrFail();
+    $group = Group::with('room.requiredMilestone')->findOrFail($groupId);
+
+    $assignedRoomIds = $teacher->evaluationRooms()->pluck('evaluation_rooms.id')->toArray();
+    if (!in_array($group->room_id, $assignedRoomIds)) {
+        return response()->json(['error' => 'You are not authorized to view this evaluation.'], 403);
+    }
+
+    $milestoneId = $group->room->required_milestone_id ?? null;
+    if (!$milestoneId) {
+        return response()->json(['error' => 'No milestone configured for this room.'], 404);
+    }
+
+    $evaluation = Evaluation::where('group_id', $groupId)
+        ->where('milestone_id', $milestoneId)
+        ->where('teacher_id', $teacher->id)
+        ->first();
+
+    if (!$evaluation) {
+        return response()->json(['error' => 'You have not evaluated this group yet.'], 404);
+    }
+
+    $decoded = json_decode($evaluation->feedback, true);
+    $feedbackText = is_array($decoded) && isset($decoded['feedback_text']) ? $decoded['feedback_text'] : $evaluation->feedback;
+    $rubricScores = is_array($decoded) && isset($decoded['rubric_scores']) ? $decoded['rubric_scores'] : [];
+
+    $rubric = Rubric::where('milestone_id', $milestoneId)->with('criteria')->first();
+    $criteria = [];
+    if ($rubric) {
+        foreach ($rubric->criteria as $c) {
+            $criteria[] = [
+                'criteria_name' => $c->criteria_name,
+                'weight'        => $c->weight,
+                'max_score'     => $c->max_score,
+                'given_score'   => $rubricScores[$c->id] ?? 0,
+            ];
+        }
+    }
+
+    return response()->json([
+        'group_name'      => $group->group_name,
+        'milestone_title' => $group->room->requiredMilestone->milestone_title ?? 'Milestone',
+        'score'           => $evaluation->score,
+        'max_score'       => $evaluation->max_score,
+        'feedback'        => $feedbackText,
+        'evaluation_date' => $evaluation->evaluation_date,
+        'criteria'        => $criteria,
+    ]);
+}
 
     /**
      * Group details (members, section, etc.) for the teacher-side view/edit modals.
@@ -3039,7 +3117,14 @@ $adviserName = $group->adviser
         'is_active' => 'nullable|boolean',
     ]);
  
-    $year = str_replace('-', '–', $validated['year']);
+    // Normalize: replace any dash variant with a standard hyphen
+    $year = preg_replace('/[–—]/', '-', $validated['year']);
+    $year = trim($year);
+
+    // Ensure format: e.g., "2026-2027"
+    if (!preg_match('/^\d{4}-\d{4}$/', $year)) {
+        return back()->withErrors(['year' => 'Invalid year format. Use e.g., 2026-2027.']);
+    }
  
     if (CapstoneYear::where('year', $year)->exists()) {
         return back()->withErrors(['year' => "Capstone year {$year} already exists."]);
@@ -3259,7 +3344,12 @@ $adviserName = $group->adviser
             'capstone_2_enabled' => 'nullable|boolean',
         ]);
 
-        $year = str_replace('-', '–', $validated['year']);
+       $year = preg_replace('/[–—]/', '-', $validated['year']);
+    $year = trim($year);
+
+    if (!preg_match('/^\d{4}-\d{4}$/', $year)) {
+        return back()->withErrors(['year' => 'Invalid year format.']);
+    }
 
         if (CapstoneYear::where('year', $year)->where('id', '!=', $id)->exists()) {
             return back()->withErrors(['year' => "Capstone year {$year} already exists."]);
@@ -4229,4 +4319,81 @@ public function getStudentRevisionById($groupId, $revisionId)
         'approved_by'     => $revision->approved_by,
     ]);
 }
+
+public function getApprovalSheet($groupId)
+{
+    $user = Auth::user();
+    $student = Student::where('user_id', $user->user_id)->firstOrFail();
+
+    $group = Group::with(['team_members.student', 'adviser', 'room.panelists'])
+        ->findOrFail($groupId);
+
+    if (!$group->team_members->contains('user_id', $user->user_id)) {
+        return response()->json(['error' => 'You are not a member of this group.'], 403);
+    }
+
+    // Members
+    $members = $group->team_members->map(function ($tm) {
+        $s = $tm->student;
+        return trim(($s->student_first_name ?? '') . ' ' . ($s->student_last_name ?? ''));
+    })->filter()->values()->all();
+
+    // Adviser
+    $adviser = $group->adviser
+        ? trim(($group->adviser->teacher_first_name ?? '') . ' ' . ($group->adviser->teacher_last_name ?? ''))
+        : null;
+
+    // Panelists – get from room, include pivot data if available
+    $panelists = [];
+    if ($group->room) {
+        foreach ($group->room->panelists as $p) {
+            $pivot = $p->pivot; // the room_panelists pivot
+            $panelists[] = [
+                'name' => trim(($p->teacher_first_name ?? '') . ' ' . ($p->teacher_last_name ?? '')),
+                'role' => $pivot->role ?? 'Member',   // if you have a role column, else 'Member'
+                'date' => $pivot->date ?? null,        // if you have a date column
+            ];
+        }
+    }
+
+    // If no panelists, provide a fallback (optional)
+    if (empty($panelists)) {
+        // You could add a placeholder chairman from the department
+        $panelists[] = [
+            'name' => 'DINO L. HUSTRIJIMO, MIT',
+            'role' => 'Chairman, Board of Panels',
+            'date' => null,
+        ];
+    }
+
+    // Oral exam result and date – fetch from the "Oral Presentation" milestone evaluation
+    $oralExamResult = '—';
+    $oralExamDate = null;
+
+    $oralMilestone = Milestone::where('milestone_title', 'like', '%Oral Presentation%')->first();
+    if ($oralMilestone) {
+        $eval = Evaluation::where('group_id', $groupId)
+            ->where('milestone_id', $oralMilestone->id)
+            ->latest('evaluation_date')
+            ->first();
+        if ($eval) {
+            $oralExamResult = $eval->score >= ($eval->max_score * 0.6) ? 'PASSED' : 'FAILED'; // threshold
+            $oralExamDate = $eval->evaluation_date ? \Carbon\Carbon::parse($eval->evaluation_date)->format('F d, Y') : null;
+        }
+    }
+
+    // School President – you can store in settings or hardcode
+    $president = 'DR. FLORIPIS A. MONTECILLO, Ed.D.';
+
+    return response()->json([
+        'capstone_title'     => $group->capstone_title,
+        'members'            => $members,
+        'adviser'            => $adviser,
+        'panelists'          => $panelists,
+        'oral_exam_result'   => $oralExamResult,
+        'oral_exam_date'     => $oralExamDate,
+        'school_president'   => $president,
+    ]);
+}
+
 }
