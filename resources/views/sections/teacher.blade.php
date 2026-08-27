@@ -663,6 +663,77 @@
     font-size: 0.7rem;
     color: #5b6375;
 }
+
+/* ── Evaluation modal (split view) ── */
+/* ── Evaluation modal (split view) ── */
+#evaluationModal .modal-box {
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+}
+#evaluationModal .eval-modal-header {
+    padding: 1.5rem 1.75rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #fff 0%, #faf8f4 100%);
+    flex-shrink: 0;
+}
+#evaluationModal .eval-modal-body {
+    display: grid;
+    grid-template-columns: 1fr;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+@media (min-width: 1024px) {
+    #evaluationModal .eval-modal-body {
+        grid-template-columns: 1.05fr 0.95fr;
+    }
+}
+#evaluationModal .eval-panel {
+    padding: 1.5rem 1.75rem;
+    overflow-y: auto;
+    min-height: 0;
+}
+#evaluationModal .eval-panel-left {
+    border-right: 1px solid var(--border);
+}
+#evaluationModal .eval-panel-right {
+    background: #fbfaf6;
+}
+#evaluationModal .eval-modal-footer {
+    padding: 1.1rem 1.75rem;
+    border-top: 1px solid var(--border);
+    background: #faf8f4;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    flex-shrink: 0;
+}
+
+/* Revision sheet content, refined */
+#eval_revision_sheet_content .form-fieldset-title {
+    font-size: 0.66rem;
+    margin-bottom: 0.65rem;
+}
+#eval_revision_sheet_content table {
+    box-shadow: var(--shadow-sm);
+    border-radius: 0.6rem;
+    overflow: hidden;
+}
+#eval_revision_sheet_content thead tr {
+    background: #faf2df !important;
+}
+#eval_revision_sheet_content .empty-state {
+    text-align: center;
+    padding: 1.75rem 1rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    background: #faf8f4;
+    border: 1px dashed var(--border);
+    border-radius: 0.75rem;
+}
 </style>
 </head>
 <body class="bg-[#f8f6f0] text-[#171e2c]">
@@ -953,24 +1024,6 @@
                                     <span class="text-xs font-semibold">{{ $progress }}%</span>
                                 </div>
 
-                                @if($group->revision_status == 'needs_revision')
-                                    <div class="mt-2 p-2.5 bg-amber-50/70 border border-amber-200 text-amber-800 rounded-lg text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                                        <div>
-                                            <span class="font-bold"><i class="fas fa-exclamation-triangle text-amber-600 mr-1"></i> Revision Requested:</span>
-                                            <span class="block text-xs mt-0.5">{{ $group->revision_description }}</span>
-                                        </div>
-                                        @if($group->adviser_id == $teacher->id)
-                                            <button onclick="window.markGroupAsRevised({{ $group->id }})" class="btn-primary text-[10px] px-2 py-1 rounded bg-amber-600 hover:bg-amber-700 whitespace-nowrap focus:outline-none transition self-end sm:self-auto" style="background-color: #d97706; border-color: #d97706;">
-                                                <i class="fas fa-check mr-1"></i> Mark as Revised
-                                            </button>
-                                        @endif
-                                    </div>
-                                @elseif($group->revision_status == 'revised')
-                                    <div class="mt-2 p-2.5 bg-green-50/70 border border-green-200 text-green-800 rounded-lg text-xs">
-                                        <span class="font-bold"><i class="fas fa-check-circle text-green-600 mr-1"></i> Revised:</span>
-                                        Awaiting panelist evaluation.
-                                    </div>
-                                @endif
                             </div>
                            @php
                                 $isPanelist = $group->room && $group->room->panelists->contains($teacher->id);
@@ -1074,24 +1127,7 @@
                                             </div>
                                         </div>
 
-                                        @if($g->revision_status == 'needs_revision')
-                                            <div class="mt-2 p-2.5 bg-amber-50/70 border border-amber-200 text-amber-800 rounded-lg text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                                                <div>
-                                                    <span class="font-bold"><i class="fas fa-exclamation-triangle text-amber-600 mr-1"></i> Revision Requested:</span>
-                                                    <span class="block text-xs mt-0.5">{{ $g->revision_description }}</span>
-                                                </div>
-                                                @if($g->adviser_id == $teacher->id)
-                                                    <button onclick="window.markGroupAsRevised({{ $g->id }})" class="btn-primary text-[10px] px-2 py-1 rounded bg-amber-600 hover:bg-amber-700 whitespace-nowrap focus:outline-none transition self-end sm:self-auto" style="background-color: #d97706; border-color: #d97706;">
-                                                        <i class="fas fa-check mr-1"></i> Mark as Revised
-                                                    </button>
-                                                @endif
-                                            </div>
-                                        @elseif($g->revision_status == 'revised')
-                                            <div class="mt-2 p-2.5 bg-green-50/70 border border-green-200 text-green-800 rounded-lg text-xs">
-                                                <span class="font-bold"><i class="fas fa-check-circle text-green-600 mr-1"></i> Revised:</span>
-                                                Awaiting panelist evaluation.
-                                            </div>
-                                        @endif
+                                        
                                     </div>
                                 @empty
                                     <div class="text-center py-6 text-[#5b6375] text-sm bg-[#faf8f4]/50 border border-[#e2dacf] border-dashed rounded-lg"><i class="fa-regular fa-folder-open mr-1.5"></i> No groups in this section</div>
@@ -1192,24 +1228,7 @@
                                         </div>
                                     </div>
 
-                                    @if($g->revision_status == 'needs_revision')
-                                        <div class="mt-2 p-2.5 bg-amber-50/70 border border-amber-200 text-amber-800 rounded-lg text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                                            <div>
-                                                <span class="font-bold"><i class="fas fa-exclamation-triangle text-amber-600 mr-1"></i> Revision Requested:</span>
-                                                <span class="block text-xs mt-0.5">{{ $g->revision_description }}</span>
-                                            </div>
-                                            @if($g->adviser_id == $teacher->id)
-                                                <button onclick="window.markGroupAsRevised({{ $g->id }})" class="btn-primary text-[10px] px-2 py-1 rounded bg-amber-600 hover:bg-amber-700 whitespace-nowrap focus:outline-none transition self-end sm:self-auto" style="background-color: #d97706; border-color: #d97706;">
-                                                    <i class="fas fa-check mr-1"></i> Mark as Revised
-                                                </button>
-                                            @endif
-                                        </div>
-                                    @elseif($g->revision_status == 'revised')
-                                        <div class="mt-2 p-2.5 bg-green-50/70 border border-green-200 text-green-800 rounded-lg text-xs">
-                                            <span class="font-bold"><i class="fas fa-check-circle text-green-600 mr-1"></i> Revised:</span>
-                                            Awaiting panelist evaluation.
-                                        </div>
-                                    @endif
+                                    
                                 </div>
                                         @empty
                                             <div class="text-center py-4 text-[#5b6375] text-sm"><i class="fa-regular fa-folder-open mr-1"></i> No groups in this section</div>
@@ -1526,7 +1545,7 @@
             >
                 <i class="fas fa-edit"></i>
 
-                Edit Revision Notes
+                Check Revision Notes
             </button>
 
         @endif
@@ -1736,24 +1755,7 @@
                                         </div>
                                     </div>
 
-                                    @if($g->revision_status == 'needs_revision')
-                                        <div class="mt-2 p-2.5 bg-amber-50/70 border border-amber-200 text-amber-800 rounded-lg text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                                            <div>
-                                                <span class="font-bold"><i class="fas fa-exclamation-triangle text-amber-600 mr-1"></i> Revision Requested:</span>
-                                                <span class="block text-xs mt-0.5">{{ $g->revision_description }}</span>
-                                            </div>
-                                            @if($g->adviser_id == $teacher->id)
-                                                <button onclick="window.markGroupAsRevised({{ $g->id }})" class="btn-primary text-[10px] px-2 py-1 rounded bg-amber-600 hover:bg-amber-700 whitespace-nowrap focus:outline-none transition self-end sm:self-auto" style="background-color: #d97706; border-color: #d97706;">
-                                                    <i class="fas fa-check mr-1"></i> Mark as Revised
-                                                </button>
-                                            @endif
-                                        </div>
-                                    @elseif($g->revision_status == 'revised')
-                                        <div class="mt-2 p-2.5 bg-green-50/70 border border-green-200 text-green-800 rounded-lg text-xs">
-                                            <span class="font-bold"><i class="fas fa-check-circle text-green-600 mr-1"></i> Revised:</span>
-                                            Awaiting panelist evaluation.
-                                        </div>
-                                    @endif
+                                    
                                 </div>
                                         @empty
                                             <div class="text-center py-4 text-[#5b6375] text-sm"><i class="fa-regular fa-folder-open mr-1"></i> No groups in this section</div>
@@ -1999,7 +2001,7 @@
 <div class="border-t border-[#e2dacf] pt-3">
     <p class="form-fieldset-title mb-2">
         <i class="fa-solid fa-list-check"></i>
-        Additional Objectives for Capstone Project 2
+        Additional Objectives (if any)
     </p>
 
     <div class="border border-[#e2dacf] rounded-lg overflow-hidden">
@@ -2082,70 +2084,131 @@
 
 <!-- EVALUATION MODAL -->
 <div id="evaluationModal" class="modal-overlay">
-    <div class="modal-box wide">
-        <div class="modal-accent"></div>
-        <div class="flex justify-between items-center mb-4">
-            <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">Evaluate Group</h2>
-            <button type="button" onclick="closeModal('evaluationModal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
-        </div>
-        <form  action="/teacher/submit-evaluation" method="POST" class="space-y-4">
-            @csrf
-            <input type="hidden" name="form_type" value="evaluation">
-    <div id="evalErrors" class="hidden mb-3 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm"></div>
-            <input type="hidden" name="group_id" id="eval_group_id">
-            <input type="hidden" name="milestone_id" id="eval_milestone_id">
-            <input type="hidden" name="score" id="eval_total_score">
-            <input type="hidden" name="max_score" id="eval_max_score">
-            <div class="grid grid-cols-2 gap-4">
-                <div><label class="form-label">Group</label><input type="text" id="eval_group_name" class="form-input" readonly></div>
+    <div class="modal-box wide" style="max-width: 82rem;">
+
+        <!-- Header -->
+        <div class="eval-modal-header">
+            <div class="flex justify-between items-start gap-4">
                 <div>
-                    <label class="form-label">Milestone</label>
-                    <select id="milestone_select" class="form-select" required>
-                        <option value="">-- Select Milestone --</option>
-                        @foreach($allRooms as $milestone)
-                            <option value="{{ $milestone->required_milestone_id }}">{{ $milestone->activity_name }}</option>
-                        @endforeach
-                    </select>
+                    <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.6rem; font-weight:600; color:var(--navy); line-height:1.1;">
+                        Evaluate Group
+                    </h2>
+                    <p class="text-xs text-[#5b6375] mt-1">Score the group's milestone deliverables against the assigned rubric.</p>
                 </div>
+                <button type="button" onclick="closeModal('evaluationModal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-xl leading-none flex-shrink-0 mt-1">&times;</button>
             </div>
-            <!-- Attendance -->
-            <div>
-                <label class="form-label">Attendance</label>
-                <div class="flex gap-4 mt-1">
-                    <label class="flex items-center gap-2 text-xs cursor-pointer">
-                        <input type="radio" name="attendance" value="present" checked class="form-radio text-[#d6b15c] focus:ring-[#d6b15c]">
-                        <span>All members present</span>
-                    </label>
-                    <label class="flex items-center gap-2 text-xs cursor-pointer">
-                        <input type="radio" name="attendance" value="absent" class="form-radio text-[#d6b15c] focus:ring-[#d6b15c]">
-                        <span>Some members absent</span>
-                    </label>
+        </div>
+
+        <div class="eval-modal-body">
+
+            <!-- ═══ LEFT: EVALUATION FORM ═══ -->
+            <div class="eval-panel eval-panel-left">
+                <div class="eval-panel-heading">
+                    <div class="eval-panel-title">
+                        <span class="icon-badge"><i class="fa-regular fa-pen-to-square"></i></span>
+                        Evaluation Form
+                    </div>
+                </div>
+
+                <form id="evaluation_form" action="/teacher/submit-evaluation" method="POST" class="space-y-5">
+                    @csrf
+                    <input type="hidden" name="form_type" value="evaluation">
+                    <div id="evalErrors" class="hidden p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm"></div>
+                    <input type="hidden" name="group_id" id="eval_group_id">
+                    <input type="hidden" name="milestone_id" id="eval_milestone_id">
+                    <input type="hidden" name="score" id="eval_total_score">
+                    <input type="hidden" name="max_score" id="eval_max_score">
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="form-label">Group</label><input type="text" id="eval_group_name" class="form-input" readonly></div>
+                        <div>
+                            <label class="form-label">Milestone</label>
+                            <select id="milestone_select" class="form-select" required>
+                                <option value="">-- Select Milestone --</option>
+                                @foreach($allRooms as $milestone)
+                                    <option value="{{ $milestone->required_milestone_id }}">{{ $milestone->activity_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Attendance -->
+                    <div>
+                        <label class="form-label">Attendance</label>
+                        <div class="flex gap-4 mt-1.5">
+                            <label class="flex items-center gap-2 text-xs cursor-pointer">
+                                <input type="radio" name="attendance" value="present" checked class="form-radio text-[#d6b15c] focus:ring-[#d6b15c]">
+                                <span>All members present</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-xs cursor-pointer">
+                                <input type="radio" name="attendance" value="absent" class="form-radio text-[#d6b15c] focus:ring-[#d6b15c]">
+                                <span>Some members absent</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Absent Students Checklist -->
+                    <div id="absent_students_container" class="hidden">
+                        <label class="form-label">Select Absent Student(s)</label>
+                        <div id="student_checklist" class="grid grid-cols-2 gap-2 mt-1.5 p-3 border border-[#e2dacf] rounded-xl bg-[#faf8f4] max-h-36 overflow-y-auto">
+                            <!-- Loaded dynamically via JS -->
+                        </div>
+                    </div>
+
+                    <div id="rubric_container" class="hidden">
+                        <label class="form-label">Rubric: <span id="rubric_name_display" class="text-[#b88d3a]"></span></label>
+                        <div class="overflow-x-auto rounded-lg border border-[#e2dacf]">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-[#5b6375] bg-[#faf8f4] border-b border-[#e2dacf]">
+                                        <th class="text-left py-2 px-3 text-xs">Criteria</th>
+                                        <th class="text-center py-2 text-xs">Weight</th>
+                                        <th class="text-center py-2 text-xs">Max Score</th>
+                                        <th class="text-center py-2 px-3 text-xs">Your Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="criteria_tbody"></tbody>
+                                <tfoot>
+                                    <tr class="border-t border-[#e2dacf] font-semibold bg-[#faf8f4]">
+                                        <td class="py-2 px-3">Total</td>
+                                        <td class="text-center" id="total_weight">100%</td>
+                                        <td class="text-center" id="total_max">0</td>
+                                        <td class="text-center px-3" id="total_score_display">0</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label">Feedback</label>
+                        <textarea name="feedback" rows="3" class="form-input" placeholder="Overall feedback for this milestone..."></textarea>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ═══ RIGHT: REVISION SHEET (VIEW ONLY) ═══ -->
+            <div class="eval-panel eval-panel-right">
+                <div class="eval-panel-heading">
+                    <div class="eval-panel-title">
+                        <span class="icon-badge"><i class="fa-solid fa-file-lines"></i></span>
+                        Revision Sheet
+                    </div>
+                    <span class="readonly-pill"><i class="fa-solid fa-lock"></i> View Only</span>
+                </div>
+                <div id="eval_revision_sheet_content" class="text-sm">
+                    <p class="text-sm text-[#5b6375]">Loading…</p>
                 </div>
             </div>
 
-            <!-- Absent Students Checklist -->
-            <div id="absent_students_container" class="hidden">
-                <label class="form-label">Select Absent Student(s)</label>
-                <div id="student_checklist" class="grid grid-cols-2 gap-2 mt-1 p-3 border border-[#e2dacf] rounded-xl bg-[#faf8f4] max-h-36 overflow-y-auto">
-                    <!-- Loaded dynamically via JS -->
-                </div>
-            </div>
-            <div id="rubric_container" class="mb-4 hidden">
-                <label class="form-label">Rubric: <span id="rubric_name_display" class="text-[#b88d3a]"></span></label>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead><tr class="text-[#5b6375] border-b border-[#e2dacf]"><th class="text-left py-2">Criteria</th><th class="text-center py-2">Weight</th><th class="text-center py-2">Max Score</th><th class="text-center py-2">Your Score</th></tr></thead>
-                        <tbody id="criteria_tbody"></tbody>
-                        <tfoot><tr class="border-t border-[#e2dacf] font-semibold"><td class="py-2">Total</td><td class="text-center" id="total_weight">100%</td><td class="text-center" id="total_max">0</td><td class="text-center" id="total_score_display">0</td></tr></tfoot>
-                    </table>
-                </div>
-            </div>
-            <div><label class="form-label">Feedback</label><textarea name="feedback" rows="3" class="form-input" placeholder="Overall feedback for this milestone..."></textarea></div>
-            <div class="flex justify-end gap-2 pt-3">
-                <button type="button" onclick="closeModal('evaluationModal')" class="btn-ghost">Cancel</button>
-                <button type="submit" class="btn-primary">Submit Evaluation</button>
-            </div>
-        </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="eval-modal-footer">
+            <button type="button" onclick="closeModal('evaluationModal')" class="btn-ghost">Cancel</button>
+            <button type="submit" form="evaluation_form" class="btn-primary"><i class="fa-regular fa-floppy-disk mr-1"></i> Submit Evaluation</button>
+        </div>
+
     </div>
 </div>
 {{-- edit group modal --}}
@@ -3110,7 +3173,7 @@ document.addEventListener('DOMContentLoaded', function () {
 }
 
     // ── REVISION HELPER FUNCTIONS ────────────────
- window.openRevisionModal = function (groupId, groupName, capstoneTitle) {
+window.openRevisionModal = function (groupId, groupName, capstoneTitle) {
     document.getElementById('revision_group_id').value = groupId;
     document.getElementById('revision_group_name').value = groupName || '';
     document.getElementById('revision_capstone_title').value = capstoneTitle || '';
@@ -3126,56 +3189,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     openModal('revisionModal');
 
-   fetch(`/teacher/get-group/${groupId}`)
-    .then(r => r.json())
-    .then(data => {
+    fetch(`/teacher/get-group/${groupId}`)
+        .then(r => r.json())
+        .then(data => {
+            proponentsContainer.innerHTML = '';
 
-        // SET GROUP NAME FROM DATABASE
-        const groupNameInput = document.getElementById('eval_group_name');
+            if (data.error || !data.members || data.members.length === 0) {
+                proponentsContainer.innerHTML = '<span class="text-xs text-[#5b6375] italic">No team members found.</span>';
+                return;
+            }
 
-        if (groupNameInput) {
-            groupNameInput.value = data.group_name || 'Unknown Group';
-        }
-
-        checklist.innerHTML = '';
-
-        if (data.error || !data.members || data.members.length === 0) {
-            checklist.innerHTML =
-                '<p class="text-xs text-[#5b6375] col-span-2 text-center py-2">No members found.</p>';
-            return;
-        }
-
-        data.members.forEach(m => {
-            const label = document.createElement('label');
-
-            label.className =
-                'flex items-center gap-2 cursor-pointer text-sm text-[#171e2c]';
-
-            label.innerHTML = `
-                <input
-                    type="checkbox"
-                    name="absent_students[]"
-                    value="${m.user_id}"
-                    class="form-checkbox text-[#d6b15c] focus:ring-[#d6b15c]"
-                >
-                <span>
-                    ${m.name}
-                    <span class="text-[#5b6375] text-xs">
-                        (${m.user_id})
-                    </span>
-                </span>
-            `;
-
-            checklist.appendChild(label);
+            data.members.forEach(m => {
+                const badge = document.createElement('span');
+                badge.className = 'badge badge-navy';
+                badge.innerHTML = `<i class="fa-regular fa-user mr-1"></i> ${m.name}${m.role ? ` (${m.role})` : ''}`;
+                proponentsContainer.appendChild(badge);
+            });
+        })
+        .catch(() => {
+            proponentsContainer.innerHTML = '<span class="text-xs text-red-500 italic">Failed to load team members.</span>';
         });
-    })
-    .catch(error => {
-        console.error('Failed to load group:', error);
-
-        checklist.innerHTML =
-            '<p class="text-xs text-red-500 col-span-2 text-center py-2">Failed to load students.</p>';
-    });
-};  
+};
 window.submitRevisionCheck = function (event) {
     event.preventDefault();
     const groupId = document.getElementById('check_group_id').value;
@@ -3374,6 +3408,9 @@ window.submitRevisionCheck = function (event) {
 
     // ── Open the modal first (user sees it immediately) ──
     openModal('evaluationModal');
+        // ── Load the read-only revision sheet on the right ──
+    const revisionSheetEl = document.getElementById('eval_revision_sheet_content');
+    if (revisionSheetEl) renderRevisionSheet(revisionSheetEl, groupId);
 
     // ── Then load group members in the background ──
     const checklist = document.getElementById('student_checklist');
@@ -4092,15 +4129,131 @@ window.openMyEvaluationModal = function (groupId) {
             console.error('MyEvaluation error:', err);
         });
 };
-window.openViewRevisionModal = function (groupId) {
-    const modal = document.getElementById('viewRevisionModal');
-    const content = document.getElementById('viewRevisionContent');
+function buildRevisionSheetHtml(data) {
+    let html = '';
 
-    // Show loading
-    content.innerHTML = '<p class="text-sm text-[#5b6375]">Loading revision data…</p>';
-    modal.classList.add('active');
+    html += `
+        <div class="mb-4">
+            <label class="form-label">Overall Remarks / Instructions</label>
+            <p class="p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg text-sm text-[#5b6375] italic">
+                ${data.overall_remarks || 'No remarks provided.'}
+            </p>
+        </div>
+    `;
 
-    // Fetch the same revision data (teacher panelist only) – or use student endpoint if needed
+    html += `
+        <div class="border-t border-[#e2dacf] pt-4 mt-4">
+            <p class="form-fieldset-title"><i class="fa-solid fa-book"></i> Chapter / Document Findings</p>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                            <th class="p-2 pl-3" style="width:20%">Chapter</th>
+                            <th class="p-2" style="width:45%">Findings</th>
+                            <th class="p-2 pr-3 text-center" style="width:35%">Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#faf1e0]">
+    `;
+    if (data.chapters && data.chapters.length) {
+        data.chapters.forEach(ch => {
+            html += `
+                <tr>
+                    <td class="p-2 pl-3 font-semibold">${ch.chapter}</td>
+                    <td class="p-2">${ch.findings}</td>
+                    <td class="p-2 pr-3 text-center">
+                        <span class="badge ${ch.remarks.toLowerCase() === 'completed' ? 'badge-green' : 'badge-muted'}">
+                            ${ch.remarks || 'Pending'}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        });
+    } else {
+        html += `<tr><td colspan="3" class="p-4 text-center text-[#5b6375]">No chapter findings.</td></tr>`;
+    }
+    html += `</tbody></table></div></div>`;
+
+    html += `
+        <div class="border-t border-[#e2dacf] pt-4 mt-4">
+            <p class="form-fieldset-title"><i class="fa-solid fa-microchip"></i> System / IoT Findings / Enhancements</p>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                            <th class="p-2 pl-3" style="width:65%">Finding / Enhancement</th>
+                            <th class="p-2 pr-3 text-center" style="width:35%">Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#faf1e0]">
+    `;
+    if (data.iot_findings && data.iot_findings.length) {
+        data.iot_findings.forEach(iot => {
+            html += `
+                <tr>
+                    <td class="p-2 pl-3">${iot.finding}</td>
+                    <td class="p-2 pr-3 text-center">
+                        <span class="badge ${iot.remarks.toLowerCase() === 'completed' ? 'badge-green' : 'badge-muted'}">
+                            ${iot.remarks || 'Pending'}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        });
+    } else {
+        html += `<tr><td colspan="2" class="p-4 text-center text-[#5b6375]">No IoT findings.</td></tr>`;
+    }
+    html += `</tbody></table></div></div>`;
+
+    html += `
+        <div class="border-t border-[#e2dacf] pt-4 mt-4">
+            <p class="form-fieldset-title"><i class="fa-solid fa-list-check"></i> Additional Objectives (if any)</p>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                            <th class="p-2 pl-3" style="width:65%">Objective</th>
+                            <th class="p-2 pr-3 text-center" style="width:35%">Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#faf1e0]">
+    `;
+    if (data.additional_objectives && data.additional_objectives.length) {
+        data.additional_objectives.forEach(obj => {
+            const objText = typeof obj === 'object' ? obj.objective : obj;
+            const remarks = typeof obj === 'object' ? (obj.remarks || 'Pending') : 'Pending';
+            html += `
+                <tr>
+                    <td class="p-2 pl-3">${objText}</td>
+                    <td class="p-2 pr-3 text-center">
+                        <span class="badge ${remarks.toLowerCase() === 'completed' ? 'badge-green' : 'badge-muted'}">
+                            ${remarks}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        });
+    } else {
+        html += `<tr><td colspan="2" class="p-4 text-center text-[#5b6375]">No additional objectives.</td></tr>`;
+    }
+    html += `</tbody></table></div></div>`;
+
+    if (data.approved_by) {
+        html += `
+            <div class="border-t border-[#e2dacf] pt-4 mt-4">
+                <label class="form-label">Approved by</label>
+                <p class="p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg text-sm font-semibold text-[#0a1428]">
+                    ${data.approved_by}
+                </p>
+            </div>
+        `;
+    }
+
+    return html;
+}
+
+function renderRevisionSheet(container, groupId) {
+    container.innerHTML = '<p class="text-sm text-[#5b6375]">Loading revision data…</p>';
     fetch(`/teacher/get-revision-details/${groupId}`)
         .then(async response => {
             if (!response.ok) {
@@ -4110,164 +4263,22 @@ window.openViewRevisionModal = function (groupId) {
             return response.json();
         })
         .then(data => {
-            // If there's an error message in the response
             if (data.error) {
-                content.innerHTML = `<p class="text-sm text-red-500">${data.error}</p>`;
+                container.innerHTML = `<p class="text-sm text-red-500">${data.error}</p>`;
                 return;
             }
-
-            // Build the read‑only view
-            let html = '';
-
-            // --- Overall remarks ---
-            html += `
-                <div class="mb-4">
-                    <label class="form-label">Overall Remarks / Instructions</label>
-                    <p class="p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg text-sm text-[#5b6375] italic">
-                        ${data.overall_remarks || 'No remarks provided.'}
-                    </p>
-                </div>
-            `;
-
-            // --- Chapters ---
-            html += `
-                <div class="border-t border-[#e2dacf] pt-4 mt-4">
-                    <p class="form-fieldset-title"><i class="fa-solid fa-book"></i> Chapter / Document Findings</p>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse text-sm">
-                            <thead>
-                                <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
-                                    <th class="p-2 pl-3" style="width:20%">Chapter</th>
-                                    <th class="p-2" style="width:45%">Findings</th>
-                                    <th class="p-2 pr-3 text-center" style="width:35%">Remarks</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-[#faf1e0]">
-            `;
-
-            if (data.chapters && data.chapters.length) {
-                data.chapters.forEach(ch => {
-                    html += `
-                        <tr>
-                            <td class="p-2 pl-3 font-semibold">${ch.chapter}</td>
-                            <td class="p-2">${ch.findings}</td>
-                            <td class="p-2 pr-3 text-center">
-                                <span class="badge ${ch.remarks.toLowerCase() === 'completed' ? 'badge-green' : 'badge-muted'}">
-                                    ${ch.remarks || 'Pending'}
-                                </span>
-                            </td>
-                        </tr>
-                    `;
-                });
-            } else {
-                html += `<tr><td colspan="3" class="p-4 text-center text-[#5b6375]">No chapter findings.</td></tr>`;
-            }
-
-            html += `
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-
-            // --- IoT / System findings ---
-            html += `
-                <div class="border-t border-[#e2dacf] pt-4 mt-4">
-                    <p class="form-fieldset-title"><i class="fa-solid fa-microchip"></i> System / IoT Findings / Enhancements</p>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse text-sm">
-                            <thead>
-                                <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
-                                    <th class="p-2 pl-3" style="width:65%">Finding / Enhancement</th>
-                                    <th class="p-2 pr-3 text-center" style="width:35%">Remarks</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-[#faf1e0]">
-            `;
-
-            if (data.iot_findings && data.iot_findings.length) {
-                data.iot_findings.forEach(iot => {
-                    html += `
-                        <tr>
-                            <td class="p-2 pl-3">${iot.finding}</td>
-                            <td class="p-2 pr-3 text-center">
-                                <span class="badge ${iot.remarks.toLowerCase() === 'completed' ? 'badge-green' : 'badge-muted'}">
-                                    ${iot.remarks || 'Pending'}
-                                </span>
-                            </td>
-                        </tr>
-                    `;
-                });
-            } else {
-                html += `<tr><td colspan="2" class="p-4 text-center text-[#5b6375]">No IoT findings.</td></tr>`;
-            }
-
-            html += `
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-
-            // --- Additional objectives ---
-            html += `
-                <div class="border-t border-[#e2dacf] pt-4 mt-4">
-                    <p class="form-fieldset-title"><i class="fa-solid fa-list-check"></i> Additional Objectives for Capstone 2</p>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse text-sm">
-                            <thead>
-                                <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
-                                    <th class="p-2 pl-3" style="width:65%">Objective</th>
-                                    <th class="p-2 pr-3 text-center" style="width:35%">Remarks</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-[#faf1e0]">
-            `;
-
-            if (data.additional_objectives && data.additional_objectives.length) {
-                data.additional_objectives.forEach(obj => {
-                    const objText = typeof obj === 'object' ? obj.objective : obj;
-                    const remarks = typeof obj === 'object' ? (obj.remarks || 'Pending') : 'Pending';
-                    html += `
-                        <tr>
-                            <td class="p-2 pl-3">${objText}</td>
-                            <td class="p-2 pr-3 text-center">
-                                <span class="badge ${remarks.toLowerCase() === 'completed' ? 'badge-green' : 'badge-muted'}">
-                                    ${remarks}
-                                </span>
-                            </td>
-                        </tr>
-                    `;
-                });
-            } else {
-                html += `<tr><td colspan="2" class="p-4 text-center text-[#5b6375]">No additional objectives.</td></tr>`;
-            }
-
-            html += `
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-
-            // --- Approved by (if available) ---
-            if (data.approved_by) {
-                html += `
-                    <div class="border-t border-[#e2dacf] pt-4 mt-4">
-                        <label class="form-label">Approved by</label>
-                        <p class="p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg text-sm font-semibold text-[#0a1428]">
-                            ${data.approved_by}
-                        </p>
-                    </div>
-                `;
-            }
-
-            content.innerHTML = html;
+            container.innerHTML = buildRevisionSheetHtml(data);
         })
         .catch(err => {
-            content.innerHTML = `<p class="text-sm text-red-500">❌ ${err.message}</p>`;
-            console.error('ViewRevision error:', err);
+            container.innerHTML = `<p class="text-sm text-red-500">❌ ${err.message}</p>`;
+            console.error('RevisionSheet error:', err);
         });
+}
+window.openViewRevisionModal = function (groupId) {
+    const modal = document.getElementById('viewRevisionModal');
+    const content = document.getElementById('viewRevisionContent');
+    modal.classList.add('active');
+    renderRevisionSheet(content, groupId);
 };
 </script>
 </body>

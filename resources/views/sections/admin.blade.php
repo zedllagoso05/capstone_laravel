@@ -596,6 +596,22 @@
 .toggle-section-btn:hover {
     background: rgba(214, 177, 92, 0.15);
 }
+/* Progress section group lists */
+.group-list {
+    overflow: hidden;
+    max-height: 1000px;
+    opacity: 1;
+    transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+
+.group-list.collapsed {
+    max-height: 0 !important;
+    opacity: 0;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    border-top: none !important;
+}
+
     </style>
 </head>
 <body class="bg-[#f8f6f0] text-[#171e2c]">
@@ -892,8 +908,8 @@
             </div>
         </div>
 
-        <!-- ==================== STUDENTS ==================== -->
-        <div id="students-section" class="section-container hidden section-card">
+        <!-- ==================== STUDENTS & GROUPS ==================== -->
+<div id="students-section" class="section-container hidden section-card">
     <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
             <h1>Students & Groups</h1>
@@ -906,72 +922,96 @@
         </div>
     </div>
 
-    <!-- STUDENTS VIEW -->
-    <div id="sg-students-view" class="content-card">
-        <div class="card-accent"></div>
-        <div class="p-6">
-            <div class="flex justify-between items-center mb-5 flex-wrap gap-3">
-                <h3>All Students</h3>
-                <div class="flex gap-2">
-                    <button onclick="openModal('createGroupModal')" class="btn-outline text-sm"><i class="fas fa-users mr-1"></i> Create Group</button>
-                    <button onclick="openModal('import_student_modal')" class="btn-outline text-sm"><i class="fas fa-file-import mr-1"></i> Import Excel</button>
-                    <button onclick="openModal('student_modal')" class="btn-primary text-sm"><i class="fas fa-plus mr-1"></i> Register Student</button>
+    <!-- ========== STUDENTS VIEW (with filter + pagination) ========== -->
+        <div id="sg-students-view" class="content-card">
+            <div class="card-accent"></div>
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-5 flex-wrap gap-3">
+                    <h3>All Students</h3>
+                    <div class="flex gap-2 flex-wrap">
+                        <button onclick="openModal('createGroupModal')" class="btn-outline text-sm"><i class="fas fa-users mr-1"></i> Create Group</button>
+                        <button onclick="openModal('import_student_modal')" class="btn-outline text-sm"><i class="fas fa-file-import mr-1"></i> Import Excel</button>
+                        <button onclick="openModal('student_modal')" class="btn-primary text-sm"><i class="fas fa-plus mr-1"></i> Register Student</button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>ID</th>
+                                <th>Course</th>
+                                <th>
+                                    <!-- Section Filter -->
+                                    <select id="admin-student-section-filter" class="form-select text-xs py-1 px-2 border border-[#e2dacf] rounded-lg bg-[#faf8f4] font-semibold" style="color: var(--navy); max-width: 140px;">
+                                        <option value="All">All Section</option>
+                                        @forelse ($allSections as $section)
+                                            <option value="{{ $section->section_name }}">{{ $section->section_name }}</option>
+                                        @empty
+                                            <option disabled>No section available</option>
+                                        @endforelse
+                                    </select>
+                                </th>
+                                <th>
+                                    <!-- Group Filter -->
+                                    <select id="admin-student-group-filter" class="form-select text-xs py-1 px-2 border border-[#e2dacf] rounded-lg bg-[#faf8f4] font-semibold" style="color: var(--navy); max-width: 140px;" disabled>
+                                        <option value="All">All Groups</option>
+                                    </select>
+                                </th>
+                                <th class="pr-2">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="students-tbody">
+                            @forelse($allStudents ?? [] as $student)
+                            <tr data-section="{{ $student->section }}" data-group="{{ $student->groups->pluck('group_name')->first() ?? 'No Group' }}">
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                                            style="background:linear-gradient(135deg, var(--navy) 0%, #1e3a5f 100%);">
+                                            {{ strtoupper(substr($student->student_first_name, 0, 1) . substr($student->student_last_name, 0, 1)) }}
+                                        </div>
+                                        <span class="text-sm">{{ $student->student_first_name }} {{ $student->student_last_name }}</span>
+                                    </div>
+                                </td>
+                                <td class="text-sm text-[#3d4450]">{{ $student->user->user_id ?? 'N/A' }}</td>
+                                <td class="text-sm text-[#3d4450]">{{ $student->course }}</td>
+                                <td class="text-sm text-[#3d4450]">{{ $student->section }}</td>
+                                <td class="text-sm text-[#3d4450]">{{ $student->groups->pluck('group_name')->join(', ') ?: 'No Group' }}</td>
+                                <td class="pr-2">
+                                    <div class="flex gap-3 text-[#5b6375]">
+                                        <button onclick='openEditStudentModal(@json($student))' class="hover:text-[#0a1428] transition"><i class="fas fa-pen"></i></button>
+                                        <button type="button" onclick="openDeleteStudentModal('{{ $student->user_id }}', '{{ addslashes($student->student_first_name . ' ' . $student->student_last_name) }}')" class="hover:text-red-500 transition"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr class="no-students-row">
+                                <td colspan="6" class="py-6 text-center text-[#5b6375]">No students found.</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Controls (for Students only) -->
+                <div class="flex items-center justify-between mt-5 pt-4 border-t border-[#e2dacf]">
+                    <span class="text-xs text-[#5b6375]">
+                        Showing <span id="students-start">0</span> – <span id="students-end">0</span> of <span id="students-total">0</span>
+                    </span>
+                    <div class="flex gap-2">
+                        <button id="students-prev" class="btn-ghost text-xs px-3 py-1 border border-[#e2dacf] rounded-lg hover:bg-[#faf8f4] disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+                            <i class="fas fa-chevron-left mr-1"></i> Previous
+                        </button>
+                        <span id="students-page-info" class="text-xs text-[#5b6375] self-center">Page 1</span>
+                        <button id="students-next" class="btn-ghost text-xs px-3 py-1 border border-[#e2dacf] rounded-lg hover:bg-[#faf8f4] disabled:opacity-40 disabled:cursor-not-allowed">
+                            Next <i class="fas fa-chevron-right ml-1"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="overflow-x-auto">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Student</th>
-                            <th>ID</th>
-                            <th>Course</th>
-                            <th>
-                                <select id="admin-student-section-filter" class="form-select text-xs py-1 px-2 border border-[#e2dacf] rounded-lg bg-[#faf8f4] font-semibold" style="color: var(--navy); max-width: 140px;">
-                                    <option value="All">All Section</option>
-                                    @forelse ($allSections as $section)
-                                        <option value="{{ $section->section_name }}">{{ $section->section_name }}</option>
-                                    @empty
-                                        <option disabled>No section available</option>
-                                    @endforelse
-                                </select>
-                            </th>
-                            <th>Group</th>
-                            <th class="pr-2">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($allStudents ?? [] as $student)
-                        <tr>
-                            <td>
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                                         style="background:linear-gradient(135deg, var(--navy) 0%, #1e3a5f 100%);">
-                                        {{ strtoupper(substr($student->student_first_name, 0, 1) . substr($student->student_last_name, 0, 1)) }}
-                                    </div>
-                                    <span class="text-sm">{{ $student->student_first_name }} {{ $student->student_last_name }}</span>
-                                </div>
-                            </td>
-                            <td class="text-sm text-[#3d4450]">{{ $student->user->user_id ?? 'N/A' }}</td>
-                            <td class="text-sm text-[#3d4450]">{{ $student->course }}</td>
-                            <td class="text-sm text-[#3d4450]">{{ $student->section }}</td>
-                            <td class="text-sm text-[#3d4450]">{{ $student->groups->pluck('group_name')->join(', ') ?: 'No Group' }}</td>
-                            <td class="pr-2">
-                                <div class="flex gap-3 text-[#5b6375]">
-                                    <button onclick='openEditStudentModal(@json($student))' class="hover:text-[#0a1428] transition"><i class="fas fa-pen"></i></button>
-                                    <button type="button" onclick="openDeleteStudentModal('{{ $student->user_id }}', '{{ addslashes($student->student_first_name . ' ' . $student->student_last_name) }}')" class="hover:text-red-500 transition"><i class="fas fa-trash"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr><td colspan="6" class="py-6 text-center text-[#5b6375]">No students found.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
         </div>
-    </div>
-
-    <!-- GROUPS VIEW -->
+    <!-- ========== GROUPS VIEW (unchanged – no filter, no pagination) ========== -->
     <div id="sg-groups-view" class="content-card hidden">
         <div class="card-accent"></div>
         <div class="p-6">
@@ -981,7 +1021,19 @@
             </div>
             <div class="overflow-x-auto">
                 <table>
-                    <thead><tr><th>Group</th><th>Capstone Title</th><th>Section</th><th>Adviser</th><th>Members</th><th>Capstone 1</th><th>Capstone 2</th><th>Room</th><th class="pr-2">Actions</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Group</th>
+                            <th>Capstone Title</th>
+                            <th>Section</th>
+                            <th>Adviser</th>
+                            <th>Members</th>
+                            <th>Capstone 1</th>
+                            <th>Capstone 2</th>
+                            <th>Room</th>
+                            <th class="pr-2">Actions</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         @forelse($groupsData ?? [] as $group)
                         <tr>
@@ -1024,11 +1076,14 @@
                             <td class="pr-2">
                                 <div class="flex gap-3 text-[#5b6375]">
                                     <button onclick="openEditGroupModal({{ $group['id'] }})" class="hover:text-[#0a1428] transition"><i class="fas fa-pen"></i></button>
+                                    <button type="button" onclick="openDeleteGroupModal({{ $group['id'] }}, '{{ addslashes($group['name']) }}')" class="hover:text-red-500 transition"><i class="fas fa-trash"></i></button>
                                 </div>
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="9" class="py-6 text-center text-[#5b6375]">No groups found.</td></tr>
+                        <tr>
+                            <td colspan="9" class="py-6 text-center text-[#5b6375]">No groups found.</td>
+                        </tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -1135,129 +1190,166 @@
 </div>
 
         <!-- ==================== PROGRESS ==================== -->
-        <div id="progress-section" class="section-container hidden section-card">
-            <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+<div id="progress-section" class="section-container hidden section-card">
+    <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+            <h1>Progress Monitoring</h1>
+            <div class="gold-accent-line"></div>
+            <p class="text-[#5b6375] mt-2 text-sm">Real-time tracking of all capstone sections and groups.</p>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-[#5b6375]">
+            <i class="fas fa-circle text-[8px]" style="color:#1e6b3a;"></i> On Track
+            <i class="fas fa-circle text-[8px] ml-3" style="color:#b88d3a;"></i> At Risk
+            <i class="fas fa-circle text-[8px] ml-3" style="color:#a12b2b;"></i> Needs Attention
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="content-card mb-8">
+        <div class="card-accent"></div>
+        <div class="p-6 grid grid-cols-2 lg:grid-cols-4 divide-x divide-[#eee7d9]">
+            @php
+            $progressStats = [
+                ['label'=>'On Track','count'=>$onTrackCount??48,'color'=>'#1e6b3a','icon'=>'fa-check-circle'],
+                ['label'=>'At Risk','count'=>$atRiskCount??9,'color'=>'#b88d3a','icon'=>'fa-clock'],
+                ['label'=>'Needs Attention','count'=>$delayedCount??5,'color'=>'#a12b2b','icon'=>'fa-exclamation-triangle'],
+            ];
+            $avgP = $avgProgress ?? 73;
+            $ringColor = $avgP >= 75 ? '#1e6b3a' : ($avgP >= 50 ? '#b88d3a' : '#a12b2b');
+            $ringDeg = round(($avgP/100)*360);
+            @endphp
+            @foreach($progressStats as $i => $ps)
+            <div class="flex items-center gap-3 {{ $i === 0 ? 'pl-0' : 'pl-6' }} pr-6">
+                <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:{{ $ps['color'] }}14; color:{{ $ps['color'] }};">
+                    <i class="fas {{ $ps['icon'] }} text-sm"></i>
+                </div>
                 <div>
-                    <h1>Progress Monitoring</h1>
-                    <div class="gold-accent-line"></div>
-                    <p class="text-[#5b6375] mt-2 text-sm">Real-time tracking of all capstone sections and groups.</p>
-                </div>
-                <div class="flex items-center gap-2 text-xs text-[#5b6375]">
-                    <i class="fas fa-circle text-[8px]" style="color:#1e6b3a;"></i> On Track
-                    <i class="fas fa-circle text-[8px] ml-3" style="color:#b88d3a;"></i> At Risk
-                    <i class="fas fa-circle text-[8px] ml-3" style="color:#a12b2b;"></i> Needs Attention
+                    <p class="text-[11px] uppercase tracking-wide text-[#9a9385] font-semibold">{{ $ps['label'] }}</p>
+                    <p class="text-xl font-bold text-[#0a1428] leading-tight" style="font-family:'Cormorant Garamond',serif;">{{ $ps['count'] }} <span class="text-xs font-normal text-[#9a9385]" style="font-family:'DM Sans',sans-serif;">groups</span></p>
                 </div>
             </div>
-            <div class="content-card mb-8">
-                <div class="card-accent"></div>
-                <div class="p-6 grid grid-cols-2 lg:grid-cols-4 divide-x divide-[#eee7d9]">
-                    @php
-                    $progressStats = [
-                        ['label'=>'On Track','count'=>$onTrackCount??48,'color'=>'#1e6b3a','icon'=>'fa-check-circle'],
-                        ['label'=>'At Risk','count'=>$atRiskCount??9,'color'=>'#b88d3a','icon'=>'fa-clock'],
-                        ['label'=>'Needs Attention','count'=>$delayedCount??5,'color'=>'#a12b2b','icon'=>'fa-exclamation-triangle'],
-                    ];
-                    $avgP = $avgProgress ?? 73;
-                    $ringColor = $avgP >= 75 ? '#1e6b3a' : ($avgP >= 50 ? '#b88d3a' : '#a12b2b');
-                    $ringDeg = round(($avgP/100)*360);
-                    @endphp
-                    @foreach($progressStats as $i => $ps)
-                    <div class="flex items-center gap-3 {{ $i === 0 ? 'pl-0' : 'pl-6' }} pr-6">
-                        <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:{{ $ps['color'] }}14; color:{{ $ps['color'] }};">
-                            <i class="fas {{ $ps['icon'] }} text-sm"></i>
-                        </div>
-                        <div>
-                            <p class="text-[11px] uppercase tracking-wide text-[#9a9385] font-semibold">{{ $ps['label'] }}</p>
-                            <p class="text-xl font-bold text-[#0a1428] leading-tight" style="font-family:'Cormorant Garamond',serif;">{{ $ps['count'] }} <span class="text-xs font-normal text-[#9a9385]" style="font-family:'DM Sans',sans-serif;">groups</span></p>
-                        </div>
-                    </div>
-                    @endforeach
-                    <div class="flex items-center gap-4 pl-6">
-                        <div class="relative w-14 h-14 flex-shrink-0" style="border-radius:50%; background:conic-gradient({{ $ringColor }} {{ $ringDeg }}deg, #eee7d9 0deg);">
-                            <div class="absolute inset-[3px] rounded-full bg-white flex items-center justify-center"><span class="text-sm font-bold text-[#0a1428]">{{ $avgP }}%</span></div>
-                        </div>
-                        <div>
-                            <p class="text-[11px] uppercase tracking-wide text-[#9a9385] font-semibold">Overall</p>
-                            <p class="text-sm font-semibold text-[#171e2c]">Average Progress</p>
-                        </div>
-                    </div>
+            @endforeach
+            <div class="flex items-center gap-4 pl-6">
+                <div class="relative w-14 h-14 flex-shrink-0" style="border-radius:50%; background:conic-gradient({{ $ringColor }} {{ $ringDeg }}deg, #eee7d9 0deg);">
+                    <div class="absolute inset-[3px] rounded-full bg-white flex items-center justify-center"><span class="text-sm font-bold text-[#0a1428]">{{ $avgP }}%</span></div>
                 </div>
-            </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                <div class="content-card">
-                    <div class="card-accent"></div>
-                    <div class="p-6">
-                        <div class="flex justify-between items-center mb-6 pb-4 border-b border-[#f0ece4]">
-                            <div><h3>Section Progress</h3><p class="text-xs text-[#9a9385] mt-0.5">Completion rate by student section</p></div>
-                            <i class="fas fa-chart-simple text-[#c9a24a]"></i>
-                        </div>
-                        @if(count($sectionProgress ?? []) <= 0)
-                        <p class="text-[#5b6375] text-sm text-center py-6">No student sections found.</p>
-                        @else
-                        <div class="space-y-5">
-                            @foreach($sectionProgress as $section)
-                            @php
-                                $avg = $section->avg ?? 0;
-                                if ($avg >= 75) { $statusColor = '#1e6b3a'; $statusBg = '#e6f4ea'; }
-                                elseif ($avg >= 50) { $statusColor = '#8a5d0b'; $statusBg = '#fef7e6'; }
-                                else { $statusColor = '#a12b2b'; $statusBg = '#fdecea'; }
-                                $total = $section->done + $section->in_progress + $section->not_started;
-                            @endphp
-                            <div class="pb-5 border-b border-[#f5f1e8] last:border-0 last:pb-0">
-                                <div class="flex justify-between items-center mb-1.5">
-                                    <h4 class="font-bold text-sm text-[#0a1428] tracking-tight">{{ $section->name }}</h4>
-                                    <span class="badge flex items-center gap-1.5" style="background:{{ $statusBg }}; color:{{ $statusColor }}; border:1px solid {{ $statusColor }}30;">
-                                        <span class="inline-block w-1.5 h-1.5 rounded-full" style="background:{{ $statusColor }};"></span>{{ $avg }}%
-                                    </span>
-                                </div>
-                                <div class="progress-bar-bg h-2.5 w-full"><div class="progress-fill fill-animate h-full" data-target="{{ $avg }}" style="width:0%; background:{{ $statusColor }};"></div></div>
-                                @if($total > 0)
-                                <p class="text-[11px] text-[#8b8477] mt-2 font-medium flex flex-wrap items-center gap-x-3 gap-y-1">
-                                    <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#1e6b3a;"></span> {{ $section->done }} done</span>
-                                    <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#b88d3a;"></span> {{ $section->in_progress }} in progress</span>
-                                    <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#9a9385;"></span> {{ $section->not_started }} not started</span>
-                                </p>
-                                @else
-                                <p class="text-xs text-[#9a9385] mt-2">No groups yet</p>
-                                @endif
-                            </div>
-                            @endforeach
-                        </div>
-                        @endif
-                    </div>
-                </div>
-                <div class="content-card">
-                    <div class="card-accent"></div>
-                    <div class="p-6">
-                        <div class="flex justify-between items-center mb-2 pb-4 border-b border-[#f0ece4]">
-                            <div><h3>Milestone Completion</h3><p class="text-xs text-[#9a9385] mt-0.5">Progress across capstone stages</p></div>
-                        </div>
-                        <div class="space-y-4 mt-5">
-                            @forelse($milestoneCompletion ?? [] as $m)
-                            @php
-                                $pct = ($m->total > 0) ? round(($m->completed / $m->total) * 100) : 0;
-                                if ($pct >= 75) { $pctColor = '#1e6b3a'; }
-                                elseif ($pct >= 40) { $pctColor = '#b88d3a'; }
-                                else { $pctColor = '#a12b2b'; }
-                            @endphp
-                            <div class="milestone-row flex items-center gap-4" data-stage="{{ $m->stage }}">
-                                <div class="w-28 text-sm text-[#171e2c] font-medium flex-shrink-0 truncate" title="{{ $m->name }}">{{ $m->name }}</div>
-                                <div class="flex-1 progress-bar-bg h-2.5"><div class="progress-fill fill-animate h-full" data-target="{{ $pct }}" style="width:0%; background:{{ $m->color ?? $pctColor }};"></div></div>
-                                <div class="flex items-center gap-2 flex-shrink-0">
-                                    <span class="text-xs text-[#9a9385] w-10 text-right">{{ $m->completed }}/{{ $m->total }}</span>
-                                    <span class="text-xs font-bold w-9 text-right" style="color:{{ $pctColor }};">{{ $pct }}%</span>
-                                </div>
-                            </div>
-                            @empty
-                            <p class="text-[#5b6375] text-sm text-center py-6">No milestones created yet.</p>
-                            @endforelse
-                        </div>
-                    </div>
+                <div>
+                    <p class="text-[11px] uppercase tracking-wide text-[#9a9385] font-semibold">Overall</p>
+                    <p class="text-sm font-semibold text-[#171e2c]">Average Progress</p>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- ===== SECTION PROGRESS (LEFT) + MILESTONE COMPLETION (RIGHT) ===== -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <!-- Section Progress -->
+        <div class="content-card">
+            <div class="card-accent"></div>
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6 pb-4 border-b border-[#f0ece4]">
+                    <div><h3>Section Progress</h3><p class="text-xs text-[#9a9385] mt-0.5">Completion rate by student section</p></div>
+                    <i class="fas fa-chart-simple text-[#c9a24a]"></i>
+                </div>
+                @if(count($sectionProgress ?? []) <= 0)
+                <p class="text-[#5b6375] text-sm text-center py-6">No student sections found.</p>
+                @else
+                <div class="space-y-5">
+                    @foreach($sectionProgress as $section)
+                    @php
+                        $avg = $section->avg ?? 0;
+                        if ($avg >= 75) { $statusColor = '#1e6b3a'; $statusBg = '#e6f4ea'; }
+                        elseif ($avg >= 50) { $statusColor = '#8a5d0b'; $statusBg = '#fef7e6'; }
+                        else { $statusColor = '#a12b2b'; $statusBg = '#fdecea'; }
+                        $total = $section->done + $section->in_progress + $section->not_started;
+                    @endphp
+                    <div class="pb-5 border-b border-[#f5f1e8] last:border-0 last:pb-0">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-bold text-sm text-[#0a1428] tracking-tight">{{ $section->name }}</h4>
+                                <!-- Toggle button -->
+                                <button type="button" class="toggle-section-btn text-[#5b6375] hover:text-[#0a1428] transition-transform duration-200" data-target="section-groups-{{ $loop->index }}">
+                                    <i class="fa-solid fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <span class="badge flex items-center gap-1.5" style="background:{{ $statusBg }}; color:{{ $statusColor }}; border:1px solid {{ $statusColor }}30;">
+                                <span class="inline-block w-1.5 h-1.5 rounded-full" style="background:{{ $statusColor }};"></span>{{ $avg }}%
+                            </span>
+                        </div>
+                        <div class="progress-bar-bg h-2.5 w-full"><div class="progress-fill fill-animate h-full" data-target="{{ $avg }}" style="width:0%; background:{{ $statusColor }};"></div></div>
+                        @if($total > 0)
+                        <p class="text-[11px] text-[#8b8477] mt-2 font-medium flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#1e6b3a;"></span> {{ $section->done }} done</span>
+                            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#b88d3a;"></span> {{ $section->in_progress }} in progress</span>
+                            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#9a9385;"></span> {{ $section->not_started }} not started</span>
+                        </p>
+                        @else
+                        <p class="text-xs text-[#9a9385] mt-2">No groups yet</p>
+                        @endif
+
+                        <!-- ===== COLLAPSIBLE GROUP LIST ===== -->
+                        <div id="section-groups-{{ $loop->index }}" class="group-list mt-3 pt-3 border-t border-[#e2dacf]/50 collapsed">
+                            @if(!empty($section->groups))
+                                <p class="text-[10px] uppercase tracking-wider font-semibold text-[#5b6375] mb-2">Groups in this section</p>
+                                @foreach($section->groups as $group)
+                                <div class="flex items-center justify-between py-1.5 text-sm live-group-row" data-group-id="{{ $group->id }}">
+                                    <span class="text-[#171e2c] font-medium">{{ $group->name }}</span>
+                                    <div class="flex items-center gap-3">
+                                        <div class="progress-bar-bg h-1.5 w-20">
+                                            <div class="progress-fill live-progress-bar h-full" data-base-color="{{ $group->color }}" style="width:{{ $group->progress }}%; background:{{ $group->color }};"></div>
+                                        </div>
+                                        <span class="text-xs font-bold live-progress-pct" style="color:{{ $group->color }};">{{ $group->progress }}%</span>
+                                        <span class="badge text-[10px] live-progress-badge" style="background:{{ $group->color }}20; color:{{ $group->color }}; border:1px solid {{ $group->color }}40;">
+                                            {{ $group->status }}
+                                        </span>
+                                    </div>
+                                </div>
+                                @endforeach
+                            @else
+                                <p class="text-xs text-[#9a9385] py-1">No groups in this section</p>
+                            @endif
+                        </div>
+                        <!-- ===== END COLLAPSIBLE GROUP LIST ===== -->
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- Milestone Completion (unchanged) -->
+        <div class="content-card">
+            <div class="card-accent"></div>
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-2 pb-4 border-b border-[#f0ece4]">
+                    <div><h3>Milestone Completion</h3><p class="text-xs text-[#9a9385] mt-0.5">Progress across capstone stages</p></div>
+                </div>
+                <div class="space-y-4 mt-5">
+                    @forelse($milestoneCompletion ?? [] as $m)
+                    @php
+                        $pct = ($m->total > 0) ? round(($m->completed / $m->total) * 100) : 0;
+                        if ($pct >= 75) { $pctColor = '#1e6b3a'; }
+                        elseif ($pct >= 40) { $pctColor = '#b88d3a'; }
+                        else { $pctColor = '#a12b2b'; }
+                    @endphp
+                    <div class="milestone-row flex items-center gap-4" data-stage="{{ $m->stage }}">
+                        <div class="w-28 text-sm text-[#171e2c] font-medium flex-shrink-0 truncate" title="{{ $m->name }}">{{ $m->name }}</div>
+                        <div class="flex-1 progress-bar-bg h-2.5"><div class="progress-fill fill-animate h-full" data-target="{{ $pct }}" style="width:0%; background:{{ $m->color ?? $pctColor }};"></div></div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <span class="text-xs text-[#9a9385] w-10 text-right">{{ $m->completed }}/{{ $m->total }}</span>
+                            <span class="text-xs font-bold w-9 text-right" style="color:{{ $pctColor }};">{{ $pct }}%</span>
+                        </div>
+                    </div>
+                    @empty
+                    <p class="text-[#5b6375] text-sm text-center py-6">No milestones created yet.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
         {{-- evaluation --}}
-      <div id="evaluation-section" class="section-container hidden section-card">
+<div id="evaluation-section" class="section-container hidden section-card">
             <div class="mb-8"><h1>Evaluation</h1><div class="gold-accent-line"></div><p class="text-[#5b6375] mt-2 text-sm">Create evaluation rooms and manage panelists.</p></div>
             <div class="content-card">
                 <div class="card-accent"></div>
@@ -1573,6 +1665,40 @@
     </main>
 
     <!-- ======================= MODALS ======================= -->
+<!-- DELETE GROUP MODAL -->
+<div id="delete_group_modal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-accent" style="background: #a12b2b;"></div>
+        <div class="flex justify-between items-center mb-4">
+            <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">Confirm Deletion</h2>
+            <button type="button" onclick="closeModal('delete_group_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
+        </div>
+        <form action="{{ route('admin.delete_group') }}" method="POST" class="space-y-3">
+            @csrf
+            @if ($errors->any() && old('confirm_delete_group'))
+            <div class="bg-red-50 border border-red-300 text-red-700 p-3 rounded-lg text-sm"><ul class="list-disc list-inside">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
+            @endif
+            <input type="hidden" name="confirm_delete_group" value="1">
+            <input type="hidden" name="group_id" id="delete_group_id">
+            <div class="bg-red-50 border border-red-200 text-red-800 p-3 rounded-xl text-xs">
+                <span class="font-bold"><i class="fas fa-exclamation-triangle"></i> This will permanently delete this group</span>
+                <p class="mt-1">You are about to delete <strong id="delete_group_name" class="text-red-950"></strong> and all its associated members, milestones, evaluations, remarks, and certificates. This cannot be undone.</p>
+            </div>
+            <div>
+                <label class="form-label">Confirm Your Admin Password</label>
+                <div class="relative">
+                    <input type="password" name="admin_password" id="delete_group_admin_password" class="form-input pr-10" placeholder="Enter your password" required>
+                    <button type="button" class="password-toggle absolute right-3 top-1/2 -translate-y-1/2 text-[#5b6375] hover:text-[#0a1428]" onclick="toggleVisibility('delete_group_admin_password', this)"><i class="fa-regular fa-eye"></i></button>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-3">
+                <button type="button" onclick="closeModal('delete_group_modal')" class="btn-ghost">Cancel</button>
+                <button type="submit" class="btn-primary" style="background:#a12b2b;"><i class="fas fa-trash mr-1"></i> Delete Group</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div id="assign_modal" class="modal-overlay">
     <div class="modal-box">
         <div class="modal-accent"></div>
@@ -2129,8 +2255,8 @@
                 </div>
                 <div>
                     <label class="inline-flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="is_active" value="1" class="rounded text-green-600 focus:ring-green-500 border-gray-300" checked>
-                        <span class="text-xs text-[#5b6375] font-semibold">add the Capstone stage(1 and 2) and Activate immediately (archives current active year)</span>
+                        <input type="hidden" name="is_active" value="1" class="rounded text-green-600 focus:ring-green-500 border-gray-300" checked>
+                       
                     </label>
                 </div>
                 <div class="flex justify-end gap-2 pt-3">
@@ -2464,7 +2590,7 @@
         </div>
         <form action="{{ route('admin.create_group') }}" method="POST" class="space-y-4">
             @csrf
-            <div><label class="form-label">Group Name</label><input type="text" name="group_name" class="form-input" required></div>
+            <div><label class="form-label">Group Name</label><input type="text" name="group_name" class="form-input" readonly value=""></div>
             <div><label class="form-label">Capstone Title</label><input type="text" name="capstone_title" class="form-input" required></div>
             <div>
                 <label class="form-label">Section</label>
@@ -2479,6 +2605,7 @@
             
             <div>
                 <label class="form-label">Select Students (Ctrl to select multiple)</label>
+                <input type="text" id="studentSearchInput" class="form-input mb-2" placeholder="Search student by name...">
                 <div class="flex gap-2">
                     <select id="studentSelect" class="form-select flex-1" multiple style="height:100px;"><option disabled>Select a section first</option></select>
                     <button type="button" id="addStudentsBtn" class="btn-primary whitespace-nowrap"><i class="fas fa-plus mr-1"></i> Add</button>
@@ -2775,595 +2902,603 @@
         </div>
     </div>
 
-    <script>
-        // ---- SECTION NAVIGATION ----
-        const sections = {
-            dashboard: document.getElementById('dashboard-section'),
-            teachers: document.getElementById('teachers-section'),
-            students: document.getElementById('students-section'),
-            rubrics: document.getElementById('rubrics-section'),
-            progress: document.getElementById('progress-section'),
-            evaluation: document.getElementById('evaluation-section'),
-            profile: document.getElementById('profile-section'),
-            capstone: document.getElementById('capstone-section'),
-        };
-        const navLinks = document.querySelectorAll('.nav-link');
-        const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+<script>
+ // ---- SECTION NAVIGATION ----
+const sections = {
+    dashboard: document.getElementById('dashboard-section'),
+    teachers: document.getElementById('teachers-section'),
+    students: document.getElementById('students-section'),
+    rubrics: document.getElementById('rubrics-section'),
+    progress: document.getElementById('progress-section'),
+    evaluation: document.getElementById('evaluation-section'),
+    profile: document.getElementById('profile-section'),
+    capstone: document.getElementById('capstone-section'),
+};
+const navLinks = document.querySelectorAll('.nav-link');
+const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
 
-        function activateSection(sectionId) {
-            Object.values(sections).forEach(s => s.classList.add('hidden'));
-            if (sections[sectionId]) sections[sectionId].classList.remove('hidden');
-            navLinks.forEach(link => {
-                const isActive = link.dataset.section === sectionId;
-                link.classList.toggle('active-link', isActive);
-                if (isActive) {
-                    link.style.color = 'var(--gold)';
-                } else {
-                    link.style.color = 'rgba(255,255,255,0.65)';
-                }
-                const chevron = link.querySelector('.fa-chevron-right');
-                if (chevron) chevron.style.display = isActive ? 'inline-block' : 'none';
-            });
-            mobileNavLinks.forEach(link => {
-                link.style.color = link.dataset.section === sectionId ? 'var(--gold)' : 'rgba(255,255,255,0.55)';
-            });
-            localStorage.setItem('activeSection', sectionId);
+function activateSection(sectionId) {
+    Object.values(sections).forEach(s => s.classList.add('hidden'));
+    if (sections[sectionId]) sections[sectionId].classList.remove('hidden');
+    navLinks.forEach(link => {
+        const isActive = link.dataset.section === sectionId;
+        link.classList.toggle('active-link', isActive);
+        if (isActive) {
+            link.style.color = 'var(--gold)';
+        } else {
+            link.style.color = 'rgba(255,255,255,0.65)';
         }
-        document.querySelectorAll('.sg-tab-btn').forEach(btn => {
+        const chevron = link.querySelector('.fa-chevron-right');
+        if (chevron) chevron.style.display = isActive ? 'inline-block' : 'none';
+    });
+    mobileNavLinks.forEach(link => {
+        link.style.color = link.dataset.section === sectionId ? 'var(--gold)' : 'rgba(255,255,255,0.55)';
+    });
+    localStorage.setItem('activeSection', sectionId);
+}
+
+document.querySelectorAll('.sg-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.sg-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
         const view = btn.dataset.view;
         document.getElementById('sg-students-view').classList.toggle('hidden', view !== 'students');
         document.getElementById('sg-groups-view').classList.toggle('hidden', view !== 'groups');
+        // Re‑paginate students when switching to Students tab
+        if (view === 'students' && studentsPaginate) {
+            setTimeout(studentsPaginate, 50);
+        }
     });
 });
 
-        // Restore active section
-        document.addEventListener('DOMContentLoaded', () => {
-            navLinks.forEach(link => {
-                const chevron = link.querySelector('.fa-chevron-right');
-                if (chevron) chevron.style.display = link.classList.contains('active-link') ? 'inline-block' : 'none';
-            });
-            const stored = localStorage.getItem('activeSection');
-            if (stored && sections[stored]) activateSection(stored);
-            else activateSection('dashboard');
+// Restore active section
+document.addEventListener('DOMContentLoaded', () => {
+    navLinks.forEach(link => {
+        const chevron = link.querySelector('.fa-chevron-right');
+        if (chevron) chevron.style.display = link.classList.contains('active-link') ? 'inline-block' : 'none';
+    });
+    const stored = localStorage.getItem('activeSection');
+    if (stored && sections[stored]) activateSection(stored);
+    else activateSection('dashboard');
 
-            @if(session('success'))
-                showToast('{{ session('success') }}', false);
-            @endif
+    @if(session('success'))
+        showToast('{{ session('success') }}', false);
+    @endif
 
-            @if(session('error'))
-                showToast('{{ session('error') }}', true);
-            @endif
+    @if(session('error'))
+        showToast('{{ session('error') }}', true);
+    @endif
 
-            @if($errors->any())
-                showToast('{{ $errors->first() }}', true);
-            @endif
+    @if($errors->any())
+        showToast('{{ $errors->first() }}', true);
+    @endif
 
-            @if ($errors->any() && session('import_teachers'))
-                openModal('import_teacher_modal');
-            @endif
+    @if ($errors->any() && session('import_teachers'))
+        openModal('import_teacher_modal');
+    @endif
 
-            @if ($errors->any() && session('import_students'))
-                openModal('import_student_modal');
-            @endif
+    @if ($errors->any() && session('import_students'))
+        openModal('import_student_modal');
+    @endif
 
-            // animate fill bars on load
-            document.querySelectorAll('.fill-animate').forEach(bar => {
-                const target = bar.dataset.target || 0;
-                requestAnimationFrame(() => {
-                    setTimeout(() => { bar.style.width = target + '%'; }, 100);
-                });
-            });
-            filterMilestones();
-            addCriteriaRow();
-            document.querySelectorAll('.rubric-stage-tab-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.rubric-stage-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
-                    showStage(btn.dataset.stageType);
-                });
-            });
-            // ── RUBRICS: Toggle sections ──
-                document.querySelectorAll('.toggle-section-btn').forEach(btn => {
-                    btn.addEventListener('click', function () {
-                        const targetId = this.dataset.target;
-                        const target = document.getElementById(targetId);
-                        if (!target) return;
-                        const icon = this.querySelector('i');
-                        const isCollapsed = target.classList.toggle('collapsed');
-                        if (isCollapsed) {
-                            target.style.setProperty('display', 'none', 'important');
-                        } else {
-                            target.style.removeProperty('display');
-                        }
-                        icon.className = isCollapsed ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up';
-                    });
-                });
-
-                // ── RUBRICS: Filter by stage ──
-                const stageFilter = document.getElementById('rubric-stage-filter');
-                if (stageFilter) {
-                    stageFilter.addEventListener('change', function () {
-                        const selected = this.value;
-                        const items = document.querySelectorAll('.rubric-item');
-                        items.forEach(el => {
-                            const stage = el.dataset.stage;
-                            if (selected === 'all' || String(stage) === selected) {
-                                el.style.display = '';
-                            } else {
-                                el.style.display = 'none';
-                            }
-                        });
-                    });
-                }
+    // animate fill bars on load
+    document.querySelectorAll('.fill-animate').forEach(bar => {
+        const target = bar.dataset.target || 0;
+        requestAnimationFrame(() => {
+            setTimeout(() => { bar.style.width = target + '%'; }, 100);
         });
-
-        [...navLinks, ...mobileNavLinks].forEach(el => {
-            el.addEventListener('click', e => {
-                e.preventDefault();
-                const s = el.dataset.section;
-                if (s && sections[s]) activateSection(s);
-            });
+    });
+    filterMilestones();
+    document.querySelectorAll('.rubric-stage-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.rubric-stage-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+            showStage(btn.dataset.stageType);
         });
+    });
+    // ── RUBRICS: Toggle sections ──
+ // ── RUBRICS & GROUPS: Toggle sections ──
+document.querySelectorAll('.toggle-section-btn').forEach(btn => {
+    btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const targetId = this.dataset.target;
+        const target = document.getElementById(targetId);
+        if (!target) return;
 
-        // ---- MODALS ----
-        function openModal(id) { document.getElementById(id).classList.add('active'); }
-        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        // Toggle the 'collapsed' class
+        target.classList.toggle('collapsed');
 
-        window.openDashboardDetailModal = function(tabName) {
-            openModal('dashboard_detail_modal');
-            switchDdmTab(tabName);
-            // Reset search input
-            const sInput = document.getElementById('ddm_search_input');
-            if (sInput) {
-                sInput.value = '';
-                filterDdmTable();
-            }
-        };
-
-        window.switchDdmTab = function(tabName) {
-            // Hide all tab contents
-            document.querySelectorAll('.ddm-tab-content').forEach(el => el.classList.add('hidden'));
-            
-            // Reset all tab button styles to default state
-            document.querySelectorAll('.ddm-tab-btn').forEach(btn => {
-                btn.style.borderColor = '#e2dacf';
-                btn.style.color = '#5b6375';
-                btn.style.backgroundColor = 'transparent';
-                btn.classList.remove('active');
-            });
-
-            // Show selected content
-            const content = document.getElementById(`ddm_content_${tabName}`);
-            if (content) content.classList.remove('hidden');
-
-            // Set active button style
-            const activeBtn = document.getElementById(`ddm_tab_${tabName}`);
-            if (activeBtn) {
-                activeBtn.style.borderColor = 'var(--gold)';
-                activeBtn.style.color = 'var(--gold)';
-                activeBtn.style.backgroundColor = '#faf8f4';
-                activeBtn.classList.add('active');
-            }
-
-            // Update modal title prefix based on selected tab
-            const modalTitle = document.getElementById('ddm_modal_title');
-            if (modalTitle) {
-                const titleMap = {
-                    students: 'Students Directory',
-                    groups: 'Capstone Groups Directory',
-                    teachers: 'Teachers Directory',
-                    sections: 'Sections Directory'
-                };
-                modalTitle.textContent = titleMap[tabName] || 'System Overview Details';
-            }
-
-            // Run search filter on switch to apply current filter to the active table
-            filterDdmTable();
-        };
-
-        window.filterDdmTable = function() {
-            const query = document.getElementById('ddm_search_input').value.trim().toLowerCase();
-            const activeTab = document.querySelector('.ddm-tab-btn.active');
-            if (!activeTab) return;
-
-            const tabIdName = activeTab.id.replace('ddm_tab_', '');
-            const activeContent = document.getElementById(`ddm_content_${tabIdName}`);
-            if (!activeContent) return;
-
-            const rows = activeContent.querySelectorAll('.ddm-row-item');
-            let visibleCount = 0;
-
-            rows.forEach(row => {
-                const searchVal = row.dataset.searchText || '';
-                if (!query || searchVal.includes(query)) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-
-            // Update counter in active tab
-            const counterEl = document.getElementById(`ddm_count_${tabIdName}`);
-            if (counterEl) {
-                const originalTotal = rows.length;
-                if (query) {
-                    counterEl.textContent = `${visibleCount}/${originalTotal}`;
-                } else {
-                    counterEl.textContent = originalTotal;
-                }
-            }
-        };
-
-        function viewArchivedProgress(groupId, groupName) {
-            document.getElementById('apm_title').textContent = `Archived Progress: ${groupName}`;
-            const tbody = document.getElementById('apm_milestones_tbody');
-            tbody.innerHTML = '<tr><td colspan="2" class="text-center py-4">Loading progress...</td></tr>';
-            openModal('archived_progress_modal');
-
-            fetch(`/admin/get-group-progress/${groupId}`)
-                .then(r => r.json())
-                .then(data => {
-                    document.getElementById('apm_progress_pct').textContent = `${data.overall_progress ?? 0}%`;
-                    tbody.innerHTML = '';
-
-                    if (!data.milestones || data.milestones.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="2" class="text-center py-4">No milestones for this stage.</td></tr>';
-                        return;
-                    }
-
-                    data.milestones.forEach(m => {
-                        const tr = document.createElement('tr');
-                        const statusBadge = m.is_completed 
-                            ? '<span class="px-2 py-0.5 text-[10px] font-semibold text-green-700 bg-green-50 rounded">Completed</span>'
-                            : '<span class="px-2 py-0.5 text-[10px] font-semibold text-red-600 bg-red-50 rounded">Pending</span>';
-
-                        tr.innerHTML = `
-                            <td class="px-4 py-3">
-                                <div class="font-bold text-[#0a1428]">${m.title}</div>
-                                <div class="text-[10px] text-[#5b6375]">${m.description ?? ''}</div>
-                            </td>
-                            <td class="px-4 py-3">${statusBadge}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                })
-                .catch(() => {
-                    tbody.innerHTML = '<tr><td colspan="2" class="text-center text-red-500 py-4">Failed to load archived progress data.</td></tr>';
-                });
+        // Update the chevron icon
+        const icon = this.querySelector('i');
+        if (icon) {
+            icon.className = target.classList.contains('collapsed')
+                ? 'fa-solid fa-chevron-down'
+                : 'fa-solid fa-chevron-up';
         }
-        document.querySelectorAll('.modal-overlay').forEach(overlay => {
-            overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('active'); });
-        });
+    });
+});
 
-        // ---- TOAST ----
-        const toastEl = document.getElementById('toast');
-        const toastMessageEl = document.getElementById('toastMessage');
-        let toastTimeout;
-        function showToast(msg, isError = false) {
-            toastMessageEl.textContent = msg;
-            const iconEl = toastEl.querySelector('.toast-content i');
-            const contentEl = toastEl.querySelector('.toast-content');
-            if (iconEl && contentEl) {
-                if (isError) {
-                    iconEl.className = 'fas fa-exclamation-circle text-red-500';
-                    contentEl.style.borderLeftColor = '#a12b2b';
+    // ── RUBRICS: Filter by stage ──
+    const stageFilter = document.getElementById('rubric-stage-filter');
+    if (stageFilter) {
+        stageFilter.addEventListener('change', function () {
+            const selected = this.value;
+            const items = document.querySelectorAll('.rubric-item');
+            items.forEach(el => {
+                const stage = el.dataset.stage;
+                if (selected === 'all' || String(stage) === selected) {
+                    el.style.display = '';
                 } else {
-                    iconEl.className = 'fas fa-check-circle text-gold';
-                    contentEl.style.borderLeftColor = 'var(--gold)';
-                }
-            }
-            toastEl.classList.add('show');
-            if (toastTimeout) clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => hideToast(), 3000);
-        }
-        function hideToast() {
-            toastEl.classList.remove('show');
-            if (toastTimeout) { clearTimeout(toastTimeout); toastTimeout = null; }
-        }
-
-        // ---- PASSWORD TOGGLE ----
-        document.querySelectorAll('.password-toggle').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const targetId = this.dataset.target;
-                if (!targetId) return;
-                const input = document.getElementById(targetId);
-                if (input) {
-                    const icon = this.querySelector('i');
-                    if (input.type === 'password') {
-                        input.type = 'text';
-                        if (icon) {
-                            icon.classList.remove('fa-eye');
-                            icon.classList.add('fa-eye-slash');
-                        }
-                    } else {
-                        input.type = 'password';
-                        if (icon) {
-                            icon.classList.remove('fa-eye-slash');
-                            icon.classList.add('fa-eye');
-                        }
-                    }
+                    el.style.display = 'none';
                 }
             });
         });
-        function toggleVisibility(id, btn) {
-            const input = document.getElementById(id);
+    }
+});
+
+[...navLinks, ...mobileNavLinks].forEach(el => {
+    el.addEventListener('click', e => {
+        e.preventDefault();
+        const s = el.dataset.section;
+        if (s && sections[s]) activateSection(s);
+    });
+});
+
+// ---- MODALS ----
+function openModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.add('active');
+
+    if (id === 'createGroupModal') {
+        // Wait for the modal to render, then set the group name
+        setTimeout(() => {
+            const input = document.querySelector('#createGroupModal input[name="group_name"]');
             if (input) {
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    if (btn) {
-                        const icon = btn.querySelector('i');
-                        if (icon) {
-                            icon.className = 'fa-regular fa-eye-slash';
-                        }
-                    }
-                } else {
-                    input.type = 'password';
-                    if (btn) {
-                        const icon = btn.querySelector('i');
-                        if (icon) {
-                            icon.className = 'fa-regular fa-eye';
-                        }
-                    }
-                }
+                input.value = suggestGroupName();
             }
+        }, 100);
+    }
+}
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+
+
+window.openDashboardDetailModal = function(tabName) {
+    openModal('dashboard_detail_modal');
+    switchDdmTab(tabName);
+    const sInput = document.getElementById('ddm_search_input');
+    if (sInput) {
+        sInput.value = '';
+        filterDdmTable();
+    }
+};
+
+window.switchDdmTab = function(tabName) {
+    document.querySelectorAll('.ddm-tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.ddm-tab-btn').forEach(btn => {
+        btn.style.borderColor = '#e2dacf';
+        btn.style.color = '#5b6375';
+        btn.style.backgroundColor = 'transparent';
+        btn.classList.remove('active');
+    });
+    const content = document.getElementById(`ddm_content_${tabName}`);
+    if (content) content.classList.remove('hidden');
+    const activeBtn = document.getElementById(`ddm_tab_${tabName}`);
+    if (activeBtn) {
+        activeBtn.style.borderColor = 'var(--gold)';
+        activeBtn.style.color = 'var(--gold)';
+        activeBtn.style.backgroundColor = '#faf8f4';
+        activeBtn.classList.add('active');
+    }
+    const modalTitle = document.getElementById('ddm_modal_title');
+    if (modalTitle) {
+        const titleMap = {
+            students: 'Students Directory',
+            groups: 'Capstone Groups Directory',
+            teachers: 'Teachers Directory',
+            sections: 'Sections Directory'
+        };
+        modalTitle.textContent = titleMap[tabName] || 'System Overview Details';
+    }
+    filterDdmTable();
+};
+
+window.filterDdmTable = function() {
+    const query = document.getElementById('ddm_search_input').value.trim().toLowerCase();
+    const activeTab = document.querySelector('.ddm-tab-btn.active');
+    if (!activeTab) return;
+    const tabIdName = activeTab.id.replace('ddm_tab_', '');
+    const activeContent = document.getElementById(`ddm_content_${tabIdName}`);
+    if (!activeContent) return;
+    const rows = activeContent.querySelectorAll('.ddm-row-item');
+    let visibleCount = 0;
+    rows.forEach(row => {
+        const searchVal = row.dataset.searchText || '';
+        if (!query || searchVal.includes(query)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
         }
-
-        // ---- CRITERIA ROWS ----
-        function addCriteriaRow(listId = 'criteria-list', values = null) {
-            const list = document.getElementById(listId);
-            const row = document.createElement('div');
-            row.className = 'criteria-row grid grid-cols-12 gap-2';
-            row.innerHTML = `
-                <input type="text" name="criteria_name[]" placeholder="Criteria name" class="form-input col-span-6" required value="${values?.criteria_name ?? ''}">
-                <input type="number" name="weight[]" min="0" max="100" step="0.01" placeholder="Weight %" class="form-input col-span-2" required value="${values?.weight ?? ''}">
-                <input type="number" name="score[]" min="0" step="0.01" placeholder="Max score" class="form-input col-span-3" required value="${values?.max_score ?? ''}">
-                <button type="button" onclick="this.closest('.criteria-row').remove()" class="col-span-1 text-[#5b6375] hover:text-red-500 flex items-center justify-center"><i class="fas fa-trash text-xs"></i></button>`;
-            list.appendChild(row);
+    });
+    const counterEl = document.getElementById(`ddm_count_${tabIdName}`);
+    if (counterEl) {
+        const originalTotal = rows.length;
+        if (query) {
+            counterEl.textContent = `${visibleCount}/${originalTotal}`;
+        } else {
+            counterEl.textContent = originalTotal;
         }
+    }
+};
 
-        function toggleRubricSection(checked) {
-            const section = document.getElementById('milestone_rubric_section');
-            section.classList.toggle('hidden', !checked);
-            
-            const nameInput = document.getElementById('milestone_rubric_name');
-            nameInput.required = checked;
-            
-            const criteriaList = document.getElementById('milestone-criteria-list');
-            if (checked && criteriaList.children.length === 0) {
-                addCriteriaRow('milestone-criteria-list');
-            }
-        }
-
-        function validateMilestoneForm() {
-            const chk = document.getElementById('add_rubric_chk');
-            if (chk && chk.checked) {
-                const errorEl = document.getElementById('milestone-error-message');
-                errorEl.classList.add('hidden');
-                const weights = document.querySelectorAll('#milestone-criteria-list input[name="weight[]"]');
-                let total = 0;
-                weights.forEach(w => total += parseFloat(w.value) || 0);
-                total = Math.round(total * 100) / 100;
-                if (total !== 100) {
-                    errorEl.textContent = `Total weight must equal 100%. Current total: ${total}%`;
-                    errorEl.classList.remove('hidden');
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        function validateWeights() {
-            const errorEl = document.getElementById('error-message');
-            errorEl.classList.add('hidden');
-            const weights = document.querySelectorAll('#criteria-list input[name="weight[]"]');
-            let total = 0;
-            weights.forEach(w => total += parseFloat(w.value) || 0);
-            total = Math.round(total * 100) / 100;
-            if (total !== 100) {
-                errorEl.textContent = `Total weight must equal 100%. Current total: ${total}%`;
-                errorEl.classList.remove('hidden');
-                return false;
-            }
-            return true;
-        }
-        // edit milestone modal
-        function openEditMilestoneModal(milestoneId) {
-                fetch(`/admin/get-milestone/${milestoneId}`)
-                    .then(r => r.json())
-                    .then(data => {
-                        document.getElementById('edit_milestone_id').value = data.id;
-                        document.getElementById('edit_milestone_title').value = data.milestone_title;
-                        document.getElementById('edit_milestone_stage').value = data.capstone_stage_id;
-                        document.getElementById('edit_milestone_order').value = data.step_order;
-                        document.getElementById('edit_milestone_description').value = data.milestone_description;
-                        document.getElementById('edit_milestone_start').value = data.start_date ? data.start_date.substring(0, 10) : '';
-                        document.getElementById('edit_milestone_due').value = data.due_date ? data.due_date.substring(0, 10) : '';
-
-                        const hasCertCheckbox = document.getElementById('edit_milestone_has_cert');
-                        const certFields = document.getElementById('edit_milestone_cert_fields');
-                        if (data.certificate) {
-                            hasCertCheckbox.checked = true;
-                            certFields.classList.remove('hidden');
-                            document.getElementById('edit_certificate_title').value = data.certificate.certificate_title;
-                            document.getElementById('edit_certificate_description').value = data.certificate.certificate_description;
-                        } else {
-                            hasCertCheckbox.checked = false;
-                            certFields.classList.add('hidden');
-                            document.getElementById('edit_certificate_title').value = '';
-                            document.getElementById('edit_certificate_description').value = '';
-                        }
-
-                        // Optional Rubric Populating
-                        const hasRubricCheckbox = document.getElementById('edit_add_rubric_chk');
-                        const rubricSection = document.getElementById('edit_milestone_rubric_section');
-                        const criteriaList = document.getElementById('edit-milestone-criteria-list');
-                        criteriaList.innerHTML = ''; // Clear old ones
-
-                        if (data.rubric) {
-                            hasRubricCheckbox.checked = true;
-                            rubricSection.classList.remove('hidden');
-                            document.getElementById('edit_milestone_rubric_name').value = data.rubric.rubric_name;
-                            document.getElementById('edit_milestone_rubric_name').required = true;
-                            
-                            data.rubric.criteria.forEach(c => {
-                                addCriteriaRow('edit-milestone-criteria-list', c);
-                            });
-                        } else {
-                            hasRubricCheckbox.checked = false;
-                            rubricSection.classList.add('hidden');
-                            document.getElementById('edit_milestone_rubric_name').value = '';
-                            document.getElementById('edit_milestone_rubric_name').required = false;
-                        }
-
-                        document.getElementById('edit_milestone_form').action = `/admin/update-milestone/${data.id}`;
-                        document.getElementById('edit_milestone_errors').classList.add('hidden');
-                        openModal('edit_milestone_modal');
-                    })
-                    .catch(() => showToast('Failed to load milestone.', true));
-            }
-
-            document.getElementById('edit_milestone_has_cert').addEventListener('change', function () {
-                document.getElementById('edit_milestone_cert_fields').classList.toggle('hidden', !this.checked);
-            });
-
-            document.getElementById('edit_add_rubric_chk').addEventListener('change', function () {
-                const section = document.getElementById('edit_milestone_rubric_section');
-                section.classList.toggle('hidden', !this.checked);
-                document.getElementById('edit_milestone_rubric_name').required = this.checked;
-                const criteriaList = document.getElementById('edit-milestone-criteria-list');
-                if (this.checked && criteriaList.children.length === 0) {
-                    addCriteriaRow('edit-milestone-criteria-list');
-                }
-            });
-
-            document.getElementById('edit_milestone_form').addEventListener('submit', function (e) {
-                e.preventDefault();
-                const form = this;
-                const errorsBox = document.getElementById('edit_milestone_errors');
-                errorsBox.classList.add('hidden');
-                errorsBox.innerHTML = '';
-
-                // Rubric Criteria Weight Validation
-                const rubricChk = document.getElementById('edit_add_rubric_chk');
-                if (rubricChk && rubricChk.checked) {
-                    const errorEl = document.getElementById('edit-milestone-error-message');
-                    errorEl.classList.add('hidden');
-                    const weights = document.querySelectorAll('#edit-milestone-criteria-list input[name="weight[]"]');
-                    let total = 0;
-                    weights.forEach(w => total += parseFloat(w.value) || 0);
-                    total = Math.round(total * 100) / 100;
-                    if (total !== 100) {
-                        errorEl.textContent = `Total weight must equal 100%. Current total: ${total}%`;
-                        errorEl.classList.remove('hidden');
-                        return;
-                    }
-                }
-
-                fetch(form.action, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                        'Accept': 'application/json'
-                    },
-                    body: new FormData(form)
-                })
-                .then(async r => {
-                    if (r.redirected) { window.location.href = r.url; return; }
-                    const data = await r.json().catch(() => null);
-                    if (data?.errors) {
-                        errorsBox.innerHTML = Object.values(data.errors).flat().join('<br>');
-                        errorsBox.classList.remove('hidden');
-                    } else {
-                        showToast('Failed to update milestone.', true);
-                    }
-                })
-                .catch(() => showToast('Failed to update milestone.', true));
-            });
-
-        // ---- EDIT RUBRIC LOGIC ----
-        function openEditRubricModal(rubricId) {
-            fetch(`/admin/get-rubric/${rubricId}`)
-                .then(r => r.json())
-                .then(data => {
-                    document.getElementById('edit_rubric_id').value = data.id;
-                    document.getElementById('edit_rubric_name').value = data.rubric_name;
-                    document.getElementById('edit_capstone_id').value = data.capstone_id;
-                    document.getElementById('edit_rubric_form').action = `/admin/update-rubric/${data.id}`;
-
-                    const milestoneSelect = document.getElementById('edit_milestone_select');
-                    Array.from(milestoneSelect.options).forEach(opt => {
-                        if (!opt.value) return;
-                        opt.style.display = (opt.dataset.capstoneStageId == data.capstone_id) ? '' : 'none';
-                    });
-                    milestoneSelect.value = data.milestone_id;
-
-                    const list = document.getElementById('edit_criteria_list');
-                    list.innerHTML = '';
-                    data.criteria.forEach(c => addCriteriaRow('edit_criteria_list', c));
-                    if (data.criteria.length === 0) addCriteriaRow('edit_criteria_list');
-
-                    document.getElementById('edit_rubric_errors').classList.add('hidden');
-                    openModal('rubrics_edit_modal');
-                })
-                .catch(() => showToast('Failed to load rubric.'));
-        }
-
-        document.getElementById('edit_capstone_id').addEventListener('change', function () {
-            const stageId = this.value;
-            const ms = document.getElementById('edit_milestone_select');
-            Array.from(ms.options).forEach(opt => {
-                if (!opt.value) return;
-                opt.style.display = (!stageId || opt.dataset.capstoneStageId == stageId) ? '' : 'none';
-            });
-            ms.value = '';
-        });
-
-        document.getElementById('edit_rubric_form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const weights = document.querySelectorAll('#edit_criteria_list input[name="weight[]"]');
-            let total = 0; weights.forEach(w => total += parseFloat(w.value) || 0);
-            total = Math.round(total * 100) / 100;
-            const errorEl = document.getElementById('edit_error_message');
-            if (total !== 100) {
-                errorEl.textContent = `Total weight must equal 100%. Current total: ${total}%`;
-                errorEl.classList.remove('hidden');
+function viewArchivedProgress(groupId, groupName) {
+    document.getElementById('apm_title').textContent = `Archived Progress: ${groupName}`;
+    const tbody = document.getElementById('apm_milestones_tbody');
+    tbody.innerHTML = '<tr><td colspan="2" class="text-center py-4">Loading progress...</td></tr>';
+    openModal('archived_progress_modal');
+    fetch(`/admin/get-group-progress/${groupId}`)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('apm_progress_pct').textContent = `${data.overall_progress ?? 0}%`;
+            tbody.innerHTML = '';
+            if (!data.milestones || data.milestones.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" class="text-center py-4">No milestones for this stage.</td></tr>';
                 return;
             }
-            errorEl.classList.add('hidden');
-            const form = this;
-            const errorsBox = document.getElementById('edit_rubric_errors');
-            errorsBox.classList.add('hidden');
-            errorsBox.innerHTML = '';
-            fetch(form.action, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                    'Accept': 'application/json'
-                },
-                body: new FormData(form)
-            })
-            .then(async r => {
-                if (r.redirected) { window.location.href = r.url; return; }
-                const data = await r.json().catch(() => null);
-                if (data?.errors) {
-                    errorsBox.innerHTML = Object.values(data.errors).flat().join('<br>');
-                    errorsBox.classList.remove('hidden');
-                } else {
-                    showToast('Failed to update rubric.');
-                }
-            })
-            .catch(() => showToast('Failed to update rubric.'));
+            data.milestones.forEach(m => {
+                const tr = document.createElement('tr');
+                const statusBadge = m.is_completed 
+                    ? '<span class="px-2 py-0.5 text-[10px] font-semibold text-green-700 bg-green-50 rounded">Completed</span>'
+                    : '<span class="px-2 py-0.5 text-[10px] font-semibold text-red-600 bg-red-50 rounded">Pending</span>';
+                tr.innerHTML = `
+                    <td class="px-4 py-3">
+                        <div class="font-bold text-[#0a1428]">${m.title}</div>
+                        <div class="text-[10px] text-[#5b6375]">${m.description ?? ''}</div>
+                    </td>
+                    <td class="px-4 py-3">${statusBadge}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        })
+        .catch(() => {
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center text-red-500 py-4">Failed to load archived progress data.</td></tr>';
         });
+}
 
-        function openDeleterubricModal(rubricId) {
-            document.getElementById('delete_rubric_id').value = rubricId;
-            document.getElementById('delete_rubric_name').textContent = 'this rubric';
-            openModal('delete_rubric_modal');
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('active'); });
+});
+
+// ---- TOAST ----
+const toastEl = document.getElementById('toast');
+const toastMessageEl = document.getElementById('toastMessage');
+
+// ── Normalize section/group names for reliable comparisons ──
+function normText(s) {
+    return (s ?? '').toString().trim().toUpperCase();
+}
+
+let toastTimeout;
+function showToast(msg, isError = false) {
+    toastMessageEl.textContent = msg;
+    const iconEl = toastEl.querySelector('.toast-content i');
+    const contentEl = toastEl.querySelector('.toast-content');
+    if (iconEl && contentEl) {
+        if (isError) {
+            iconEl.className = 'fas fa-exclamation-circle text-red-500';
+            contentEl.style.borderLeftColor = '#a12b2b';
+        } else {
+            iconEl.className = 'fas fa-check-circle text-gold';
+            contentEl.style.borderLeftColor = 'var(--gold)';
         }
-        let currentEditRoomId = null;
-// delete room
+    }
+    toastEl.classList.add('show');
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => hideToast(), 3000);
+}
+function hideToast() {
+    toastEl.classList.remove('show');
+    if (toastTimeout) { clearTimeout(toastTimeout); toastTimeout = null; }
+}
+
+// ---- PASSWORD TOGGLE ----
+document.querySelectorAll('.password-toggle').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const targetId = this.dataset.target;
+        if (!targetId) return;
+        const input = document.getElementById(targetId);
+        if (input) {
+            const icon = this.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (icon) {
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                }
+            } else {
+                input.type = 'password';
+                if (icon) {
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            }
+        }
+    });
+});
+function toggleVisibility(id, btn) {
+    const input = document.getElementById(id);
+    if (input) {
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (btn) {
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = 'fa-regular fa-eye-slash';
+                }
+            }
+        } else {
+            input.type = 'password';
+            if (btn) {
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = 'fa-regular fa-eye';
+                }
+            }
+        }
+    }
+}
+
+// ---- CRITERIA ROWS ----
+function addCriteriaRow(listId = 'criteria-list', values = null) {
+    const list = document.getElementById(listId);
+      if (!list) return;
+    const row = document.createElement('div');
+    row.className = 'criteria-row grid grid-cols-12 gap-2';
+    row.innerHTML = `
+        <input type="text" name="criteria_name[]" placeholder="Criteria name" class="form-input col-span-6" required value="${values?.criteria_name ?? ''}">
+        <input type="number" name="weight[]" min="0" max="100" step="0.01" placeholder="Weight %" class="form-input col-span-2" required value="${values?.weight ?? ''}">
+        <input type="number" name="score[]" min="0" step="0.01" placeholder="Max score" class="form-input col-span-3" required value="${values?.max_score ?? ''}">
+        <button type="button" onclick="this.closest('.criteria-row').remove()" class="col-span-1 text-[#5b6375] hover:text-red-500 flex items-center justify-center"><i class="fas fa-trash text-xs"></i></button>`;
+    list.appendChild(row);
+}
+
+function toggleRubricSection(checked) {
+    const section = document.getElementById('milestone_rubric_section');
+    section.classList.toggle('hidden', !checked);
+    const nameInput = document.getElementById('milestone_rubric_name');
+    nameInput.required = checked;
+    const criteriaList = document.getElementById('milestone-criteria-list');
+    if (checked && criteriaList.children.length === 0) {
+        addCriteriaRow('milestone-criteria-list');
+    }
+}
+
+function validateMilestoneForm() {
+    const chk = document.getElementById('add_rubric_chk');
+    if (chk && chk.checked) {
+        const errorEl = document.getElementById('milestone-error-message');
+        errorEl.classList.add('hidden');
+        const weights = document.querySelectorAll('#milestone-criteria-list input[name="weight[]"]');
+        let total = 0;
+        weights.forEach(w => total += parseFloat(w.value) || 0);
+        total = Math.round(total * 100) / 100;
+        if (total !== 100) {
+            errorEl.textContent = `Total weight must equal 100%. Current total: ${total}%`;
+            errorEl.classList.remove('hidden');
+            return false;
+        }
+    }
+    return true;
+}
+
+function validateWeights() {
+    const errorEl = document.getElementById('error-message');
+    errorEl.classList.add('hidden');
+    const weights = document.querySelectorAll('#criteria-list input[name="weight[]"]');
+    let total = 0;
+    weights.forEach(w => total += parseFloat(w.value) || 0);
+    total = Math.round(total * 100) / 100;
+    if (total !== 100) {
+        errorEl.textContent = `Total weight must equal 100%. Current total: ${total}%`;
+        errorEl.classList.remove('hidden');
+        return false;
+    }
+    return true;
+}
+
+// ---- EDIT MILESTONE ----
+function openEditMilestoneModal(milestoneId) {
+    fetch(`/admin/get-milestone/${milestoneId}`)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('edit_milestone_id').value = data.id;
+            document.getElementById('edit_milestone_title').value = data.milestone_title;
+            document.getElementById('edit_milestone_stage').value = data.capstone_stage_id;
+            document.getElementById('edit_milestone_order').value = data.step_order;
+            document.getElementById('edit_milestone_description').value = data.milestone_description;
+            document.getElementById('edit_milestone_start').value = data.start_date ? data.start_date.substring(0, 10) : '';
+            document.getElementById('edit_milestone_due').value = data.due_date ? data.due_date.substring(0, 10) : '';
+
+            const hasCertCheckbox = document.getElementById('edit_milestone_has_cert');
+            const certFields = document.getElementById('edit_milestone_cert_fields');
+            if (data.certificate) {
+                hasCertCheckbox.checked = true;
+                certFields.classList.remove('hidden');
+                document.getElementById('edit_certificate_title').value = data.certificate.certificate_title;
+                document.getElementById('edit_certificate_description').value = data.certificate.certificate_description;
+            } else {
+                hasCertCheckbox.checked = false;
+                certFields.classList.add('hidden');
+                document.getElementById('edit_certificate_title').value = '';
+                document.getElementById('edit_certificate_description').value = '';
+            }
+
+            const hasRubricCheckbox = document.getElementById('edit_add_rubric_chk');
+            const rubricSection = document.getElementById('edit_milestone_rubric_section');
+            const criteriaList = document.getElementById('edit-milestone-criteria-list');
+            criteriaList.innerHTML = '';
+            if (data.rubric) {
+                hasRubricCheckbox.checked = true;
+                rubricSection.classList.remove('hidden');
+                document.getElementById('edit_milestone_rubric_name').value = data.rubric.rubric_name;
+                document.getElementById('edit_milestone_rubric_name').required = true;
+                data.rubric.criteria.forEach(c => {
+                    addCriteriaRow('edit-milestone-criteria-list', c);
+                });
+            } else {
+                hasRubricCheckbox.checked = false;
+                rubricSection.classList.add('hidden');
+                document.getElementById('edit_milestone_rubric_name').value = '';
+                document.getElementById('edit_milestone_rubric_name').required = false;
+            }
+
+            document.getElementById('edit_milestone_form').action = `/admin/update-milestone/${data.id}`;
+            document.getElementById('edit_milestone_errors').classList.add('hidden');
+            openModal('edit_milestone_modal');
+        })
+        .catch(() => showToast('Failed to load milestone.', true));
+}
+
+document.getElementById('edit_milestone_has_cert').addEventListener('change', function () {
+    document.getElementById('edit_milestone_cert_fields').classList.toggle('hidden', !this.checked);
+});
+
+document.getElementById('edit_add_rubric_chk').addEventListener('change', function () {
+    const section = document.getElementById('edit_milestone_rubric_section');
+    section.classList.toggle('hidden', !this.checked);
+    document.getElementById('edit_milestone_rubric_name').required = this.checked;
+    const criteriaList = document.getElementById('edit-milestone-criteria-list');
+    if (this.checked && criteriaList.children.length === 0) {
+        addCriteriaRow('edit-milestone-criteria-list');
+    }
+});
+
+document.getElementById('edit_milestone_form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const form = this;
+    const errorsBox = document.getElementById('edit_milestone_errors');
+    errorsBox.classList.add('hidden');
+    errorsBox.innerHTML = '';
+    const rubricChk = document.getElementById('edit_add_rubric_chk');
+    if (rubricChk && rubricChk.checked) {
+        const errorEl = document.getElementById('edit-milestone-error-message');
+        errorEl.classList.add('hidden');
+        const weights = document.querySelectorAll('#edit-milestone-criteria-list input[name="weight[]"]');
+        let total = 0;
+        weights.forEach(w => total += parseFloat(w.value) || 0);
+        total = Math.round(total * 100) / 100;
+        if (total !== 100) {
+            errorEl.textContent = `Total weight must equal 100%. Current total: ${total}%`;
+            errorEl.classList.remove('hidden');
+            return;
+        }
+    }
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+            'Accept': 'application/json'
+        },
+        body: new FormData(form)
+    })
+    .then(async r => {
+        if (r.redirected) { window.location.href = r.url; return; }
+        const data = await r.json().catch(() => null);
+        if (data?.errors) {
+            errorsBox.innerHTML = Object.values(data.errors).flat().join('<br>');
+            errorsBox.classList.remove('hidden');
+        } else {
+            showToast('Failed to update milestone.', true);
+        }
+    })
+    .catch(() => showToast('Failed to update milestone.', true));
+});
+
+// ---- EDIT RUBRIC ----
+function openEditRubricModal(rubricId) {
+    fetch(`/admin/get-rubric/${rubricId}`)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('edit_rubric_id').value = data.id;
+            document.getElementById('edit_rubric_name').value = data.rubric_name;
+            document.getElementById('edit_capstone_id').value = data.capstone_id;
+            document.getElementById('edit_rubric_form').action = `/admin/update-rubric/${data.id}`;
+            const milestoneSelect = document.getElementById('edit_milestone_select');
+            Array.from(milestoneSelect.options).forEach(opt => {
+                if (!opt.value) return;
+                opt.style.display = (opt.dataset.capstoneStageId == data.capstone_id) ? '' : 'none';
+            });
+            milestoneSelect.value = data.milestone_id;
+            const list = document.getElementById('edit_criteria_list');
+            list.innerHTML = '';
+            data.criteria.forEach(c => addCriteriaRow('edit_criteria_list', c));
+            if (data.criteria.length === 0) addCriteriaRow('edit_criteria_list');
+            document.getElementById('edit_rubric_errors').classList.add('hidden');
+            openModal('rubrics_edit_modal');
+        })
+        .catch(() => showToast('Failed to load rubric.'));
+}
+
+document.getElementById('edit_capstone_id').addEventListener('change', function () {
+    const stageId = this.value;
+    const ms = document.getElementById('edit_milestone_select');
+    Array.from(ms.options).forEach(opt => {
+        if (!opt.value) return;
+        opt.style.display = (!stageId || opt.dataset.capstoneStageId == stageId) ? '' : 'none';
+    });
+    ms.value = '';
+});
+
+document.getElementById('edit_rubric_form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const weights = document.querySelectorAll('#edit_criteria_list input[name="weight[]"]');
+    let total = 0; weights.forEach(w => total += parseFloat(w.value) || 0);
+    total = Math.round(total * 100) / 100;
+    const errorEl = document.getElementById('edit_error_message');
+    if (total !== 100) {
+        errorEl.textContent = `Total weight must equal 100%. Current total: ${total}%`;
+        errorEl.classList.remove('hidden');
+        return;
+    }
+    errorEl.classList.add('hidden');
+    const form = this;
+    const errorsBox = document.getElementById('edit_rubric_errors');
+    errorsBox.classList.add('hidden');
+    errorsBox.innerHTML = '';
+    fetch(form.action, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+            'Accept': 'application/json'
+        },
+        body: new FormData(form)
+    })
+    .then(async r => {
+        if (r.redirected) { window.location.href = r.url; return; }
+        const data = await r.json().catch(() => null);
+        if (data?.errors) {
+            errorsBox.innerHTML = Object.values(data.errors).flat().join('<br>');
+            errorsBox.classList.remove('hidden');
+        } else {
+            showToast('Failed to update rubric.');
+        }
+    })
+    .catch(() => showToast('Failed to update rubric.'));
+});
+
+function openDeleterubricModal(rubricId) {
+    document.getElementById('delete_rubric_id').value = rubricId;
+    document.getElementById('delete_rubric_name').textContent = 'this rubric';
+    openModal('delete_rubric_modal');
+}
+
+function openDeleteGroupModal(id, name) {
+    document.getElementById('delete_group_id').value = id;
+    document.getElementById('delete_group_name').textContent = name;
+    document.getElementById('delete_group_admin_password').value = '';
+    openModal('delete_group_modal');
+}
+let currentEditRoomId = null;
 
 function openEditRoomModal(roomId) {
     fetch(`/admin/get-room/${roomId}`)
@@ -3372,11 +3507,8 @@ function openEditRoomModal(roomId) {
             currentEditRoomId = data.id;
             document.getElementById('edit_room_title').textContent = data.room_name;
             renderRoomPanelists(data.panelists);
-            
-            // Populate unassigned teachers choices dynamically
             const select = document.getElementById('edit_room_teacher_select');
             select.innerHTML = '';
-            
             if (data.available_teachers && data.available_teachers.length > 0) {
                 data.available_teachers.forEach(t => {
                     const opt = document.createElement('option');
@@ -3390,11 +3522,11 @@ function openEditRoomModal(roomId) {
                 opt.textContent = 'No available unassigned teachers';
                 select.appendChild(opt);
             }
-            
             openModal('edit_room_modal');
         })
         .catch(() => showToast('Failed to load room.', true));
 }
+
 function renderRoomPanelists(panelists) {
     const container = document.getElementById('edit_room_panelists_container');
     container.innerHTML = '';
@@ -3455,16 +3587,13 @@ function fetchRoomAvailableTeachers(roomId) {
 document.getElementById('edit_room_add_btn').addEventListener('click', () => {
     const select = document.getElementById('edit_room_teacher_select');
     const selectedOptions = Array.from(select.selectedOptions);
-
     if (selectedOptions.length === 0) {
         showToast('Please select at least one teacher.', true);
         return;
     }
-
     selectedOptions.forEach(option => {
         const teacherId = option.value;
         if (!teacherId) return;
-
         fetch(`/admin/evaluation-rooms/${currentEditRoomId}/panelists`, {
             method: 'POST',
             headers: {
@@ -3481,28 +3610,21 @@ document.getElementById('edit_room_add_btn').addEventListener('click', () => {
                 return;
             }
             const container = document.getElementById('edit_room_panelists_container');
-            
-            // Avoid duplicate visual rows if already in DOM
             if (container.innerHTML.includes(`removePanelistFromRoom(${data.panelist.id}`)) {
                 return;
             }
-
             const emptyMsg = container.querySelector('p');
             if (emptyMsg) emptyMsg.remove();
-
             const row = document.createElement('div');
             row.className = 'flex items-center gap-2 p-2 bg-[#faf8f4] rounded border border-[#e2dacf]';
             row.innerHTML = `<span class="flex-1 text-sm">${data.panelist.name}</span>
                 <button type="button" class="text-[#5b6375] hover:text-red-500 transition remove-panelist-btn"><i class="fas fa-times"></i></button>`;
             row.querySelector('.remove-panelist-btn').addEventListener('click', () => removePanelistFromRoom(data.panelist.id, row));
             container.appendChild(row);
-            
-            // Refresh available teachers select list
             fetchRoomAvailableTeachers(currentEditRoomId);
         })
         .catch(() => showToast('Failed to add panelist.', true));
     });
-
     select.selectedIndex = -1;
 });
 
@@ -3511,23 +3633,20 @@ function openDeleteRoomModal(roomId, roomName) {
     document.getElementById('delete_room_name').textContent = roomName;
     openModal('delete_room_modal');
 }
-       // ---- CHANGE ADVISER MODAL ----
+
+// ---- CHANGE ADVISER MODAL ----
 const groupsDataJs = @json($groupsData);
 const milestonesDataJs = @json($milestones);
 
 function filterMilestonesByStage(stageId) {
     const activitySelect = document.getElementById('create_room_participate_activity');
-
     const filteredMilestones = milestonesDataJs.filter(m => String(m.capstone_stage_id) === String(stageId));
-
     activitySelect.innerHTML = '';
-
     if (filteredMilestones.length === 0) {
         activitySelect.innerHTML = '<option value="" disabled selected>No milestones for this stage</option>';
         activitySelect.disabled = true;
     } else {
         activitySelect.innerHTML = '<option value="" disabled selected>Select Participate Activity</option>';
-
         let hasRubrics = false;
         filteredMilestones.forEach(m => {
             if (m.rubrics && m.rubrics.length > 0) {
@@ -3538,7 +3657,6 @@ function filterMilestonesByStage(stageId) {
                 activitySelect.appendChild(optActivity);
             }
         });
-
         if (!hasRubrics) {
             activitySelect.innerHTML = '<option value="" disabled selected>No milestones with rubrics for this stage</option>';
             activitySelect.disabled = true;
@@ -3555,7 +3673,7 @@ function resetAssignModal() {
     sectionSel.value = '';
     groupSel.innerHTML = '<option value="" disabled selected>Select a section first</option>';
     groupSel.disabled = true;
-    adviserSel.innerHTML = adviserSel.innerHTML; // keep options
+    adviserSel.innerHTML = adviserSel.innerHTML;
     adviserSel.value = '';
     adviserSel.disabled = true;
     document.getElementById('ca_current_adviser').value = '';
@@ -3565,7 +3683,6 @@ document.getElementById('ca_section_select').addEventListener('change', function
     const sectionId = this.value;
     const groupSelect = document.getElementById('ca_group_select');
     const filtered = groupsDataJs.filter(g => String(g.section_id) === String(sectionId));
-
     groupSelect.innerHTML = '';
     if (filtered.length === 0) {
         groupSelect.innerHTML = '<option value="" disabled selected>No groups in this section</option>';
@@ -3580,7 +3697,6 @@ document.getElementById('ca_section_select').addEventListener('change', function
         });
         groupSelect.disabled = false;
     }
-
     document.getElementById('ca_current_adviser').value = '';
     const adviserSelect = document.getElementById('ca_adviser_select');
     adviserSelect.value = '';
@@ -3591,229 +3707,221 @@ document.getElementById('ca_group_select').addEventListener('change', function()
     const groupId = this.value;
     const group = groupsDataJs.find(g => String(g.id) === String(groupId));
     document.getElementById('ca_current_adviser').value = group?.assigned_teacher_name ?? 'Unassigned';
-
     const adviserSelect = document.getElementById('ca_adviser_select');
     adviserSelect.disabled = false;
     adviserSelect.value = '';
 });
 
-        // ---- MILESTONE FILTER ----
-        const capstoneSelect = document.querySelector('select[name="capstone_id"]');
-        const milestoneSelect = document.getElementById('milestone-select');
-        function filterMilestones() {
-            if (!capstoneSelect || !milestoneSelect) return;
-            const selected = capstoneSelect.value;
-            milestoneSelect.querySelectorAll('option').forEach(opt => {
-                if (opt.value === '') return;
-                opt.style.display = (!selected || opt.dataset.capstoneStageId == selected) ? '' : 'none';
-            });
-            const sel = milestoneSelect.options[milestoneSelect.selectedIndex];
-            if (sel && sel.style.display === 'none') milestoneSelect.value = '';
-        }
-        if (capstoneSelect) capstoneSelect.addEventListener('change', filterMilestones);
+// ---- MILESTONE FILTER ----
+const capstoneSelect = document.querySelector('select[name="capstone_id"]');
+const milestoneSelect = document.getElementById('milestone-select');
+function filterMilestones() {
+    if (!capstoneSelect || !milestoneSelect) return;
+    const selected = capstoneSelect.value;
+    milestoneSelect.querySelectorAll('option').forEach(opt => {
+        if (opt.value === '') return;
+        opt.style.display = (!selected || opt.dataset.capstoneStageId == selected) ? '' : 'none';
+    });
+    const sel = milestoneSelect.options[milestoneSelect.selectedIndex];
+    if (sel && sel.style.display === 'none') milestoneSelect.value = '';
+}
+if (capstoneSelect) capstoneSelect.addEventListener('change', filterMilestones);
 
-        // ---- STAGE TABS ----
-        const milestoneRows = document.querySelectorAll('.milestone-row');
-        milestoneRows.forEach(row => row.style.display = 'flex');
-        document.querySelectorAll('.fill-animate').forEach(bar => {
-            bar.style.width = '0%';
-            requestAnimationFrame(() => { setTimeout(() => { bar.style.width = (bar.dataset.target || 0) + '%'; }, 50); });
+// ---- STAGE TABS ----
+const milestoneRows = document.querySelectorAll('.milestone-row');
+milestoneRows.forEach(row => row.style.display = 'flex');
+document.querySelectorAll('.fill-animate').forEach(bar => {
+    bar.style.width = '0%';
+    requestAnimationFrame(() => { setTimeout(() => { bar.style.width = (bar.dataset.target || 0) + '%'; }, 50); });
+});
+
+// ---- STUDENT/TEACHER EDIT MODALS ----
+function openEditStudentModal(student) {
+    document.getElementById('edit_original_student_id').value = student.user_id ?? '';
+    document.getElementById('edit_student_id').value = student.user_id ?? '';
+    document.getElementById('edit_first_name').value = student.student_first_name ?? '';
+    document.getElementById('edit_middle_name').value = student.student_middle_name ?? '';
+    document.getElementById('edit_last_name').value = student.student_last_name ?? '';
+    document.getElementById('edit_email').value = student.student_email ?? '';
+    document.getElementById('edit_contact').value = student.contact_number ?? '';
+    document.getElementById('edit_section').value = student.section ?? '';
+    openModal('student_edit_modal');
+}
+function openDeleteStudentModal(id, name) {
+    document.getElementById('delete_student_id').value = id;
+    document.getElementById('delete_student_name').textContent = name;
+    openModal('delete_student_modal');
+}
+function openEditTeacherModal(teacher) {
+    document.getElementById('edit_original_teacher_id').value = teacher.user_id ?? '';
+    document.getElementById('edit_teacher_id').value = teacher.user_id ?? '';
+    document.getElementById('edit_teacher_first_name').value = teacher.teacher_first_name ?? '';
+    document.getElementById('edit_teacher_middle_name').value = teacher.teacher_middle_name ?? '';
+    document.getElementById('edit_teacher_last_name').value = teacher.teacher_last_name ?? '';
+    document.getElementById('edit_teacher_email').value = teacher.teacher_email ?? '';
+    document.getElementById('edit_teacher_contact').value = teacher.contact_number ?? '';
+    openModal('teacher_edit_modal');
+}
+function openDeleteTeacherModal(id, name) {
+    document.getElementById('delete_teacher_id').value = id;
+    document.getElementById('delete_teacher_name').textContent = name;
+    openModal('delete_teacher_modal');
+}
+
+// ----- EDIT CAPSTONE STAGE MODAL -----
+window.openEditStageModal = function(id, title, type) {
+    document.getElementById('edit_stage_form').action = `/admin/capstone/update-stage/${id}`;
+    document.getElementById('edit_stage_title').value = title;
+    document.getElementById('edit_stage_type').value = type;
+    openModal('edit_stage_modal');
+}
+
+// ----- EDIT CAPSTONE YEAR MODAL -----
+window.openEditYearModal = function(id, year, c1, c2) {
+    document.getElementById('edit_year_form').action = `/admin/capstone/update-year/${id}`;
+    document.getElementById('edit_year_title').value = year;
+    document.getElementById('edit_year_c1').checked = !!c1;
+    document.getElementById('edit_year_c2').checked = !!c2;
+    document.getElementById('edit_year_form').dataset.originalYear = year;
+    if (typeof window.syncEditYearCheckboxes === 'function') {
+        window.syncEditYearCheckboxes();
+    }
+    openModal('edit_year_modal');
+}
+
+// ----- ACTIVATE CAPSTONE YEAR MODAL -----
+window.confirmActivateYear = function(id, year) {
+    document.getElementById('activate_year_form').action = `/admin/capstone/activate-year/${id}`;
+    document.getElementById('activate_year_name').textContent = year;
+    openModal('activate_year_modal');
+}
+
+// ----- ARCHIVE CAPSTONE YEAR MODAL -----
+window.confirmArchiveYear = function(id, year) {
+    document.getElementById('archive_year_form').action = `/admin/capstone/archive-year/${id}`;
+    document.getElementById('archive_year_name').textContent = year;
+    openModal('archive_year_modal');
+}
+
+// ----- DELETE CAPSTONE YEAR MODAL -----
+window.openDeleteYearModal = function(id, year) {
+    document.getElementById('delete_year_form').action = `/admin/capstone/delete-year/${id}`;
+    document.getElementById('delete_year_name').textContent = year;
+    document.getElementById('delete_year_admin_password').value = '';
+    openModal('delete_year_modal');
+}
+
+// ----- CAPSTONE STAGES TOGGLE EXCLUSION & UNIQUE YEAR VALIDATION -----
+document.addEventListener('DOMContentLoaded', function() {
+    const addC1 = document.getElementById('add_year_c1');
+    const addC2 = document.getElementById('add_year_c2');
+    const editC1 = document.getElementById('edit_year_c1');
+    const editC2 = document.getElementById('edit_year_c2');
+
+    function syncCheckboxStyles(c1, c2) {
+        if (c1 && c2) {
+            if (c1.checked) {
+                c1.classList.add('opacity-70', 'cursor-not-allowed');
+                c1.parentElement.classList.add('opacity-70', 'cursor-not-allowed');
+                c2.classList.remove('opacity-70', 'cursor-not-allowed');
+                c2.parentElement.classList.remove('opacity-70', 'cursor-not-allowed');
+            } else if (c2.checked) {
+                c2.classList.add('opacity-70', 'cursor-not-allowed');
+                c2.parentElement.classList.add('opacity-70', 'cursor-not-allowed');
+                c1.classList.remove('opacity-70', 'cursor-not-allowed');
+                c1.parentElement.classList.remove('opacity-70', 'cursor-not-allowed');
+            }
+        }
+    }
+
+    if (addC1 && addC2) {
+        addC1.addEventListener('click', function(e) {
+            if (addC1.checked) {
+                addC2.checked = false;
+            } else {
+                addC1.checked = true;
+            }
+            syncCheckboxStyles(addC1, addC2);
         });
-
-        // ---- STUDENT/TEACHER EDIT MODALS ----
-        function openEditStudentModal(student) {
-            document.getElementById('edit_original_student_id').value = student.user_id ?? '';
-            document.getElementById('edit_student_id').value = student.user_id ?? '';
-            document.getElementById('edit_first_name').value = student.student_first_name ?? '';
-            document.getElementById('edit_middle_name').value = student.student_middle_name ?? '';
-            document.getElementById('edit_last_name').value = student.student_last_name ?? '';
-            document.getElementById('edit_email').value = student.student_email ?? '';
-            document.getElementById('edit_contact').value = student.contact_number ?? '';
-            document.getElementById('edit_section').value = student.section ?? '';
-            openModal('student_edit_modal');
-        }
-        function openDeleteStudentModal(id, name) {
-            document.getElementById('delete_student_id').value = id;
-            document.getElementById('delete_student_name').textContent = name;
-            openModal('delete_student_modal');
-        }
-        function openEditTeacherModal(teacher) {
-            document.getElementById('edit_original_teacher_id').value = teacher.user_id ?? '';
-            document.getElementById('edit_teacher_id').value = teacher.user_id ?? '';
-            document.getElementById('edit_teacher_first_name').value = teacher.teacher_first_name ?? '';
-            document.getElementById('edit_teacher_middle_name').value = teacher.teacher_middle_name ?? '';
-            document.getElementById('edit_teacher_last_name').value = teacher.teacher_last_name ?? '';
-            document.getElementById('edit_teacher_email').value = teacher.teacher_email ?? '';
-            document.getElementById('edit_teacher_contact').value = teacher.contact_number ?? '';
-            openModal('teacher_edit_modal');
-        }
-        function openDeleteTeacherModal(id, name) {
-            document.getElementById('delete_teacher_id').value = id;
-            document.getElementById('delete_teacher_name').textContent = name;
-            openModal('delete_teacher_modal');
-        }
-
-        // ----- EDIT CAPSTONE STAGE MODAL -----
-        window.openEditStageModal = function(id, title, type) {
-            document.getElementById('edit_stage_form').action = `/admin/capstone/update-stage/${id}`;
-            document.getElementById('edit_stage_title').value = title;
-            document.getElementById('edit_stage_type').value = type;
-            openModal('edit_stage_modal');
-        }
-
-        // ----- EDIT CAPSTONE YEAR MODAL -----
-        window.openEditYearModal = function(id, year, c1, c2) {
-            document.getElementById('edit_year_form').action = `/admin/capstone/update-year/${id}`;
-            document.getElementById('edit_year_title').value = year;
-            document.getElementById('edit_year_c1').checked = !!c1;
-            document.getElementById('edit_year_c2').checked = !!c2;
-            document.getElementById('edit_year_form').dataset.originalYear = year;
-            if (typeof window.syncEditYearCheckboxes === 'function') {
-                window.syncEditYearCheckboxes();
+        addC2.addEventListener('click', function(e) {
+            if (addC2.checked) {
+                addC1.checked = false;
+            } else {
+                addC2.checked = true;
             }
-            openModal('edit_year_modal');
-        }
+            syncCheckboxStyles(addC1, addC2);
+        });
+        syncCheckboxStyles(addC1, addC2);
+    }
 
-        // ----- ACTIVATE CAPSTONE YEAR MODAL -----
-        window.confirmActivateYear = function(id, year) {
-            document.getElementById('activate_year_form').action = `/admin/capstone/activate-year/${id}`;
-            document.getElementById('activate_year_name').textContent = year;
-            openModal('activate_year_modal');
-        }
-
-        // ----- ARCHIVE CAPSTONE YEAR MODAL -----
-        window.confirmArchiveYear = function(id, year) {
-            document.getElementById('archive_year_form').action = `/admin/capstone/archive-year/${id}`;
-            document.getElementById('archive_year_name').textContent = year;
-            openModal('archive_year_modal');
-        }
-
-        // ----- DELETE CAPSTONE YEAR MODAL -----
-        window.openDeleteYearModal = function(id, year) {
-            document.getElementById('delete_year_form').action = `/admin/capstone/delete-year/${id}`;
-            document.getElementById('delete_year_name').textContent = year;
-            document.getElementById('delete_year_admin_password').value = '';
-            openModal('delete_year_modal');
-        }
-
-        // ----- CAPSTONE STAGES TOGGLE EXCLUSION & UNIQUE YEAR VALIDATION -----
-        document.addEventListener('DOMContentLoaded', function() {
-            const addC1 = document.getElementById('add_year_c1');
-            const addC2 = document.getElementById('add_year_c2');
-            const editC1 = document.getElementById('edit_year_c1');
-            const editC2 = document.getElementById('edit_year_c2');
-
-            function syncCheckboxStyles(c1, c2) {
-                if (c1 && c2) {
-                    if (c1.checked) {
-                        c1.classList.add('opacity-70', 'cursor-not-allowed');
-                        c1.parentElement.classList.add('opacity-70', 'cursor-not-allowed');
-                        c2.classList.remove('opacity-70', 'cursor-not-allowed');
-                        c2.parentElement.classList.remove('opacity-70', 'cursor-not-allowed');
-                    } else if (c2.checked) {
-                        c2.classList.add('opacity-70', 'cursor-not-allowed');
-                        c2.parentElement.classList.add('opacity-70', 'cursor-not-allowed');
-                        c1.classList.remove('opacity-70', 'cursor-not-allowed');
-                        c1.parentElement.classList.remove('opacity-70', 'cursor-not-allowed');
-                    }
-                }
+    if (editC1 && editC2) {
+        editC1.addEventListener('click', function(e) {
+            if (editC1.checked) {
+                editC2.checked = false;
+            } else {
+                editC1.checked = true;
             }
-
-            if (addC1 && addC2) {
-                addC1.addEventListener('click', function(e) {
-                    if (addC1.checked) {
-                        addC2.checked = false;
-                    } else {
-                        addC1.checked = true; // prevent unchecking the only checked stage
-                    }
-                    syncCheckboxStyles(addC1, addC2);
-                });
-                addC2.addEventListener('click', function(e) {
-                    if (addC2.checked) {
-                        addC1.checked = false;
-                    } else {
-                        addC2.checked = true; // prevent unchecking the only checked stage
-                    }
-                    syncCheckboxStyles(addC1, addC2);
-                });
-                // Initialize styles
-                syncCheckboxStyles(addC1, addC2);
+            syncCheckboxStyles(editC1, editC2);
+        });
+        editC2.addEventListener('click', function(e) {
+            if (editC2.checked) {
+                editC1.checked = false;
+            } else {
+                editC2.checked = true;
             }
+            syncCheckboxStyles(editC1, editC2);
+        });
+    }
 
-            if (editC1 && editC2) {
-                editC1.addEventListener('click', function(e) {
-                    if (editC1.checked) {
-                        editC2.checked = false;
-                    } else {
-                        editC1.checked = true; // prevent unchecking the only checked stage
-                    }
-                    syncCheckboxStyles(editC1, editC2);
-                });
-                editC2.addEventListener('click', function(e) {
-                    if (editC2.checked) {
-                        editC1.checked = false;
-                    } else {
-                        editC2.checked = true; // prevent unchecking the only checked stage
-                    }
-                    syncCheckboxStyles(editC1, editC2);
-                });
+    window.syncEditYearCheckboxes = function() {
+        syncCheckboxStyles(editC1, editC2);
+    };
+
+    const addForm = document.querySelector('#add_year_modal form');
+    if (addForm) {
+        addForm.addEventListener('submit', function(e) {
+            const yearInput = addForm.querySelector('input[name="year"]');
+            const normalizedYear = (yearInput ? yearInput.value : '').replace(/-/g, '–').trim();
+            const existingYears = @json($capstoneYears->pluck('year'));
+            if (existingYears.includes(normalizedYear)) {
+                e.preventDefault();
+                showToast(`Capstone year ${normalizedYear} already exists.`, true);
+                return false;
             }
-
-            // Expose sync to global scope so openEditYearModal can call it
-            window.syncEditYearCheckboxes = function() {
-                syncCheckboxStyles(editC1, editC2);
-            };
-
-            // Uniqueness and validation checks on form submission
-            const addForm = document.querySelector('#add_year_modal form');
-            if (addForm) {
-                addForm.addEventListener('submit', function(e) {
-                    const yearInput = addForm.querySelector('input[name="year"]');
-                    const normalizedYear = (yearInput ? yearInput.value : '').replace(/-/g, '–').trim();
-                    const existingYears = @json($capstoneYears->pluck('year'));
-
-                    if (existingYears.includes(normalizedYear)) {
-                        e.preventDefault();
-                        showToast(`Capstone year ${normalizedYear} already exists.`, true);
-                        return false;
-                    }
-
-                    const c1Checked = document.getElementById('add_year_c1').checked;
-                    const c2Checked = document.getElementById('add_year_c2').checked;
-                    if (!c1Checked && !c2Checked) {
-                        e.preventDefault();
-                        showToast('Please enable at least one capstone stage.', true);
-                        return false;
-                    }
-                });
-            }
-
-            const editForm = document.getElementById('edit_year_form');
-            if (editForm) {
-                editForm.addEventListener('submit', function(e) {
-                    const yearInput = editForm.querySelector('#edit_year_title');
-                    const normalizedYear = (yearInput ? yearInput.value : '').replace(/-/g, '–').trim();
-                    const originalYear = editForm.dataset.originalYear;
-                    const existingYears = @json($capstoneYears->pluck('year'));
-
-                    if (normalizedYear !== originalYear && existingYears.includes(normalizedYear)) {
-                        e.preventDefault();
-                        showToast(`Capstone year ${normalizedYear} already exists.`, true);
-                        return false;
-                    }
-
-                    const c1Checked = document.getElementById('edit_year_c1').checked;
-                    const c2Checked = document.getElementById('edit_year_c2').checked;
-                    if (!c1Checked && !c2Checked) {
-                        e.preventDefault();
-                        showToast('Please enable at least one capstone stage.', true);
-                        return false;
-                    }
-                });
+            const c1Checked = document.getElementById('add_year_c1').checked;
+            const c2Checked = document.getElementById('add_year_c2').checked;
+            if (!c1Checked && !c2Checked) {
+                e.preventDefault();
+                showToast('Please enable at least one capstone stage.', true);
+                return false;
             }
         });
+    }
 
-        // ----- CREATE GROUP MODAL (ADMIN) -----
+    const editForm = document.getElementById('edit_year_form');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            const yearInput = editForm.querySelector('#edit_year_title');
+            const normalizedYear = (yearInput ? yearInput.value : '').replace(/-/g, '–').trim();
+            const originalYear = editForm.dataset.originalYear;
+            const existingYears = @json($capstoneYears->pluck('year'));
+            if (normalizedYear !== originalYear && existingYears.includes(normalizedYear)) {
+                e.preventDefault();
+                showToast(`Capstone year ${normalizedYear} already exists.`, true);
+                return false;
+            }
+            const c1Checked = document.getElementById('edit_year_c1').checked;
+            const c2Checked = document.getElementById('edit_year_c2').checked;
+            if (!c1Checked && !c2Checked) {
+                e.preventDefault();
+                showToast('Please enable at least one capstone stage.', true);
+                return false;
+            }
+        });
+    }
+});
+
+// ----- CREATE GROUP MODAL (ADMIN) -----
 const sectionSelect = document.getElementById('sectionSelect');
 const studentSelect = document.getElementById('studentSelect');
 const addBtn = document.getElementById('addStudentsBtn');
@@ -3821,20 +3929,38 @@ const container = document.getElementById('selectedStudentsContainer');
 const noMsg = document.getElementById('noStudentsMsg');
 let idx = 0;
 
+// ── LIVE SEARCH FILTER FOR STUDENT SELECT (Create Group modal) ──
+const studentSearchInput = document.getElementById('studentSearchInput');
+if (studentSearchInput && studentSelect) {
+    studentSearchInput.addEventListener('input', function () {
+        const query = this.value.trim().toLowerCase();
+        Array.from(studentSelect.options).forEach(opt => {
+            if (opt.disabled) return;
+            const matches = !query || opt.textContent.toLowerCase().includes(query);
+            opt.style.display = matches ? '' : 'none';
+        });
+    });
+}
+
 if (sectionSelect) {
     sectionSelect.addEventListener('change', function () {
-        // Extract the ID and the Name from the selected option
         const selectedOption = this.options[this.selectedIndex];
-        const sectionId = this.value;           // Used for validation (backend exists:sections,id)
-        const sectionName = selectedOption ? selectedOption.dataset.name : ''; // Used for fetch
-
+        const sectionId = this.value;
+        const sectionName = selectedOption ? selectedOption.dataset.name : '';
         studentSelect.innerHTML = '<option disabled>Loading...</option>';
+
+        // Reset the search filter box
+        if (studentSearchInput) studentSearchInput.value = '';
+
+        // Reset the "Assigned Roles" team list — members belong to the old section
+        container.innerHTML = '';
+        idx = 0;
+        noMsg.style.display = 'block';
+
         if (!sectionId) {
             studentSelect.innerHTML = '<option disabled>Select a section first</option>';
             return;
         }
-        
-        // Pass the NAME to the backend URL
         fetch(`/admin/get-students/${encodeURIComponent(sectionName)}`)
             .then(r => r.json())
             .then(students => {
@@ -3887,6 +4013,7 @@ if (addBtn) {
         studentSelect.selectedIndex = -1;
     });
 }
+
 let editGroupIdx = 0;
 
 function editGroupMemberRow(name, userId, role) {
@@ -3991,6 +4118,7 @@ document.getElementById('edit_group_form').addEventListener('submit', function(e
     })
     .catch(() => showToast('Failed to update group.'));
 });
+
 function regenerateRoomCode(roomId, btn) {
     if (!confirm('Regenerate this classroom\'s join code? The old code will stop working.')) return;
     fetch(`/admin/evaluation-rooms/${roomId}/regenerate-code`, {
@@ -4015,10 +4143,8 @@ function updateCurrentSectionTeacher() {
     const select = document.getElementById('as_section_select');
     const selectedOption = select.options[select.selectedIndex];
     const teacherUserId = selectedOption.getAttribute('data-teacher-user-id');
-    
     const teacherSelect = document.getElementById('as_teacher_select');
     const currentTeacherInput = document.getElementById('as_current_teacher');
-    
     if (teacherUserId) {
         teacherSelect.value = teacherUserId;
         const matchingTeacherOption = Array.from(teacherSelect.options).find(opt => opt.value === teacherUserId);
@@ -4029,45 +4155,215 @@ function updateCurrentSectionTeacher() {
     }
 }
 
-// ── ADMIN STUDENT SECTION FILTER ──
-document.addEventListener('DOMContentLoaded', function () {
+// ---- GROUPS SECTION FILTER (only filter, no pagination) ----
+function filterGroups() {
+    const filter = document.getElementById('groups-section-filter');
+    if (!filter) return;
+    const selected = filter.value;
+    const rows = document.querySelectorAll('#sg-groups-view tbody tr:not(.no-groups-row)');
+    let visibleCount = 0;
+    rows.forEach(row => {
+        const section = row.dataset.section || '';
+        if (selected === 'All' || section === selected) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    let noRow = document.querySelector('#sg-groups-view .no-groups-row');
+    if (visibleCount === 0) {
+        if (!noRow) {
+            noRow = document.createElement('tr');
+            noRow.className = 'no-groups-row';
+            noRow.innerHTML = '<td colspan="9" class="py-6 text-center text-[#5b6375]">No groups in this section.</td>';
+            document.querySelector('#sg-groups-view tbody').appendChild(noRow);
+        }
+        noRow.style.display = '';
+    } else {
+        if (noRow) noRow.style.display = 'none';
+    }
+}
+
+// ---- STUDENTS: PAGINATION + FILTER (corrected) ----
+const STUDENT_PAGE_SIZE = 30;
+let studentsPaginate = null;
+
+function getVisibleStudentRows() {
+    const tbody = document.getElementById('students-tbody');
+    if (!tbody) return [];
+    // Select all rows that are not hidden (style.display !== 'none') and not the "no students" row
+    return Array.from(tbody.querySelectorAll('tr:not(.no-students-row)'))
+        .filter(row => row.style.display !== 'none');
+}
+
+function initStudentsPagination() {
+    const tbody = document.getElementById('students-tbody');
+    if (!tbody) return;
+
+    let currentPage = 1;
+    // We'll compute rows dynamically each time we update
+    let rows = getVisibleStudentRows();
+    const total = rows.length;
+    const totalPages = Math.ceil(total / STUDENT_PAGE_SIZE) || 1;
+
+    function update() {
+        // Re-fetch visible rows every time (in case filter changed)
+        const visibleRows = getVisibleStudentRows();
+        const totalVisible = visibleRows.length;
+        const totalPages = Math.ceil(totalVisible / STUDENT_PAGE_SIZE) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const start = (currentPage - 1) * STUDENT_PAGE_SIZE;
+        const end = Math.min(start + STUDENT_PAGE_SIZE, totalVisible);
+
+        // First, hide all rows
+        visibleRows.forEach(row => row.style.display = 'none');
+        // Then show only the ones for this page
+        for (let i = start; i < end; i++) {
+            visibleRows[i].style.display = '';
+        }
+
+        // Update UI
+        document.getElementById('students-start').textContent = totalVisible === 0 ? 0 : start + 1;
+        document.getElementById('students-end').textContent = end;
+        document.getElementById('students-total').textContent = totalVisible;
+        document.getElementById('students-prev').disabled = currentPage === 1;
+        document.getElementById('students-next').disabled = currentPage === totalPages;
+        document.getElementById('students-page-info').textContent = `Page ${currentPage} of ${totalPages}`;
+    }
+
+    function goTo(page) {
+        const totalVisible = getVisibleStudentRows().length;
+        const totalPages = Math.ceil(totalVisible / STUDENT_PAGE_SIZE) || 1;
+        if (page < 1 || page > totalPages) return;
+        currentPage = page;
+        update();
+    }
+
+    document.getElementById('students-prev').addEventListener('click', () => goTo(currentPage - 1));
+    document.getElementById('students-next').addEventListener('click', () => goTo(currentPage + 1));
+
+    // Initial render
+    update();
+
+    // Return re‑pagination function (called after filters change)
+    return function rePaginate() {
+        const visibleRows = getVisibleStudentRows();
+        const totalVisible = visibleRows.length;
+        const totalPages = Math.ceil(totalVisible / STUDENT_PAGE_SIZE) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        update();
+    };
+}
+
+// ── Populate Group dropdown based on selected Section ──
+function populateGroupFilter(selectedSection) {
+    const groupSelect = document.getElementById('admin-student-group-filter');
+    groupSelect.innerHTML = '<option value="All">All Groups</option>';
+    if (selectedSection === 'All') {
+        groupSelect.disabled = true;
+        return;
+    }
+    const groupsInSection = groupsDataJs.filter(g => normText(g.section_name) === normText(selectedSection));
+    if (groupsInSection.length === 0) {
+        
+        groupSelect.disabled = true;
+        return;
+    }
+    groupsInSection.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.name;
+        opt.textContent = g.name;
+        groupSelect.appendChild(opt);
+    });
+    groupSelect.disabled = false;
+}
+
+// ── Apply filters (section + group) ──
+function applyStudentFilters() {
+    const sectionFilter = document.getElementById('admin-student-section-filter');
+    const groupFilter = document.getElementById('admin-student-group-filter');
+    const selectedSection = sectionFilter.value;
+    const selectedGroup = groupFilter.value;
+
+    const rows = document.querySelectorAll('#students-tbody tr:not(.no-students-row)');
+    let anyVisible = false;
+
+    rows.forEach(row => {
+        const rowSection = row.dataset.section || '';
+        const rowGroup = row.dataset.group || '';
+        let show = true;
+
+        if (selectedSection !== 'All' && normText(rowSection) !== normText(selectedSection)) {
+            show = false;
+        }
+        if (show && selectedGroup !== 'All' && normText(rowGroup) !== normText(selectedGroup)) {
+            show = false;
+        }
+
+        if (show) {
+            row.style.display = '';
+            anyVisible = true;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    // Handle "No students" message
+    let noRow = document.querySelector('#students-tbody .no-students-row');
+    if (!anyVisible) {
+        if (!noRow) {
+            noRow = document.createElement('tr');
+            noRow.className = 'no-students-row';
+            noRow.innerHTML = '<td colspan="6" class="py-6 text-center text-[#5b6375]">No students match the selected filters.</td>';
+            document.querySelector('#students-tbody').appendChild(noRow);
+        }
+        noRow.style.display = '';
+    } else {
+        if (noRow) noRow.style.display = 'none';
+    }
+
+    // Re‑paginate after filtering (rows are now hidden/shown)
+    if (studentsPaginate) studentsPaginate();
+}
+
+// ---- Attach event listeners on DOM ready ----
+document.addEventListener('DOMContentLoaded', function() {
+    // Students pagination
+    studentsPaginate = initStudentsPagination();
+
+    // Section filter change → update group dropdown + re-filter
     const sectionFilter = document.getElementById('admin-student-section-filter');
     if (sectionFilter) {
-        sectionFilter.addEventListener('change', function () {
-            const selectedSection = this.value;
-            const tbody = document.querySelector('#sg-students-view tbody');
-            if (!tbody) return;
-            const rows = tbody.querySelectorAll('tr:not(.no-students-row)');
-            let visibleCount = 0;
-
-            rows.forEach(row => {
-                // The Section cell is index 3 (Student=0, ID=1, Course=2, Section=3, Group=4, Actions=5)
-                const sectionCell = row.cells[3] ? row.cells[3].textContent.trim() : '';
-                if (selectedSection === 'All' || sectionCell === selectedSection) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-
-            // Handle the "No students found" row
-            let noStudentsRow = tbody.querySelector('.no-students-row');
-            if (visibleCount === 0) {
-                if (!noStudentsRow) {
-                    noStudentsRow = document.createElement('tr');
-                    noStudentsRow.className = 'no-students-row';
-                    noStudentsRow.innerHTML = '<td colspan="6" class="py-6 text-center text-[#5b6375]">No students found in this section.</td>';
-                    tbody.appendChild(noStudentsRow);
-                }
-                noStudentsRow.style.display = '';
-            } else {
-                if (noStudentsRow) {
-                    noStudentsRow.style.display = 'none';
-                }
-            }
+        sectionFilter.addEventListener('change', function() {
+            populateGroupFilter(this.value);
+            applyStudentFilters();
         });
+        // Initial population (if a section is selected by default)
+        populateGroupFilter(sectionFilter.value);
     }
+
+    // Group filter change → re-filter
+    const groupFilter = document.getElementById('admin-student-group-filter');
+    if (groupFilter) {
+        groupFilter.addEventListener('change', applyStudentFilters);
+    }
+
+    // When switching to Students tab, re‑paginate and re‑apply filters
+    document.querySelectorAll('.sg-tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            setTimeout(() => {
+                if (this.dataset.view === 'students') {
+                    if (studentsPaginate) studentsPaginate();
+                    applyStudentFilters(); // re-apply filters
+                }
+            }, 50);
+        });
+    });
+
+    // Initial filter application
+    applyStudentFilters();
 });
 
 window.moveItemUp = function(btn) {
@@ -4092,7 +4388,80 @@ window.showStage = function(stageType) {
         el.style.display = (stageType === 'all' || String(type) === String(stageType)) ? '' : 'none';
     });
 };
-    </script>
+// ── Auto‑suggest a unique group name ──
+function suggestGroupName() {
+    // Extract numbers from existing group names (case‑insensitive)
+    const usedNumbers = groupsDataJs
+        .map(g => g.name)
+        .map(name => {
+            const match = name.match(/^Group (\d+)$/i);
+            return match ? parseInt(match[1], 10) : null;
+        })
+        .filter(num => num !== null && !isNaN(num));
+
+    let candidate = 1;
+    while (usedNumbers.includes(candidate)) {
+        candidate++;
+    }
+    return `Group ${candidate}`;
+}
+// ── LIVE PROGRESS REFRESH (fixes stale % vs. modal mismatch) ──
+function refreshLiveGroupProgress() {
+    document.querySelectorAll('.live-group-row[data-group-id]').forEach(row => {
+        const groupId = row.dataset.groupId;
+        if (!groupId) return;
+
+        fetch(`/admin/get-group-progress/${groupId}`)
+            .then(r => r.json())
+            .then(data => {
+                const pct = data.overall_progress ?? 0;
+                const color = pct >= 70 ? '#1e6b3a' : (pct >= 40 ? '#b88d3a' : '#a12b2b');
+                const status = pct >= 70 ? 'On Track' : (pct >= 40 ? 'At Risk' : 'Delayed');
+
+                const bar = row.querySelector('.live-progress-bar');
+                const pctEl = row.querySelector('.live-progress-pct');
+                const badge = row.querySelector('.live-progress-badge');
+
+                if (bar) {
+                    bar.style.width = pct + '%';
+                    bar.style.background = color;
+                }
+                if (pctEl) {
+                    pctEl.textContent = pct + '%';
+                    pctEl.style.color = color;
+                }
+                if (badge) {
+                    badge.textContent = status;
+                    badge.style.background = color + '20';
+                    badge.style.color = color;
+                    badge.style.border = '1px solid ' + color + '40';
+                }
+            })
+            .catch(() => {
+                // Silently keep the server-rendered value if the fetch fails
+            });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    refreshLiveGroupProgress();
+}); 
+// ── Merge duplicate/near-duplicate section options (e.g. "East" vs "EAST ") ──
+function dedupeSectionFilterOptions() {
+    const select = document.getElementById('admin-student-section-filter');
+    if (!select) return;
+    const seen = new Map();
+    Array.from(select.options).forEach(opt => {
+        if (opt.value === 'All') return;
+        const key = normText(opt.value);
+        if (seen.has(key)) {
+            opt.remove(); // duplicate — drop it, keep the first one found
+        } else {
+            seen.set(key, opt);
+        }
+    });
+}
+</script>
  
 </body>
 </html>

@@ -21,7 +21,6 @@
         to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* Gold accent stripe */
     .card-accent {
         height: 4px;
         background: linear-gradient(90deg, var(--gold), var(--gold-light));
@@ -31,7 +30,6 @@
         padding: 2.25rem 2rem 2.5rem;
     }
 
-    /* ─── HEADING ─────────────────────────────────── */
     .card-heading {
         text-align: center;
         margin-bottom: 1.75rem;
@@ -51,7 +49,6 @@
         color: var(--muted);
     }
 
-    /* ─── FORM GROUPS ─────────────────────────────── */
     .form-group {
         margin-bottom: 1.25rem;
         text-align: left;
@@ -86,7 +83,6 @@
         background: var(--white);
     }
 
-    /* Password field with toggle icon */
     .password-input-wrapper {
         position: relative;
         display: flex;
@@ -115,7 +111,6 @@
         color: var(--navy);
     }
 
-    /* ─── BUTTONS ─────────────────────────────────── */
     .btn-submit {
         width: 100%;
         margin-top: 0.5rem;
@@ -139,6 +134,46 @@
 
     .btn-submit:active { transform: translateY(0); }
 
+    .btn-submit:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .btn-outline-small {
+        background: transparent;
+        border: 1.5px solid var(--gold);
+        color: var(--navy);
+        padding: 0.55rem 1rem;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+    }
+
+    .btn-outline-small:hover:not(:disabled) {
+        background: var(--gold);
+    }
+
+    .btn-outline-small:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    .resend-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.25rem;
+        gap: 0.75rem;
+    }
+
+    .resend-row .sent-to {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
     .error {
         color: #e57373;
         font-size: 0.75rem;
@@ -152,40 +187,58 @@
     <div class="card-body">
         <div class="card-heading">
             <h2>Reset Password</h2>
-            <p>Please enter your account details to recover your password.</p>
+            <p>
+                @if(session('reset_code_sent'))
+                    Enter the verification code we sent and choose a new password.
+                @else
+                    Enter the email address on your account to receive a reset code.
+                @endif
+            </p>
         </div>
 
-        {{-- Step 1: Enter User ID to request code --}}
-        <form action="{{ route('password.email') }}" method="POST">
+        @if(!session('reset_code_sent'))
+        {{-- STEP 1: Enter email to request code --}}
+        <form action="{{ route('password.email') }}" method="POST" id="sendCodeForm">
             @csrf
             <div class="form-group">
-                <label for="user_id">User ID (ID on file)</label>
+                <label for="email">Email Address</label>
                 <input
-                    type="text"
-                    id="user_id"
-                    name="user_id"
-                    placeholder="e.g. 2023-1418"
-                    value="{{ old('user_id', session('reset_user_id')) }}"
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="e.g. you@example.com"
+                    value="{{ old('email') }}"
                     required
                 >
-                @error('user_id')
+                @error('email')
                 <p class="error">{{ $message }}</p>
                 @enderror
             </div>
             <button type="submit" class="btn-submit" style="background:transparent;border:1.5px solid var(--gold);color:var(--navy);">
                 Send Reset Code
             </button>
-            @if(session('success'))
-            <p style="color:#1e6b3a;font-size:0.75rem;margin-top:0.5rem;">{{ session('success') }}</p>
-            @endif
         </form>
+        @else
+        {{-- STEP 2: Verification code + new password (email step hidden) --}}
+        <div class="resend-row">
+            <span class="sent-to">Code sent to <strong>{{ session('reset_email') }}</strong></span>
+            <form action="{{ route('password.email') }}" method="POST" id="resendForm">
+                @csrf
+                <input type="hidden" name="email" value="{{ session('reset_email') }}">
+                <button type="submit" class="btn-outline-small" id="resendBtn" disabled>
+                    Resend in <span id="resendCountdown">30</span>s
+                </button>
+            </form>
+        </div>
 
-        {{-- Step 2: Enter Verification Code and New Password --}}
-        @if(session('reset_code_sent'))
-        <form action="{{ route('password.update') }}" method="POST" style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px dashed var(--border);">
+        @if(session('success'))
+        <p style="color:#1e6b3a;font-size:0.75rem;margin-bottom:1rem;">{{ session('success') }}</p>
+        @endif
+
+        <form action="{{ route('password.update') }}" method="POST">
             @csrf
             <input type="hidden" name="user_id" value="{{ session('reset_user_id') }}">
-            
+
             <div class="form-group">
                 <label for="reset-code">Reset Verification Code</label>
                 <input type="text" id="reset-code" name="code" placeholder="6-digit code" maxlength="6" required>
@@ -210,7 +263,7 @@
             <button type="submit" class="btn-submit">Reset Password</button>
         </form>
         @endif
-        
+
         <div style="margin-top:1.5rem; text-align:center;">
             <a href="/" style="color:var(--text-muted); font-size:0.78rem; text-decoration:underline;">
                 Back to Sign In
@@ -232,6 +285,29 @@
             icon.className = 'fas fa-eye';
         }
     }
+
+    // 30-second resend cooldown
+    @if(session('reset_code_sent'))
+    (function () {
+        const resendBtn = document.getElementById('resendBtn');
+        const countdownEl = document.getElementById('resendCountdown');
+        if (!resendBtn || !countdownEl) return;
+
+        let seconds = 30;
+        resendBtn.disabled = true;
+
+        const timer = setInterval(() => {
+            seconds--;
+            if (seconds <= 0) {
+                clearInterval(timer);
+                resendBtn.disabled = false;
+                resendBtn.textContent = 'Resend Code';
+            } else {
+                countdownEl.textContent = seconds;
+            }
+        }, 1000);
+    })();
+    @endif
 </script>
 </x-slot:scripts>
 

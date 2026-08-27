@@ -41,6 +41,7 @@ Route::post('/send-code',  [user_controller::class, 'sendVerificationCode'])
 Route::get('/forgot-password',          [user_controller::class, 'showForgotPasswordForm'])->name('password.request');
 Route::post('/forgot-password/send',    [user_controller::class, 'sendForgotPasswordCode'])->name('password.email');
 Route::post('/forgot-password/reset',   [user_controller::class, 'resetPasswordWithCode'])->name('password.update');
+Route::get('/password/reset-confirmation', [user_controller::class, 'showResetConfirmation'])->name('password.reset.confirmation');
 
 /*
 |--------------------------------------------------------------------------
@@ -95,6 +96,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/create-group',  [user_controller::class, 'createGroup'])->name('admin.create_group');
         Route::get('/get-group/{id}', [user_controller::class, 'getGroupAdmin'])->name('admin.get_group');
         Route::get('/get-group-progress/{groupId}', [user_controller::class, 'getGroupProgress'])->name('admin.get_group_progress');
+        Route::post('/delete-group', [user_controller::class, 'deleteGroup'])->name('admin.delete_group');
+
         Route::put('/update-group/{id}', [user_controller::class, 'updateGroupAdmin'])->name('admin.update_group');
         Route::get('/get-students/{section}', [user_controller::class, 'getStudentsBySection'])->name('admin.get-students');
 

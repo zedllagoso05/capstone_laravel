@@ -153,6 +153,9 @@ class user_controller extends Controller
             return redirect('/')->withErrors(['id' => 'Please enter your ID first.']);
         }
 
+        
+     
+
         $incomingdata = $request->validate([
             'logname'     => 'required',
             'logpassword' => 'required|min:6'
@@ -164,11 +167,14 @@ class user_controller extends Controller
             'password'    => $incomingdata['logpassword']
         ])) {
             $request->session()->regenerate();
+        // ✅ Flash a login success message
+        session()->flash('login_success', true);
+        session()->flash('login_message', 'Welcome back, ' . Auth::user()->name . '!');
             return $this->redirectByRole(); // ← goes to correct dashboard by role
         }
 
         return back()->withErrors([
-            'logname' => 'The provided credentials do not match our records.',
+            'logname' => 'invalid username',
         ]);
     }
 
@@ -373,192 +379,224 @@ if ($groups) {
     }
 
     // ── ADMIN DASHBOARD ──────────────────────────────────────────
-    public function adminDashboard()
-    {
-        $user = Auth::user();
-        if (!$user) return redirect('/');
-        if ($user->role !== 'admin') {
-            return $this->redirectByRole();
+ public function adminDashboard()
+{
+    $user = Auth::user();
+    if (!$user) return redirect('/');
+    if ($user->role !== 'admin') {
+        return $this->redirectByRole();
+    }
+    $admin = Admin::where('user_id', $user->user_id)->first();
+
+    // ── Active Capstone Year & Auto-population ──
+    $activeYear = CapstoneYear::getActiveYear();
+
+    // Ensure any pre-existing/legacy database rows are mapped to the active year
+    Group::whereNull('capstone_year_id')->update(['capstone_year_id' => $activeYear->id]);
+    Student::whereNull('capstone_year_id')->update(['capstone_year_id' => $activeYear->id]);
+    CapstoneStages::whereNull('capstone_year_id')->update(['capstone_year_id' => $activeYear->id]);
+
+    $capstoneYears = CapstoneYear::withCount(['groups', 'students'])->get();
+
+    // ── Core data ──
+    $enabledStageIds = CapstoneStages::where('is_enabled', true)
+        ->where('capstone_year_id', $activeYear->id)
+        ->pluck('id');
+    $milestones = Milestone::whereIn('capstone_stage_id', $enabledStageIds)->with('rubrics')->orderBy('step_order')->get();
+    $rubrics = Rubric::whereHas('milestone', function($q) use ($enabledStageIds) {
+        $q->whereIn('capstone_stage_id', $enabledStageIds);
+    })->with(['milestone', 'criteria'])->latest()->get();
+    $groups = Group::where('is_archived', false)
+        ->where('capstone_year_id', $activeYear->id)
+        ->with(['students', 'groupMilestones'])
+        ->get();
+    $archivedGroups = Group::where('is_archived', true)->with(['adviser', 'section', 'team_members', 'capstoneStage'])->get();
+    $totalGroups = $groups->count();
+
+    $allTeachers = Teacher::where('is_archived', false)->with([
+        'groups' => function ($query) use ($activeYear) {
+            $query->where('is_archived', false)->where('capstone_year_id', $activeYear->id);
+        },
+        'user',
+        'sections' => function ($query) {
+            $query->where('is_archived', false);
         }
-        $admin = Admin::where('user_id', $user->user_id)->first();
+    ])->get();
+    $totalTeachers = $allTeachers->count();
 
-        // ── Active Capstone Year & Auto-population ──
-        $activeYear = CapstoneYear::getActiveYear();
+    $sections = Section::where('is_archived', false)->get();
+    $totalSections = $sections->count();
+    $allSections = Section::all();
 
-        // Ensure any pre-existing/legacy database rows are mapped to the active year
-        Group::whereNull('capstone_year_id')->update(['capstone_year_id' => $activeYear->id]);
-        Student::whereNull('capstone_year_id')->update(['capstone_year_id' => $activeYear->id]);
-        CapstoneStages::whereNull('capstone_year_id')->update(['capstone_year_id' => $activeYear->id]);
+    // ── Students with their group (singular) ──
+    $allStudents = Student::where('is_archived', false)
+        ->where('capstone_year_id', $activeYear->id)
+        ->with(['user', 'groups'])
+        ->get();
+    $totalStudents = $allStudents->count();
 
-        $capstoneYears = CapstoneYear::withCount(['groups', 'students'])->get();
+    // evaluationroom
+    $evaluationRooms = EvaluationRoom::with([
+        'panelists',
+        'groups' => function ($query) use ($activeYear) {
+            $query->where('is_archived', false)->where('capstone_year_id', $activeYear->id);
+        },
+        'requiredMilestone'
+    ])->latest()->get();
 
-        // ── Core data ──
-        $enabledStageIds = CapstoneStages::where('is_enabled', true)
-            ->where('capstone_year_id', $activeYear->id)
-            ->pluck('id');
-        $milestones = Milestone::whereIn('capstone_stage_id', $enabledStageIds)->with('rubrics')->orderBy('step_order')->get();
-        $rubrics = Rubric::whereHas('milestone', function($q) use ($enabledStageIds) {
-            $q->whereIn('capstone_stage_id', $enabledStageIds);
-        })->with(['milestone', 'criteria'])->latest()->get();
-        $groups = Group::where('is_archived', false)
-            ->where('capstone_year_id', $activeYear->id)
-            ->with(['students', 'groupMilestones'])
-            ->get();
-        $archivedGroups = Group::where('is_archived', true)->with(['adviser', 'section', 'team_members', 'capstoneStage'])->get();
-        $totalGroups = $groups->count();
+    // ── Prepare enabled milestone IDs for progress calculations ──
+    $enabledMilestoneIds = $milestones->pluck('id')->toArray();
+    $totalMilestones = $milestones->count();
 
-        $allTeachers = Teacher::where('is_archived', false)->with([
-            'groups' => function ($query) use ($activeYear) {
-                $query->where('is_archived', false)->where('capstone_year_id', $activeYear->id);
-            },
-            'user',
-            'sections' => function ($query) {
-                $query->where('is_archived', false);
-            }
-        ])->get();
-        $totalTeachers = $allTeachers->count();
+    // ── Build per‑section group progress lists ──
+    foreach ($sections as $section) {
+        $groupsInSection = $groups->filter(function($group) use ($section) {
+            return $group->section_id === $section->id;
+        });
 
-        $sections = Section::where('is_archived', false)->get();
-        $totalSections = $sections->count();
-        $allSections= Section:: all();
-        // ── Students with their group (singular) ──
-        $allStudents = Student::where('is_archived', false)
-            ->where('capstone_year_id', $activeYear->id)
-            ->with(['user', 'groups'])
-            ->get();
-        $totalStudents = $allStudents->count();
+        $groupList = [];
+        foreach ($groupsInSection as $group) {
+            $completed = $group->groupMilestones
+                ->where('status', 'completed')
+                ->whereIn('milestone_id', $enabledMilestoneIds)
+                ->count();
+            $progress = $totalMilestones > 0 ? round(($completed / $totalMilestones) * 100) : 0;
 
-        // evaluationroom
-        $evaluationRooms = EvaluationRoom::with([
-            'panelists',
-            'groups' => function ($query) use ($activeYear) {
-                $query->where('is_archived', false)->where('capstone_year_id', $activeYear->id);
-            },
-            'requiredMilestone'
-        ])->latest()->get();
-
-        // ── Section Progress ──
-        $sectionProgress = [];
-        $milestoneCount = $milestones->count();
-
-        foreach ($sections as $section) {
-            // Get students in this section
-            $studentUserIds = Student::where('section', $section->section_name)->pluck('user_id');
-            // Get group IDs of those students
-            $groupIds = TeamMember::whereIn('user_id', $studentUserIds)->pluck('group_id')->unique();
-            // Get groups with their milestones
-            $groupsInSection = Group::where('is_archived', false)->whereIn('id', $groupIds)->with('groupMilestones')->get();
-
-            $total = $groupsInSection->count();
-            $done = 0;
-            $inProgress = 0;
-            $notStarted = 0;
-            $totalProgress = 0;
-
-            $enabledMilestoneIds = $milestones->pluck('id')->toArray();
-
-            foreach ($groupsInSection as $group) {
-                $completed = $group->groupMilestones
-                    ->where('status', 'completed')
-                    ->whereIn('milestone_id', $enabledMilestoneIds)
-                    ->count();
-                $progress = $milestoneCount > 0 ? ($completed / $milestoneCount) * 100 : 0;
-                $totalProgress += $progress;
-
-                if ($completed == $milestoneCount) {
-                    $done++;
-                } elseif ($completed > 0) {
-                    $inProgress++;
-                } else {
-                    $notStarted++;
-                }
-            }
-
-            $avg = $total > 0 ? round($totalProgress / $total) : 0;
-
-            $sectionProgress[] = (object) [
-                'name'        => $section->section_name,
-                'done'        => $done,
-                'in_progress' => $inProgress,
-                'not_started' => $notStarted,
-                'avg'         => $avg,
+            $groupList[] = (object) [
+                 'id'       => $group->id,
+                'name'     => $group->group_name,
+                'progress' => $progress,
+                'status'   => $progress >= 70 ? 'On Track' : ($progress >= 40 ? 'At Risk' : 'Delayed'),
+                'color'    => $progress >= 70 ? '#1e6b3a' : ($progress >= 40 ? '#b88d3a' : '#a12b2b'),
             ];
         }
 
-        // ── Milestone Completion ──
-        $milestoneCompletion = [];
-        $colors = ['#d6b15c', '#b88d3a', '#8b6914', '#5b6375', '#0a1428']; // dashboard palette
+        // Attach the group list to the section object
+        $section->groups = $groupList;
+    }
 
-        foreach ($milestones->values() as $i => $m) {
-            $completedCount = GroupMilestones::where('milestone_id', $m->id)
-                                            ->where('status', 'completed')
-                                            ->count();
-            $milestoneCompletion[] = (object) [
-                'name'      => $m->milestone_title,
-                'completed' => $completedCount,
-                'total'     => $totalGroups,
-                'color'     => $colors[$i % count($colors)],
-                'stage'     => $m->capstone_stage_id,
-            ];
-        }
+    // ── Section Progress (now with groups attached) ──
+    $sectionProgress = [];
+    $milestoneCount = $milestones->count();
 
-        // ── Overall Stats ──
-        $onTrackCount = 0;
-        $atRiskCount  = 0;
-        $delayedCount = 0;
-        $totalProgressSum = 0;
+    foreach ($sections as $section) {
+        // Get students in this section
+        $studentUserIds = Student::where('section', $section->section_name)->pluck('user_id');
+        // Get group IDs of those students
+        $groupIds = TeamMember::whereIn('user_id', $studentUserIds)->pluck('group_id')->unique();
+        // Get groups with their milestones
+        $groupsInSection = Group::where('is_archived', false)->whereIn('id', $groupIds)->with('groupMilestones')->get();
 
-        $enabledMilestoneIds = $milestones->pluck('id')->toArray();
+        $total = $groupsInSection->count();
+        $done = 0;
+        $inProgress = 0;
+        $notStarted = 0;
+        $totalProgress = 0;
 
-        foreach ($groups as $group) {
+        foreach ($groupsInSection as $group) {
             $completed = $group->groupMilestones
                 ->where('status', 'completed')
                 ->whereIn('milestone_id', $enabledMilestoneIds)
                 ->count();
             $progress = $milestoneCount > 0 ? ($completed / $milestoneCount) * 100 : 0;
-            $totalProgressSum += $progress;
-            if ($progress >= 70) {
-                $onTrackCount++;
-            } elseif ($progress >= 40) {
-                $atRiskCount++;
+            $totalProgress += $progress;
+
+            if ($completed == $milestoneCount) {
+                $done++;
+            } elseif ($completed > 0) {
+                $inProgress++;
             } else {
-                $delayedCount++;
+                $notStarted++;
             }
         }
-        $avgProgress = $totalGroups > 0 ? round($totalProgressSum / $totalGroups) : 0;
 
-        // ── Capstone Completion Progress (real data, per milestone) ──
-        $progressItems = [];
-        $progressColors = ['#d6b15c', '#b88d3a', '#8b6914', '#5b6375', '#0a1428'];
-        foreach ($milestones->take(5) as $i => $m) {
-            $completedCount = GroupMilestones::where('milestone_id', $m->id)
-                ->where('status', 'completed')
-                ->count();
-            $pct = $totalGroups > 0 ? round(($completedCount / $totalGroups) * 100) : 0;
+        $avg = $total > 0 ? round($totalProgress / $total) : 0;
 
-            $progressItems[] = (object) [
-                'label' => $m->milestone_title,
-                'done'  => $completedCount,
-                'total' => $totalGroups,
-                'pct'   => $pct,
-                'color' => $progressColors[$i % count($progressColors)],
-            ];
+        $sectionProgress[] = (object) [
+            'name'        => $section->section_name,
+            'done'        => $done,
+            'in_progress' => $inProgress,
+            'not_started' => $notStarted,
+            'avg'         => $avg,
+            'groups'      => $section->groups, // <-- group list attached
+        ];
+    }
+
+    // ── Milestone Completion ──
+    $milestoneCompletion = [];
+    $colors = ['#d6b15c', '#b88d3a', '#8b6914', '#5b6375', '#0a1428'];
+
+    foreach ($milestones->values() as $i => $m) {
+        $completedCount = GroupMilestones::where('milestone_id', $m->id)
+                                        ->where('status', 'completed')
+                                        ->count();
+        $milestoneCompletion[] = (object) [
+            'name'      => $m->milestone_title,
+            'completed' => $completedCount,
+            'total'     => $totalGroups,
+            'color'     => $colors[$i % count($colors)],
+            'stage'     => $m->capstone_stage_id,
+        ];
+    }
+
+    // ── Overall Stats ──
+    $onTrackCount = 0;
+    $atRiskCount  = 0;
+    $delayedCount = 0;
+    $totalProgressSum = 0;
+
+    foreach ($groups as $group) {
+        $completed = $group->groupMilestones
+            ->where('status', 'completed')
+            ->whereIn('milestone_id', $enabledMilestoneIds)
+            ->count();
+        $progress = $milestoneCount > 0 ? ($completed / $milestoneCount) * 100 : 0;
+        $totalProgressSum += $progress;
+        if ($progress >= 70) {
+            $onTrackCount++;
+        } elseif ($progress >= 40) {
+            $atRiskCount++;
+        } else {
+            $delayedCount++;
         }
+    }
+    $avgProgress = $totalGroups > 0 ? round($totalProgressSum / $totalGroups) : 0;
 
-        // ── Sections Data for Assign Modal ──
-        $sectionsWithTeachers = Section::leftJoin('teachers', 'sections.user_id', '=', 'teachers.user_id')
-            ->select('sections.*', 'teachers.teacher_first_name', 'teachers.teacher_last_name')
-            ->get();
+    // ── Capstone Completion Progress (real data, per milestone) ──
+    $progressItems = [];
+    $progressColors = ['#d6b15c', '#b88d3a', '#8b6914', '#5b6375', '#0a1428'];
+    foreach ($milestones->take(5) as $i => $m) {
+        $completedCount = GroupMilestones::where('milestone_id', $m->id)
+            ->where('status', 'completed')
+            ->count();
+        $pct = $totalGroups > 0 ? round(($completedCount / $totalGroups) * 100) : 0;
 
-        $capstone1Milestones = Milestone::whereHas('capstoneStage', function ($q) {
-            $q->where('stage_type', 1)->where('is_archived', false);
-        })->pluck('id')->toArray();
+        $progressItems[] = (object) [
+            'label' => $m->milestone_title,
+            'done'  => $completedCount,
+            'total' => $totalGroups,
+            'pct'   => $pct,
+            'color' => $progressColors[$i % count($progressColors)],
+        ];
+    }
 
-        $capstone2Milestones = Milestone::whereHas('capstoneStage', function ($q) {
-            $q->where('stage_type', 2)->where('is_archived', false);
-        })->pluck('id')->toArray();
+    // ── Sections Data for Assign Modal ──
+    $sectionsWithTeachers = Section::leftJoin('teachers', 'sections.user_id', '=', 'teachers.user_id')
+        ->select('sections.*', 'teachers.teacher_first_name', 'teachers.teacher_last_name')
+        ->get();
 
-        $groupsData = Group::where('is_archived', false)->where('capstone_year_id', $activeYear->id)->with(['adviser', 'section', 'students', 'room', 'groupMilestones', 'team_members'])->get()->map(function ($group) use ($capstone1Milestones, $capstone2Milestones) {
+    $capstone1Milestones = Milestone::whereHas('capstoneStage', function ($q) {
+        $q->where('stage_type', 1)->where('is_archived', false);
+    })->pluck('id')->toArray();
+
+    $capstone2Milestones = Milestone::whereHas('capstoneStage', function ($q) {
+        $q->where('stage_type', 2)->where('is_archived', false);
+    })->pluck('id')->toArray();
+
+    $groupsData = Group::where('is_archived', false)->where('capstone_year_id', $activeYear->id)
+        ->with(['adviser', 'section', 'students', 'room', 'groupMilestones', 'team_members'])
+        ->get()
+        ->map(function ($group) use ($capstone1Milestones, $capstone2Milestones) {
             $completedMilestoneIds = $group->groupMilestones
                 ->where('status', 'completed')
                 ->pluck('milestone_id')
@@ -600,113 +638,141 @@ if ($groups) {
             ];
         });
 
-        $sectionsData = $sectionsWithTeachers->map(function($section) {
-            return [
-                'id'                     => $section->id,
-                'name'                   => $section->section_name,
-                'assigned_teacher_id'    => $section->user_id,
-                'assigned_teacher_name'  => $section->user_id
-                    ? $section->teacher_first_name . ' ' . $section->teacher_last_name
-                    : null,
-            ];
-        });
+    $sectionsData = $sectionsWithTeachers->map(function($section) {
+        return [
+            'id'                     => $section->id,
+            'name'                   => $section->section_name,
+            'assigned_teacher_id'    => $section->user_id,
+            'assigned_teacher_name'  => $section->user_id
+                ? $section->teacher_first_name . ' ' . $section->teacher_last_name
+                : null,
+        ];
+    });
 
-        $capstoneStages = CapstoneStages::where('is_archived', false)
-            ->where('capstone_year_id', $activeYear->id)
-            ->get();
+    $capstoneStages = CapstoneStages::where('is_archived', false)
+        ->where('capstone_year_id', $activeYear->id)
+        ->get();
 
-        // ── Recent Activities (real data) ──
-        $recentActivities = collect();
+    // ── Recent Activities (real data) ──
+    $recentActivities = collect();
 
-        foreach (Rubric::latest()->take(5)->get() as $rubric) {
-            $recentActivities->push([
-                'icon' => 'fa-check', 'color' => '#1e6b3a',
-                'title' => 'New rubric created',
-                'subtitle' => $rubric->rubric_name,
-                'timestamp' => $rubric->created_at,
-            ]);
-        }
-
-        foreach (Evaluation::with('group', 'milestone')->latest()->take(5)->get() as $eval) {
-            $recentActivities->push([
-                'icon' => 'fa-check', 'color' => '#1e6b3a',
-                'title' => 'Group evaluated',
-                'subtitle' => ($eval->group->group_name ?? 'Group') . ' — ' . ($eval->milestone->milestone_title ?? 'Milestone'),
-                'timestamp' => $eval->created_at,
-            ]);
-        }
-
-        foreach (Student::latest()->take(5)->get() as $student) {
-            $recentActivities->push([
-                'icon' => 'fa-arrow-right', 'color' => '#0a1428',
-                'title' => 'Student registered',
-                'subtitle' => $student->student_first_name . ' ' . $student->student_last_name . ' (' . $student->user_id . ')',
-                'timestamp' => $student->created_at,
-            ]);
-        }
-
-        foreach (Teacher::latest()->take(5)->get() as $teacher) {
-            $recentActivities->push([
-                'icon' => 'fa-arrow-right', 'color' => '#0a1428',
-                'title' => 'Teacher added',
-                'subtitle' => $teacher->teacher_first_name . ' ' . $teacher->teacher_last_name,
-                'timestamp' => $teacher->created_at,
-            ]);
-        }
-
-        $upcoming = Milestone::whereBetween('due_date', [now(), now()->addDays(3)])->get();
-        foreach ($upcoming as $m) {
-            $pendingCount = Group::where('is_archived', false)->whereDoesntHave('groupMilestones', function ($q) use ($m) {
-                $q->where('milestone_id', $m->id)->where('status', 'completed');
-            })->count();
-            if ($pendingCount > 0) {
-                $recentActivities->push([
-                    'icon' => 'fa-clock', 'color' => '#8a5d0b',
-                    'title' => 'Deadline reminder',
-                    'subtitle' => $m->milestone_title . ' due for ' . $pendingCount . ' group(s)',
-                    'timestamp' => now()->subMinute(), // keep it near top, not stale
-                ]);
-            }
-        }
-
-        $recentActivities = $recentActivities->sortByDesc('timestamp')->take(8)->values();
-
-        // ── Active/Enabled Capstone Year ──
-        $enabledYear = $activeYear->year;
-        $allCapstoneYears = CapstoneYear::pluck('year')->toArray();
-
-        return view('sections.admin', compact(
-            'user',
-            'milestones',
-            'rubrics',
-            'sectionProgress',
-            'milestoneCompletion',
-            'progressItems',
-            'onTrackCount',
-            'atRiskCount',
-            'delayedCount',
-            'avgProgress',
-            'admin',
-            'allTeachers',
-            'allStudents',
-            'allSections',
-            'recentActivities',
-            'evaluationRooms',
-            'sections',
-            'groupsData',
-            'sectionsData',
-            'totalStudents',
-            'totalGroups',
-            'totalTeachers',
-            'totalSections',
-            'capstoneStages',
-            'archivedGroups',
-            'enabledYear',
-            'allCapstoneYears',
-            'activeYear',
-            'capstoneYears'
-        ));
+    foreach (Rubric::latest()->take(5)->get() as $rubric) {
+        $recentActivities->push([
+            'icon' => 'fa-check', 'color' => '#1e6b3a',
+            'title' => 'New rubric created',
+            'subtitle' => $rubric->rubric_name,
+            'timestamp' => $rubric->created_at,
+        ]);
     }
+
+    foreach (Evaluation::with('group', 'milestone')->latest()->take(5)->get() as $eval) {
+        $recentActivities->push([
+            'icon' => 'fa-check', 'color' => '#1e6b3a',
+            'title' => 'Group evaluated',
+            'subtitle' => ($eval->group->group_name ?? 'Group') . ' — ' . ($eval->milestone->milestone_title ?? 'Milestone'),
+            'timestamp' => $eval->created_at,
+        ]);
+    }
+
+    foreach (Student::latest()->take(5)->get() as $student) {
+        $recentActivities->push([
+            'icon' => 'fa-arrow-right', 'color' => '#0a1428',
+            'title' => 'Student registered',
+            'subtitle' => $student->student_first_name . ' ' . $student->student_last_name . ' (' . $student->user_id . ')',
+            'timestamp' => $student->created_at,
+        ]);
+    }
+
+    foreach (Teacher::latest()->take(5)->get() as $teacher) {
+        $recentActivities->push([
+            'icon' => 'fa-arrow-right', 'color' => '#0a1428',
+            'title' => 'Teacher added',
+            'subtitle' => $teacher->teacher_first_name . ' ' . $teacher->teacher_last_name,
+            'timestamp' => $teacher->created_at,
+        ]);
+    }
+
+    $upcoming = Milestone::whereBetween('due_date', [now(), now()->addDays(3)])->get();
+    foreach ($upcoming as $m) {
+        $pendingCount = Group::where('is_archived', false)->whereDoesntHave('groupMilestones', function ($q) use ($m) {
+            $q->where('milestone_id', $m->id)->where('status', 'completed');
+        })->count();
+        if ($pendingCount > 0) {
+            $recentActivities->push([
+                'icon' => 'fa-clock', 'color' => '#8a5d0b',
+                'title' => 'Deadline reminder',
+                'subtitle' => $m->milestone_title . ' due for ' . $pendingCount . ' group(s)',
+                'timestamp' => now()->subMinute(),
+            ]);
+        }
+    }
+
+    $recentActivities = $recentActivities->sortByDesc('timestamp')->take(8)->values();
+
+    // ── Active/Enabled Capstone Year ──
+    $enabledYear = $activeYear->year;
+    $allCapstoneYears = CapstoneYear::pluck('year')->toArray();
+
+    // ── Group progress list (used elsewhere, keep it) ──
+    $groupProgressList = [];
+    foreach ($groups as $group) {
+        $completed = $group->groupMilestones
+            ->where('status', 'completed')
+            ->whereIn('milestone_id', $enabledMilestoneIds)
+            ->count();
+        $progress = $totalMilestones > 0 ? round(($completed / $totalMilestones) * 100) : 0;
+
+        $status = 'On Track';
+        if ($progress < 40) $status = 'Delayed';
+        elseif ($progress < 70) $status = 'At Risk';
+
+        $groupProgressList[] = (object) [
+            'group_name'       => $group->group_name,
+            'capstone_title'   => $group->capstone_title,
+            'section'          => $group->section->section_name ?? 'N/A',
+            'adviser'          => $group->adviser ? $group->adviser->teacher_first_name . ' ' . $group->adviser->teacher_last_name : 'Unassigned',
+            'progress'         => $progress,
+            'completed'        => $completed,
+            'total'            => $totalMilestones,
+            'status'           => $status,
+            'status_color'     => $progress >= 70 ? '#1e6b3a' : ($progress >= 40 ? '#b88d3a' : '#a12b2b'),
+        ];
+    }
+
+    // ── Return view with all compact variables ──
+    return view('sections.admin', compact(
+        'user',
+        'milestones',
+        'rubrics',
+        'sectionProgress',
+        'milestoneCompletion',
+        'progressItems',
+        'onTrackCount',
+        'atRiskCount',
+        'delayedCount',
+        'avgProgress',
+        'admin',
+        'allTeachers',
+        'allStudents',
+        'allSections',
+        'recentActivities',
+        'evaluationRooms',
+        'sections',
+        'groupsData',
+        'sectionsData',
+        'totalStudents',
+        'totalGroups',
+        'totalTeachers',
+        'totalSections',
+        'capstoneStages',
+        'archivedGroups',
+        'enabledYear',
+        'allCapstoneYears',
+        'activeYear',
+        'capstoneYears',
+        'groupProgressList'
+    ));
+}
 
     // ── ASSIGN / CHANGE ADVISER ────────────────────────────────────
     public function assignGroups(Request $request)
@@ -903,7 +969,7 @@ if ($groups) {
     {
         $validated = $request->validate([
             'group_name'         => 'required|string|max:255|unique:groups,group_name',
-            'capstone_title'     => 'required|string|max:255',
+            'capstone_title'     => 'required|string|max:255|unique:groups,capstone_title',
             'section'         => 'required|exists:sections,id',
             'students'           => 'required|array|min:1|max:5',
             'students.*.user_id' => 'exists:students,user_id',
@@ -1697,7 +1763,7 @@ if ($revision) {
 
         $validated = $request->validate([
             'group_name'         => 'required|string|max:255|unique:groups,group_name,' . $group->id,
-            'capstone_title'     => 'required|string|max:255',
+            'capstone_title'     => 'required|string|max:255|unique:groups,capstone_title,' . $group->id,
             'students'           => 'required|array|min:2',
             'students.*.user_id' => 'exists:students,user_id',
             'students.*.role'    => 'required|string|in:programmer,designer,researcher',
@@ -2226,7 +2292,7 @@ if ($revision) {
 
         $validated = $request->validate([
             'group_name'          => 'required|string|max:255|unique:groups,group_name,' . $group->id,
-            'capstone_title'      => 'required|string|max:255',
+            'capstone_title'      => 'required|string|max:255|unique:groups,capstone_title,' . $group->id,
             'adviser_id'          => 'required|exists:teachers,id',
             'students'            => 'required|array|min:1',
             'students.*.user_id'  => 'exists:students,user_id',
@@ -2871,92 +2937,97 @@ $adviserName = $group->adviser
     }
 
     // ── SEND FORGOT PASSWORD CODE ────────────────────
-    public function sendForgotPasswordCode(Request $request)
-    {
-        $request->validate(['user_id' => 'required|string']);
+   // ── SEND FORGOT PASSWORD CODE ────────────────────
+public function sendForgotPasswordCode(Request $request)
+{
+    $request->validate(['email' => 'required|email']);
 
-        $user = User::where('user_id', $request->user_id)->first();
-        if (!$user) {
-            return back()->withErrors(['user_id' => 'This User ID is not registered in our system.'])->withInput();
+    $email = $request->email;
+
+    // First check the verified email on the users table
+    $user = User::where('email', $email)->first();
+
+    // Fallback: match against the profile-level email on file (student/teacher/admin)
+    if (!$user) {
+        $student = Student::where('student_email', $email)->first();
+        $teacher = Teacher::where('teacher_email', $email)->first();
+        $admin   = Admin::where('admin_email', $email)->first();
+
+        $profileUserId = $student->user_id ?? $teacher->user_id ?? $admin->user_id ?? null;
+
+        if ($profileUserId) {
+            $user = User::where('user_id', $profileUserId)->first();
         }
-
-        // Send to their verified email address on file
-        $email = $user->email;
-        if (!$email) {
-            // If they didn't verify an email yet, look up their profile email on file as a fallback
-            $email = match ($user->role) {
-                'student' => Student::where('user_id', $user->user_id)->value('student_email'),
-                'teacher' => Teacher::where('user_id', $user->user_id)->value('teacher_email'),
-                'admin'   => Admin::where('user_id', $user->user_id)->value('admin_email'),
-                default   => null,
-            };
-        }
-
-        if (!$email) {
-            return back()->withErrors(['user_id' => 'We could not find an email address associated with this account. Please contact your administrator.'])->withInput();
-        }
-
-        $code = (string) random_int(100000, 999999);
-        Cache::put('reset_code_' . $user->user_id, $code, now()->addMinutes(10));
-
-        $sent = Mailer::send(
-            $email,
-            $user->user_id,
-            'Your Capstone Tracker password reset code',
-            "<p>Your password reset verification code is:</p><h2>{$code}</h2><p>This code expires in 10 minutes.</p>"
-        );
-
-        if (!$sent) {
-            return back()->withErrors(['user_id' => 'Failed to send password reset code. Please try again.'])->withInput();
-        }
-
-        // Mask email for privacy (e.g., j***e@domain.com)
-        $parts = explode('@', $email);
-        $name = $parts[0];
-        $domain = $parts[1] ?? '';
-        $maskedName = strlen($name) > 2 ? $name[0] . str_repeat('*', strlen($name) - 2) . $name[strlen($name) - 1] : $name;
-        $maskedEmail = $maskedName . '@' . $domain;
-
-        return back()->with('success', "A password reset code has been sent to your email on file ({$maskedEmail}).")
-                      ->with('reset_code_sent', true)
-                      ->with('reset_user_id', $user->user_id);
     }
 
+    if (!$user) {
+        return back()->withErrors(['email' => 'No account was found with that email address.'])->withInput();
+    }
+
+    $code = (string) random_int(100000, 999999);
+    Cache::put('reset_code_' . $user->user_id, $code, now()->addMinutes(10));
+
+    $sent = Mailer::send(
+        $email,
+        $user->user_id,
+        'Your Capstone Tracker password reset code',
+        "<p>Your password reset verification code is:</p><h2>{$code}</h2><p>This code expires in 10 minutes.</p>"
+    );
+
+    if (!$sent) {
+        return back()->withErrors(['email' => 'Failed to send password reset code. Please try again.'])->withInput();
+    }
+
+    return back()->with('success', "A password reset code has been sent to {$email}.")
+                  ->with('reset_code_sent', true)
+                  ->with('reset_user_id', $user->user_id)
+                  ->with('reset_email', $email);
+}
+
+public function showResetConfirmation()
+{
+    // If no success flash, redirect to home (prevent direct access)
+    if (!session('success')) {
+        return redirect('/');
+    }
+    return view('reset-confirmation');
+}
     // ── RESET PASSWORD WITH CODE ────────────────────
-    public function resetPasswordWithCode(Request $request)
-    {
-        $request->validate([
-            'user_id'  => 'required|string',
-            'code'     => 'required|string',
-            'password' => 'required|min:6',
-        ]);
+ public function resetPasswordWithCode(Request $request)
+{
+    $request->validate([
+        'user_id'  => 'required|string',
+        'code'     => 'required|string',
+        'password' => 'required|min:6',
+    ]);
 
-        $user = User::where('user_id', $request->user_id)->first();
-        if (!$user) {
-            return back()->withErrors(['user_id' => 'User ID not found.'])
-                         ->withInput()
-                         ->with('reset_code_sent', true)
-                         ->with('reset_user_id', $request->user_id);
-        }
-
-        $cachedCode = Cache::get('reset_code_' . $user->user_id);
-
-        if (!$cachedCode || $cachedCode !== $request->code) {
-            return back()->withErrors(['code' => 'Invalid or expired reset code.'])
-                         ->withInput()
-                         ->with('reset_code_sent', true)
-                         ->with('reset_user_id', $request->user_id);
-        }
-
-        // Update the password
-        $user->password = bcrypt($request->password);
-        $user->save();
-
-        Cache::forget('reset_code_' . $user->user_id);
-
-        return redirect('/')->with('success', 'Your password has been reset successfully! Please log in.');
+    $user = User::where('user_id', $request->user_id)->first();
+    if (!$user) {
+        return back()->withErrors(['user_id' => 'User ID not found.'])
+                     ->withInput()
+                     ->with('reset_code_sent', true)
+                     ->with('reset_user_id', $request->user_id);
     }
 
+    $cachedCode = Cache::get('reset_code_' . $user->user_id);
+
+    if (!$cachedCode || $cachedCode !== $request->code) {
+        return back()->withErrors(['code' => 'Invalid or expired reset code.'])
+                     ->withInput()
+                     ->with('reset_code_sent', true)
+                     ->with('reset_user_id', $request->user_id);
+    }
+
+    // Update password
+    $user->password = bcrypt($request->password);
+    $user->save();
+
+    Cache::forget('reset_code_' . $user->user_id);
+
+    // ✅ Redirect to confirmation page with a success flag
+    return redirect()->route('password.reset.confirmation')
+                     ->with('success', 'Your password has been reset successfully!');
+}
     // ── TOGGLE CAPSTONE STAGE ───────────────────────────────────────
    public function toggleCapstoneStage(Request $request)
 {
@@ -3500,8 +3571,43 @@ $adviserName = $group->adviser
 
         $stage->delete();
 
-        return back()->with('success', 'Capstone stage deleted successfully.');
+        return back()->with('success', 'Capstone stage deleted suc  cessfully.');
     }
+    
+    // deletegroup
+    public function deleteGroup(Request $request)
+{
+    $validated = $request->validate([
+        'group_id'       => 'required|integer|exists:groups,id',
+        'admin_password' => 'required|string',
+    ]);
+
+    if (!Hash::check($validated['admin_password'], Auth::user()->password)) {
+        return back()
+            ->withErrors(['admin_password' => 'Incorrect password. Group was not deleted.'])
+            ->withInput();
+    }
+
+    $group = Group::findOrFail($validated['group_id']);
+
+    DB::transaction(function () use ($group) {
+        Evaluation::where('group_id', $group->id)->delete();
+        \App\Models\Remarks::where('group_id', $group->id)->delete();
+        \App\Models\Absence::where('group_id', $group->id)->delete();
+        GroupMilestones::where('group_id', $group->id)->delete();
+        GroupCertificate::where('group_id', $group->id)->delete();
+        \App\Models\Revision::where('group_id', $group->id)->each(function ($rev) {
+            $rev->documentation()->delete();
+            $rev->enhancements()->delete();
+            $rev->objectives()->delete();
+            $rev->delete();
+        });
+        TeamMember::where('group_id', $group->id)->delete();
+        $group->delete();
+    });
+
+    return back()->with('success', 'Group deleted successfully.');
+}
 
     /**
      * Restore an archived group and its related entities back to active.

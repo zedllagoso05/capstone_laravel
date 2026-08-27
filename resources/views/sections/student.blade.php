@@ -1808,7 +1808,7 @@
             <br>
            
 
-           <!-- Capstone 2: Recommendation & Approval Sheets -->
+<!-- Capstone 2: Recommendation & Approval Sheets -->
 <hr>
 <br>
 <h2 class="text-xl font-bold text-[#0a1428] mb-4 flex items-center gap-2" style="font-family:'Cormorant Garamond',serif;">
@@ -1816,37 +1816,45 @@
 </h2>
 <hr>
 <br>
+<div class="flex gap-3 mb-6 text-sm">
+    @php
+    $capstone2AvailableCount = $isCapstone2Complete ? 2 : 0;
+    @endphp
+    <span class="badge badge-green">
+        Available: <strong>{{ $capstone2AvailableCount }}/2</strong>
+    </span>
+</div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
     <!-- Recommendation Sheet -->
     <div class="content-card {{ !$isCapstone2Complete ? 'locked-card' : '' }}">
         <div class="card-accent"></div>
-        <div class="p-5 relative">
+        <div class="p-5">
             @if(!$isCapstone2Complete)
-                <div class="absolute top-3 right-3 badge badge-muted">
-                    <i class="fa-solid fa-lock"></i> Locked
-                </div>
+            <div class="absolute top-3 right-3 badge badge-muted">
+                <i class="fa-solid fa-lock"></i> Locked
+            </div>
             @endif
-            <div class="flex items-start gap-4">
-                <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: white;">
-                    <i class="fas fa-thumbs-up text-xl"></i>
-                </div>
-                <div class="flex-1">
-                    <h3 class="mt-3 text-lg font-bold text-[#0a1428]">Recommendation Sheet</h3>
-                    <p class="text-[#5b6375] text-xs my-2">
-                        View the recommendation sheet for your capstone project.
-                    </p>
-                    @if($isCapstone2Complete)
-                        <button onclick="openApprovalSheet({{ $groups->id }})" class="btn-outline text-xs py-1.5 px-4 mt-1">
-                            <i class="fas fa-eye mr-1"></i> View Recommendation
-                        </button>
-                    @else
-                        <button class="btn-outline text-xs py-1.5 px-4 mt-1" disabled>
-                            <i class="fas fa-lock mr-1"></i> Locked
-                        </button>
-                    @endif
-                </div>
+
+            <h3 class="mt-3 text-lg {{ !$isCapstone2Complete ? 'text-[#5b6375]' : 'text-[#0a1428]' }}">Recommendation Sheet</h3>
+            <p class="text-[#5b6375] text-xs my-2">View the recommendation sheet for your capstone project.</p>
+            @if($isCapstone2Complete)
+            <p class="text-[11px] text-[#5b6375]"><i class="fa-regular fa-circle-check"></i> Issued</p>
+            @else
+            <p class="text-xs" style="color:var(--gold-dark);"><i class="fa-regular fa-hourglass-half"></i> Not yet available</p>
+            <p class="text-[10px] text-[#5b6375] mt-1">Complete the required milestone to unlock</p>
+            @endif
+            <div class="flex gap-3 mt-4">
+                @if($isCapstone2Complete)
+                <button onclick="openApprovalSheet({{ $groups->id }})" class="btn-outline text-xs py-1.5 px-3">
+                    <i class="fas fa-eye mr-1"></i> View Recommendation
+                </button>
+                @else
+                <button class="btn-outline text-xs py-1.5 px-3" disabled>
+                    <i class="fas fa-lock mr-1"></i> View Recommendation
+                </button>
+                @endif
             </div>
         </div>
     </div>
@@ -1854,31 +1862,31 @@
     <!-- Approval Sheet -->
     <div class="content-card {{ !$isCapstone2Complete ? 'locked-card' : '' }}">
         <div class="card-accent"></div>
-        <div class="p-5 relative">
+        <div class="p-5">
             @if(!$isCapstone2Complete)
-                <div class="absolute top-3 right-3 badge badge-muted">
-                    <i class="fa-solid fa-lock"></i> Locked
-                </div>
+            <div class="absolute top-3 right-3 badge badge-muted">
+                <i class="fa-solid fa-lock"></i> Locked
+            </div>
             @endif
-            <div class="flex items-start gap-4">
-                <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: white;">
-                    <i class="fas fa-check-circle text-xl"></i>
-                </div>
-                <div class="flex-1">
-                    <h3 class="mt-3 text-lg font-bold text-[#0a1428]">Approval Sheet</h3>
-                    <p class="text-[#5b6375] text-xs my-2">
-                        View the final approval sheet for your capstone project.
-                    </p>
-                    @if($isCapstone2Complete)
-                        <button onclick="openApprovalSheet({{ $groups->id }})" class="btn-outline text-xs py-1.5 px-4 mt-1">
-                            <i class="fas fa-eye mr-1"></i> View Approval
-                        </button>
-                    @else
-                        <button class="btn-outline text-xs py-1.5 px-4 mt-1" disabled>
-                            <i class="fas fa-lock mr-1"></i> Locked
-                        </button>
-                    @endif
-                </div>
+
+            <h3 class="mt-3 text-lg {{ !$isCapstone2Complete ? 'text-[#5b6375]' : 'text-[#0a1428]' }}">Approval Sheet</h3>
+            <p class="text-[#5b6375] text-xs my-2">View the final approval sheet for your capstone project.</p>
+            @if($isCapstone2Complete)
+            <p class="text-[11px] text-[#5b6375]"><i class="fa-regular fa-circle-check"></i> Issued</p>
+            @else
+            <p class="text-xs" style="color:var(--gold-dark);"><i class="fa-regular fa-hourglass-half"></i> Not yet available</p>
+            <p class="text-[10px] text-[#5b6375] mt-1">Complete the required milestone to unlock</p>
+            @endif
+            <div class="flex gap-3 mt-4">
+                @if($isCapstone2Complete)
+                <button onclick="openApprovalSheet({{ $groups->id }})" class="btn-outline text-xs py-1.5 px-3">
+                    <i class="fas fa-eye mr-1"></i> View Approval
+                </button>
+                @else
+                <button class="btn-outline text-xs py-1.5 px-3" disabled>
+                    <i class="fas fa-lock mr-1"></i> View Approval
+                </button>
+                @endif
             </div>
         </div>
     </div>
@@ -1908,12 +1916,7 @@
                         <p class="text-sm mt-1" style="color: #b45309;">
                             The panel has requested revisions for your group. Review the instructions below, implement the changes, and inform your adviser <strong>{{ $adviser ? $adviser->teacher_first_name . ' ' . $adviser->teacher_last_name : 'your adviser' }}</strong> when ready.
                         </p>
-                        @if($groups->revision_description)
-                            <div class="bg-white border rounded-lg p-4 mt-4" style="border-color: #fde68a;">
-                                <span class="text-xs font-bold uppercase tracking-wider" style="color: #d97706;">Revision Instructions</span>
-                                <p class="text-[#0a1428] font-medium mt-1 whitespace-pre-line">{{ $groups->revision_description }}</p>
-                            </div>
-                        @endif
+
                     </div>
                 </div>
             @elseif($groups->revision_status == 'revised')
@@ -1925,13 +1928,7 @@
                         <h3 class="text-lg font-bold" style="color: #1e40af;">Revisions Submitted</h3>
                         <p class="text-sm mt-1" style="color: #1d4ed8;">
                             Your group has addressed the requested revisions! Your adviser has marked this as revised. The panel is currently reviewing your updates.
-                        </p>
-                        @if($groups->revision_description)
-                            <div class="bg-white border rounded-lg p-4 mt-4" style="border-color: #bfdbfe;">
-                                <span class="text-xs font-bold uppercase tracking-wider" style="color: #2563eb;">Revision Notes</span>
-                                <p class="text-[#0a1428] font-medium mt-1 whitespace-pre-line">{{ $groups->revision_description }}</p>
-                            </div>
-                        @endif
+                        </p>        
                     </div>
                 </div>
             @else
@@ -1948,102 +1945,48 @@
                 </div>
             @endif
 
-      @if($revisions->count() > 0)
+            @if($revisions->count() > 0)
             <div class="mt-4">
-                <h4 class="font-semibold text-sm text-[#5b6375] mb-2 flex items-center gap-2">
+                <h4 class="font-semibold text-sm text-[#5b6375] mb-4 flex items-center gap-2">
                     <i class="fas fa-file-alt"></i> Revision Sheets from Panelists
                 </h4>
-                <div class="flex flex-wrap gap-2">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @foreach($revisions as $rev)
-                        <button type="button"
-                                onclick="openRevisionSheet({{ $groups->id }}, {{ $rev->id }}, '{{ $rev->panelist ? $rev->panelist->teacher_first_name . ' ' . $rev->panelist->teacher_last_name : 'Panelist' }}')"
-                                class="btn-outline text-xs py-2 px-4">
-                            <i class="fas fa-file-alt mr-1"></i>
-                            {{ $rev->panelist ? $rev->panelist->teacher_first_name . ' ' . $rev->panelist->teacher_last_name : 'Panelist' }}
-                            ({{ $rev->created_at->format('M d, Y') }})
-                        </button>
+                        @php
+                            $panelistName = $rev->panelist
+                                ? $rev->panelist->teacher_first_name . ' ' . $rev->panelist->teacher_last_name
+                                : 'Panelist';
+                        @endphp
+                        <div class="content-card">
+                            <div class="card-accent"></div>
+                            <div class="p-5">
+                                <div class="flex items-start gap-4">
+                                    <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: white;">
+                                        <i class="fas fa-file-alt text-xl"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h3 class="text-lg font-bold text-[#0a1428]">Revision Sheet</h3>
+                                        <p class="text-[#5b6375] text-xs my-2">
+                                            From <strong>{{ $panelistName }}</strong> — {{ $rev->created_at->format('M d, Y') }}
+                                        </p>
+                                        <div class="flex gap-3 mt-4">
+                                            <button type="button"
+                                                    onclick="openRevisionSheet({{ $groups->id }}, {{ $rev->id }}, '{{ addslashes($panelistName) }}')"
+                                                    class="btn-outline text-xs py-1.5 px-4">
+                                                <i class="fas fa-eye mr-1"></i> View Revision Sheet
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     @endforeach
                 </div>
             </div>
         @endif
+
         </div>
 
-        <!-- Evaluation History & Feedback -->
-<div class="mt-8">
-    <h2 class="text-xl font-bold text-[#0a1428] mb-4 flex items-center gap-2" style="font-family:'Cormorant Garamond',serif;">
-        <i class="fas fa-list text-[#d6b15c]"></i> Evaluation History &amp; Feedback
-    </h2>
-
-    @if($allEvaluations->count() > 0)
-        <div class="space-y-4">
-            @foreach($allEvaluations as $eval)
-                <div class="bg-white border border-[#e2dacf] rounded-xl shadow-sm overflow-hidden">
-                    <div class="p-5 flex flex-wrap items-start justify-between gap-3 border-b border-[#e2dacf]">
-                        <div>
-                            <h4 class="font-semibold text-[#0a1428]">{{ $eval->milestone->milestone_title ?? 'Milestone' }}</h4>
-                            <p class="text-sm text-[#5b6375]">
-                                Evaluated by {{ $eval->teacher ? $eval->teacher->teacher_first_name . ' ' . $eval->teacher->teacher_last_name : ($eval->teacher->user->name ?? 'Teacher') }}
-                                &bull; {{ \Carbon\Carbon::parse($eval->evaluation_date)->format('M d, Y') }}
-                            </p>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="text-lg font-bold" style="color: #1e6b3a;">{{ $eval->score }} / {{ $eval->max_score }}</span>
-                            @if(!empty($eval->rubric_scores))
-                                <button type="button" onclick="toggleRubricDetails({{ $eval->id }})" class="text-[#b88d3a] hover:text-[#8b6914] text-xs font-medium">
-                                    <i id="chevron-{{ $eval->id }}" class="fas fa-chevron-down"></i> Criteria
-                                </button>
-                            @endif
-                        </div>
-                    </div>
-
-                    @if($eval->feedback)
-                        <div class="p-5 bg-[#faf8f4] border-b border-[#e2dacf]">
-                            <p class="text-sm italic text-[#5b6375]">"{{ $eval->feedback }}"</p>
-                        </div>
-                    @endif
-
-                    @if(!empty($eval->rubric_scores))
-                        <div id="rubric-details-{{ $eval->id }}" class="hidden p-5 bg-white">
-                            <table class="w-full text-sm border-collapse">
-                                <thead>
-                                    <tr class="border-b border-[#e2dacf] text-left text-[#5b6375]">
-                                        <th class="py-2 font-medium">Criterion</th>
-                                        <th class="py-2 text-center font-medium">Weight</th>
-                                        <th class="py-2 text-center font-medium">Max</th>
-                                        <th class="py-2 text-center font-medium">Score</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @php
-                                        $rubric = \App\Models\Rubric::where('milestone_id', $eval->milestone_id)->with('criteria')->first();
-                                        $rubricScores = $eval->rubric_scores ?? [];
-                                    @endphp
-                                    @if($rubric)
-                                        @foreach($rubric->criteria as $criterion)
-                                            <tr class="border-b border-[#faf1e0]">
-                                                <td class="py-2">{{ $criterion->criteria_name }}</td>
-                                                <td class="py-2 text-center">{{ $criterion->weight }}%</td>
-                                                <td class="py-2 text-center">{{ $criterion->max_score }}</td>
-                                                <td class="py-2 text-center font-semibold text-[#1e6b3a]">{{ $rubricScores[$criterion->id] ?? 0 }}</td>
-                                            </tr>
-                                        @endforeach
-                                    @else
-                                        <tr><td colspan="4" class="py-4 text-center text-[#5b6375]">Rubric data not available</td></tr>
-                                    @endif
-                                </tbody>
-                            </table>
-                        </div>
-                    @endif
-                </div>
-            @endforeach
-        </div>
-    @else
-        <div class="bg-white border border-[#e2dacf] rounded-xl p-8 text-center text-[#5b6375]">
-            <i class="fa-regular fa-file-lines text-3xl mb-2 block"></i>
-            <p>No evaluations have been recorded for your group yet.</p>
-        </div>
-    @endif
-</div>
 
     @else
         <!-- No group card -->

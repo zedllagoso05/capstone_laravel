@@ -6,8 +6,58 @@
     <title>Capstone Tracker — MCC | Intelligent Student Tracking System</title>
     <link rel="stylesheet" href="/css/app.css">
     <link rel="icon" type="image/jpeg" href="{{ asset('pictures/favicon.jpg') }}"> 
-       <script src="/js/app.js" defer></script>
+    <script src="/js/app.js" defer></script>
     {{ $styles ?? '' }}
+
+    {{-- Toast notification styles --}}
+    <style>
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99999;
+            background: #1e6b3a; /* success green */
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 1rem;
+            font-weight: 500;
+            min-width: 280px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none; /* so clicks pass through */
+        }
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .toast-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .toast-icon {
+            font-size: 1.4rem;
+        }
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+        .toast-notification {
+            animation: slideDown 0.4s ease-out;
+        }
+    </style>
 </head>
 <body>
 
@@ -66,29 +116,29 @@
         {{ $slot }}
     </main>
 
-    {{-- ABOUT SECTION WITH UNIFIED GOLD/NAVY THEME (ENHANCED) --}}
+    {{-- ABOUT SECTION – updated to reflect the actual Capstone Tracker features --}}
     <div id="about" class="about_form">
         <h2 class="about_heading">About the Capstone Tracker System</h2>
         <div class="cards_grid">
             <div class="cards">
-                <div class="icon_wrap">📱</div>
-                <h3>QR-Based Tracking</h3>
-                <p>Each item, record, and student activity is assigned a unique QR code for instant scanning, secure validation, and real-time tracking across campus.</p>
+                <div class="icon_wrap">👥</div>
+                <h3>Group Management</h3>
+                <p>Organise students into project groups, assign faculty advisers, and keep track of team members and roles throughout the capstone journey.</p>
             </div>
             <div class="cards">
-                <div class="icon_wrap">⏱️</div>
-                <h3>Automated Student Logs</h3>
-                <p>Scan student IDs to capture time-in/out, visit details, symptoms, and treatment history — fully automated and audit-ready logs.</p>
+                <div class="icon_wrap">📋</div>
+                <h3>Milestone Tracking</h3>
+                <p>Define milestones for each capstone stage (Proposal and Implementation). Monitor completion status, view progress, and ensure deadlines are met.</p>
             </div>
             <div class="cards">
-                <div class="icon_wrap">📊</div>
-                <h3>Data Insights Dashboard</h3>
-                <p>Powerful real-time charts and analytics transform health records into actionable insights, enabling smarter clinic decisions.</p>
+                <div class="icon_wrap">⭐</div>
+                <h3>Evaluations &amp; Rubrics</h3>
+                <p>Faculty evaluate group presentations using customisable rubrics. Score criteria, provide feedback, and automatically compute overall scores.</p>
             </div>
             <div class="cards">
-                <div class="icon_wrap">📄</div>
-                <h3>Report Generation</h3>
-                <p>Generate official clinic reports and excuse letters with integrated approvals, one-click PDF exports, and professional formatting.</p>
+                <div class="icon_wrap">🏆</div>
+                <h3>Certificates &amp; Reports</h3>
+                <p>Automatically issue certificates upon milestone completion. Generate official reports and approval sheets for administration and records.</p>
             </div>
         </div>
     </div>
@@ -101,6 +151,16 @@
             <a href="https://www.facebook.com/myroe.26" target="_blank" rel="noopener noreferrer" aria-label="Facebook page">🌐 Facebook</a>
         </div>
     </footer>
+
+    {{-- ========== LOGIN SUCCESS TOAST ========== --}}
+    @if(session('login_success'))
+        <div id="loginSuccessToast" class="toast-notification">
+            <div class="toast-content">
+                <span class="toast-icon">✅</span>
+                <span class="toast-message">{{ session('login_message') ?? 'Login successful!' }}</span>
+            </div>
+        </div>
+    @endif
 
     <script>
         (function() {
@@ -147,8 +207,27 @@
             }
             window.addEventListener('hashchange', setActiveBasedOnHash);
             setActiveBasedOnHash();
+
+            // ========== LOGIN SUCCESS TOAST AUTO-HIDE ==========
+            const toast = document.getElementById('loginSuccessToast');
+            if (toast) {
+                // Show with a tiny delay so the entrance animation plays
+                setTimeout(() => {
+                    toast.classList.add('show');
+                }, 100);
+
+                // Hide after 3 seconds
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    // Remove from DOM after fade-out (optional)
+                    setTimeout(() => {
+                        if (toast.parentNode) toast.remove();
+                    }, 300);
+                }, 3000);
+            }
         })();
     </script>
+
     {{ $scripts ?? '' }}
 </body>
 </html>
