@@ -37,7 +37,12 @@ class CertificateSeeder extends Seeder
                 [
                     'certificate_title' => 'Recommendation Sheet',
                     'certificate_description' => 'partial fulfillment of the requirements for the degree of Bachelor of Science in Information Technology has been examined, accepted, and recommended for Oral Presentation.',
-                    'milestone_id' => $m5,
+                    'milestone_id' => null,
+                ], 
+                [
+                    'certificate_title' => 'Approval Sheet',
+                    'certificate_description' => 'View and print the official approval sheet for your capstone project.',
+                    'milestone_id' => null,
                 ],
 
             ]);

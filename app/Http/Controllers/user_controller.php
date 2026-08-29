@@ -167,10 +167,7 @@ class user_controller extends Controller
             'password'    => $incomingdata['logpassword']
         ])) {
             $request->session()->regenerate();
-        // ✅ Flash a login success message
-        session()->flash('login_success', true);
-        session()->flash('login_message', 'Welcome back, ' . Auth::user()->name . '!');
-            return $this->redirectByRole(); // ← goes to correct dashboard by role
+            return $this->redirectByRole()->with('success', 'Welcome back, ' . Auth::user()->name . '!');
         }
 
         return back()->withErrors([
@@ -264,6 +261,8 @@ class user_controller extends Controller
                 ->pluck('milestone_id')
                 ->toArray();
         }
+
+ 
       // ── Load ALL revisions for this group (if any) ──
     $revisions = collect();
     if ($groups) {
@@ -345,14 +344,14 @@ class user_controller extends Controller
                 return $cert;
             });
 
-               // ── Check if capstone is fully completed ──
-            $isCapstoneComplete = false;
-            if ($groups) {
-                $totalMilestones = $milestones->count();
-                $completedMilestones = count($completedMilestoneIds);
-                $isCapstoneComplete = ($totalMilestones > 0 && $completedMilestones == $totalMilestones);
-            }
-            // ── Check if Capstone 2 is fully completed ──
+   // ── Check if capstone is fully completed ──
+    $isCapstoneComplete = false;
+    if ($groups) {
+        $totalMilestones = $milestones->count();
+        $completedMilestones = count($completedMilestoneIds);
+        $isCapstoneComplete = ($totalMilestones > 0 && $completedMilestones == $totalMilestones);
+    }
+    // ── Check if Capstone 2 is fully completed ──
 $isCapstone2Complete = false;
 if ($groups) {
     $capstone2Milestones = $milestones->filter(function($m) {
@@ -370,11 +369,65 @@ if ($groups) {
 }
 
 
+       $certificatesCap1 = collect();
+$certificatesCap2 = collect();
+
+foreach ($certificates as $cert) {
+    // Each certificate is linked to a milestone via `milestone_id`
+    $milestone = \App\Models\Milestone::find($cert->milestone_id);
+    if ($milestone) {
+        $stage = $milestone->capstoneStage->stage_type ?? null;
+        if ($stage == 1) {
+            $certificatesCap1->push($cert);
+        } elseif ($stage == 2) {
+            $certificatesCap2->push($cert);
+        }
+    }
+}
+
+// ── Has this group's required capstone milestone (oral presentation) been evaluated? ──
+$isRequiredCapstoneEvaluated = false;
+if ($groups && $groups->room && $groups->room->required_milestone_id) {
+    $isRequiredCapstoneEvaluated = \App\Models\Evaluation::where('group_id', $groups->id)
+        ->where('milestone_id', $groups->room->required_milestone_id)
+        ->exists();
+}
+
+// ── Have ALL revisions requested for this group been fully completed? ──
+$isAllRevisionsComplete = false;
+if ($groups) {
+    $groupRevisions = \App\Models\Revision::with(['documentation', 'enhancements', 'objectives'])
+        ->where('group_id', $groups->id)
+        ->get();
+
+    if ($groupRevisions->isNotEmpty()) {
+        $isAllRevisionsComplete = $groupRevisions->every(function ($rev) {
+            $allDocsDone = $rev->documentation->every(fn($item) => strtolower(trim($item->remarks ?? '')) === 'completed');
+            $allEnhDone  = $rev->enhancements->every(fn($item) => strtolower(trim($item->remarks ?? '')) === 'completed');
+            $allObjDone  = $rev->objectives->every(fn($item) => strtolower(trim($item->remarks ?? '')) === 'completed');
+            return $allDocsDone && $allEnhDone && $allObjDone;
+        });
+    }
+}
+
+// ── Approval Sheet unlocks: capstone fully completed, OR all revisions cleared, OR required milestone evaluated ──
+$isApprovalSheetUnlocked = $isCapstoneComplete || $isAllRevisionsComplete || $isRequiredCapstoneEvaluated;
+
+// ── Recommendation Sheet unlocks: the "Recommendation Sheet" milestone itself is marked completed ──
+$isRecommendationUnlocked = false;
+if ($groups) {
+    $recommendationMilestone = $milestones->first(function ($m) {
+        return stripos($m->milestone_title, 'recommendation sheet') !== false;
+    });
+    if ($recommendationMilestone) {
+        $isRecommendationUnlocked = in_array($recommendationMilestone->id, $completedMilestoneIds);
+    }
+}
         return view('sections.student', compact(
             'user', 'student', 'groups', 'members', 'adviser',
             'milestones', 'overallProgress', 'nextMilestone',
             'evaluations', 'allEvaluations', 'certificates', 'completedMilestoneIds', 'groupcertificates',
-            'remarksByMilestone', 'absencesByMilestone','revisions','isCapstoneComplete','isCapstone2Complete'
+            'remarksByMilestone', 'absencesByMilestone','revisions','isCapstoneComplete','isCapstone2Complete','isRecommendationUnlocked','isApprovalSheetUnlocked','certificatesCap1','certificatesCap2'
         ));
     }
 
@@ -1135,7 +1188,6 @@ if ($groups) {
             'teacher_first_name' => 'required|string|max:255',
             'teacher_middle_name' => 'required|string|max:255',
             'teacher_last_name' => 'required|string|max:255',
-            'teacher_email' => 'required|email|unique:teachers,teacher_email',
         ]);
 
         User::create([
@@ -1148,8 +1200,6 @@ if ($groups) {
             'teacher_first_name'  => $validatedData['teacher_first_name'],
             'teacher_middle_name' => $validatedData['teacher_middle_name'],
             'teacher_last_name'   => $validatedData['teacher_last_name'],
-            'teacher_email'       => $validatedData['teacher_email'],
-            'contact_number'      => '',           // ← required by DB schema
         ]);
 
         return redirect()->route('admin.page')->with('success', 'Teacher added successfully.');
@@ -1163,10 +1213,8 @@ if ($groups) {
             'student_first_name'  => 'required|string|max:255',
             'student_middle_name' => 'nullable|string|max:255',
             'student_last_name'   => 'required|string|max:255',
-            'student_email'       => 'required|email|unique:students,student_email',
             'course'              => 'required|string|max:255',
             'section'             => 'required|string|max:255',
-            'contact_number'      => 'nullable|string|max:255',
         ]);
 
         DB::transaction(function () use ($validatedData) {
@@ -1180,8 +1228,8 @@ if ($groups) {
                 'student_first_name' => $validatedData['student_first_name'],
                 'student_middle_name'=> $validatedData['student_middle_name'] ?? null,
                 'student_last_name'  => $validatedData['student_last_name'],
-                'student_email'      => $validatedData['student_email'],
-                'contact_number'     => $validatedData['contact_number'] ?? '',
+                'student_email'      => null,
+                'contact_number'     => null,
                 'course'             => $validatedData['course'],
                 'section'            => $validatedData['section'],
             ]);
@@ -1257,7 +1305,8 @@ if ($groups) {
             if (round(array_sum($validatedData['weight'] ?? []), 2) != 100) {
                 return back()
                     ->withErrors(['weight' => 'Criteria weights must add up to 100%.'])
-                    ->withInput();
+                    ->withInput()
+                    ->with('add_milestone', true);
             }
         }
 
@@ -1995,7 +2044,50 @@ if ($revision) {
 
         return redirect()->route('admin.page')->with('success', 'Rubric updated successfully.');
     }
+/**
+ * Delete a milestone and its associated rubric, criteria, and group progress records.
+ */
+public function deleteMilestone(Request $request)
+{
+    $validated = $request->validate([
+        'milestone_id'   => 'required|integer|exists:milestones,id',
+        'admin_password' => 'required|string',
+    ]);
 
+    // Verify admin password
+    if (!Hash::check($validated['admin_password'], Auth::user()->password)) {
+        return back()
+            ->withErrors(['admin_password' => 'Incorrect password. Milestone was not deleted.'])
+            ->withInput();
+    }
+
+    $milestone = Milestone::findOrFail($validated['milestone_id']);
+
+    DB::transaction(function () use ($milestone) {
+        // 1. Delete associated rubrics and their criteria
+        $rubrics = Rubric::where('milestone_id', $milestone->id)->get();
+        foreach ($rubrics as $rubric) {
+            $rubric->criteria()->delete();
+            $rubric->delete();
+        }
+
+        // 2. Delete any certificates linked to this milestone
+        Certificate::where('milestone_id', $milestone->id)->delete();
+
+        // 3. Delete group milestones (progress) records
+        GroupMilestones::where('milestone_id', $milestone->id)->delete();
+
+        // 4. Delete any evaluations, remarks, absences tied to this milestone
+        Evaluation::where('milestone_id', $milestone->id)->delete();
+        \App\Models\Remarks::where('milestone_id', $milestone->id)->delete();
+        \App\Models\Absence::where('milestone_id', $milestone->id)->delete();
+
+        // 5. Finally delete the milestone itself
+        $milestone->delete();
+    });
+
+    return back()->with('success', 'Milestone and all associated data deleted successfully.');
+}
     public function deleteRubrics(Request $request)
     {
         $validated = $request->validate([
@@ -2211,7 +2303,7 @@ if ($revision) {
 
     public function downloadStudentTemplate()
     {
-        $headers = ['student_id', 'student_first_name', 'student_middle_name', 'student_last_name', 'student_email', 'contact_number', 'course', 'section'];
+        $headers = ['student_id', 'student_first_name', 'student_middle_name', 'student_last_name', 'course', 'section'];
 
         return response()->streamDownload(function () use ($headers) {
             $handle = fopen('php://output', 'w');
@@ -2254,7 +2346,7 @@ if ($revision) {
 
     public function downloadTeacherTemplate()
     {
-        $headers = ['teacher_id', 'teacher_first_name', 'teacher_middle_name', 'teacher_last_name', 'teacher_email', 'contact_number'];
+        $headers = ['teacher_id', 'teacher_first_name', 'teacher_middle_name', 'teacher_last_name'];
 
         return response()->streamDownload(function () use ($headers) {
             $handle = fopen('php://output', 'w');
@@ -2596,23 +2688,35 @@ public function updateMilestone(Request $request, $id)
 public function reorderMilestones(Request $request)
 {
     $validated = $request->validate([
-        'milestone_ids' => 'required|array',
+        'milestone_ids' => 'required|array|min:1',
         'milestone_ids.*' => 'required|exists:milestones,id',
     ]);
 
-    $milestones = Milestone::whereIn('id', $validated['milestone_ids'])->get();
+    $milestones = Milestone::whereIn('id', $validated['milestone_ids'])
+        ->with('capstoneStage')
+        ->get()
+        ->keyBy('id');
 
-    foreach ($milestones as $milestone) {
-        if ($milestone->capstone_stage_id != 1) {
-            return back()->with('error', 'Only milestones in Capstone 1 can be rearranged.');
+    // Determine the stage_type of the milestones being reordered
+    $stageTypes = $milestones->map(fn($m) => $m->capstoneStage->stage_type ?? null)->unique()->filter();
+
+    if ($stageTypes->count() > 1) {
+        $message = 'Cannot rearrange: milestones must all belong to the same Capstone stage.';
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => false, 'error' => $message], 422);
         }
+        return back()->with('error', $message);
     }
 
     foreach ($validated['milestone_ids'] as $index => $id) {
         Milestone::where('id', $id)->update(['step_order' => $index + 1]);
     }
 
-    return back()->with('success', 'Milestones rearranged successfully.');
+    $message = 'Milestones rearranged successfully.';
+    if ($request->wantsJson() || $request->ajax()) {
+        return response()->json(['success' => true, 'message' => $message]);
+    }
+    return back()->with('success', $message);
 }
 /**
  * Full printable certificate document for a group's earned certificate.

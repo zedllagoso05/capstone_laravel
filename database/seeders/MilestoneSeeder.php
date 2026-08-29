@@ -87,7 +87,7 @@ class MilestoneSeeder extends Seeder
                     'milestone_description' => 'Subject Orientation',
                     'start_date' => '2026-06-15',
                     'due_date' => '2026-06-20',
-                    'step_order' => 8,
+                    'step_order' => 1,
                     'capstone_stage_id' => 2,
 
                 ],
@@ -100,7 +100,7 @@ class MilestoneSeeder extends Seeder
                     initial checking of the both the prototype and the documents(chapter 1 highlighting 1st and 1st additional objectives)',
                     'start_date' => '2026-07-13',
                     'due_date' => '2026-07-18',
-                    'step_order' => 9,
+                    'step_order' => 2,
                     'capstone_stage_id' => 2,
 
                 ],
@@ -113,7 +113,7 @@ class MilestoneSeeder extends Seeder
                     initial checking of the both the prototype and the documents(chapter 1 highlighting 1st and 2nd additional objectives)',
                     'start_date' => '2026-08-03',
                     'due_date' => '2026-08-08',
-                    'step_order' => 10,
+                    'step_order' => 3,
                     'capstone_stage_id' => 2,
 
                 ],
@@ -123,7 +123,7 @@ class MilestoneSeeder extends Seeder
                     initial checking of the both the system/prototype and the documents chapter 2(highlighting the prior arts used); cross-checking the prior arts with the system/prototype)',
                     'start_date' => '2026-08-10',
                     'due_date' => '2026-08-15',
-                    'step_order' => 11,
+                    'step_order' => 4,
                     'capstone_stage_id' => 2,
 
                 ],
@@ -135,7 +135,7 @@ class MilestoneSeeder extends Seeder
                     The Presence of Gant chart is highly required.',
                     'start_date' => '2026-08-17',
                     'due_date' => '2026-08-22',
-                    'step_order' => 12,
+                    'step_order' => 5,
                     'capstone_stage_id' => 2,
 
                 ],
@@ -144,7 +144,7 @@ class MilestoneSeeder extends Seeder
                     'milestone_description' => '*assessment will be based on the requirements of the advisers',
                     'start_date' => '2026-09-01',
                     'due_date' => '2026-09-05',
-                    'step_order' => 13,
+                    'step_order' => 6,
                     'capstone_stage_id' => 2,
 
                 ],
@@ -157,7 +157,7 @@ class MilestoneSeeder extends Seeder
 *assessment will be based on the requirements of the advisers',
                     'start_date' => '2026-09-07',
                     'due_date' => '2026-09-12',
-                    'step_order' => 14,
+                    'step_order' => 7,
                     'capstone_stage_id' => 2,
 
                 ],
@@ -169,7 +169,7 @@ class MilestoneSeeder extends Seeder
 *assessment will be based on the requirements set by the College Librarian',
                     'start_date' => '2026-09-21',
                     'due_date' => '2026-09-26',
-                    'step_order' => 15,
+                    'step_order' => 8,
                     'capstone_stage_id' => 2,
 
                 ],
@@ -180,7 +180,7 @@ class MilestoneSeeder extends Seeder
 *assessment will be based on the requirements of the advisers',
                     'start_date' => '2026-09-28',
                     'due_date' => '2026-09-30',
-                    'step_order' => 16,
+                    'step_order' => 9,
                     'capstone_stage_id' => 2,
 
                 ],
@@ -189,7 +189,7 @@ class MilestoneSeeder extends Seeder
                     'milestone_description' => 'SUBMISSION OF THE FULLY-FORMATTED DOCUMENTS CONTAINING CHAPTERS 1 THROUGH 5',
                     'start_date' => '2026-09-28',
                     'due_date' => '2026-10-03',
-                    'step_order' => 17,
+                    'step_order' => 10,
                     'capstone_stage_id' => 2,
 
                 ],
@@ -198,7 +198,7 @@ class MilestoneSeeder extends Seeder
                     'milestone_description' => '•	No Recommendation Sheet, Oral Presentation',
                     'start_date' => '2026-10-05',
                     'due_date' => '2026-10-05',
-                    'step_order' => 18,
+                    'step_order' => 11,
                     'capstone_stage_id' => 2,
 
                 ],
@@ -207,7 +207,7 @@ class MilestoneSeeder extends Seeder
                     'milestone_description' => 'SUBMISSION OF THE FINAL REVISION OF THE FULLY-FORMATTED DOCUMENTS FOR BOOK-BINDING PURPOSES',
                     'start_date' => '2026-10-12',
                     'due_date' => '2026-10-17',
-                    'step_order' => 19,
+                    'step_order' => 12,
                     'capstone_stage_id' => 2,
 
                 ],
@@ -216,7 +216,7 @@ class MilestoneSeeder extends Seeder
                     'milestone_description' => '•	Only those who have submitted their full-blown documents and have secured the fully-signed Approval Sheets will be allowed to ENROLL THEIR INTERNSHIP',
                     'start_date' => '2026-10-12',
                     'due_date' => '2026-10-17',
-                    'step_order' => 20,
+                    'step_order' => 13,
                     'capstone_stage_id' => 2,
 
                 ],

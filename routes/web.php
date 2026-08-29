@@ -89,6 +89,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/get-milestone/{id}', [user_controller::class, 'getMilestone'])->name('admin.get_milestone');
         Route::put('/update-milestone/{id}', [user_controller::class, 'updateMilestone'])->name('admin.update_milestone');
         Route::post('/reorder-milestones', [user_controller::class, 'reorderMilestones'])->name('admin.reorder_milestones');
+        Route::post('/delete-milestone', [user_controller::class, 'deleteMilestone'])->name('admin.delete_milestone');
 
         // Groups & Advisers
         Route::post('/assign-group',  [user_controller::class, 'assignGroups'])->name('admin.assign_group');

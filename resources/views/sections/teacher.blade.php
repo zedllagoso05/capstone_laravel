@@ -734,6 +734,148 @@
     border: 1px dashed var(--border);
     border-radius: 0.75rem;
 }
+/* ── Rubric Scores modal ── */
+#rubricScoresModal .rs-card {
+    background: #faf8f4;
+    border: 1px solid var(--border);
+    border-radius: 0.85rem;
+    padding: 1.1rem 1.25rem;
+    transition: var(--transition);
+}
+#rubricScoresModal .rs-card:hover {
+    border-color: rgba(214, 177, 92, 0.4);
+    box-shadow: var(--shadow-sm);
+}
+#rubricScoresModal .rs-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+#rubricScoresModal .rs-panelist {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+#rubricScoresModal .rs-panelist-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--navy) 0%, #1e3a5f 100%);
+    color: var(--gold-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+#rubricScoresModal .rs-panelist-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--navy);
+}
+#rubricScoresModal .rs-milestone {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 600;
+}
+#rubricScoresModal .rs-score {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #1e6b3a;
+    line-height: 1;
+    white-space: nowrap;
+}
+#rubricScoresModal .rs-score small {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+#rubricScoresModal .rs-date {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 0.15rem;
+    text-align: right;
+}
+#rubricScoresModal .rs-criteria-toggle {
+    font-size: 0.72rem;
+    color: var(--gold-dark);
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.75rem;
+}
+#rubricScoresModal .rs-criteria-toggle:hover { color: #8b6914; }
+#rubricScoresModal .rs-criteria-table {
+    margin-top: 0.6rem;
+    width: 100%;
+    font-size: 0.75rem;
+    border-collapse: collapse;
+}
+#rubricScoresModal .rs-criteria-table th {
+    text-align: left;
+    color: var(--text-muted);
+    font-weight: 600;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+    font-size: 0.62rem;
+    letter-spacing: 0.03em;
+}
+#rubricScoresModal .rs-criteria-table td {
+    padding: 0.45rem 0;
+    border-bottom: 1px solid rgba(226,218,207,0.5);
+    color: var(--text);
+}
+#rubricScoresModal .rs-feedback {
+    margin-top: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    background: #fff;
+    border-left: 3px solid var(--gold);
+    border-radius: 0.4rem;
+    font-style: italic;
+    font-size: 0.78rem;
+    color: var(--text);
+}
+#rubricScoresModal .rs-empty {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: var(--text-muted);
+}
+#rubricScoresModal .rs-empty i {
+    font-size: 2rem;
+    color: #d8d2c4;
+    display: block;
+    margin-bottom: 0.6rem;
+}
+.btn-check-primary {
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+    color: var(--navy);
+    border: none;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 0.65rem 1.4rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 14px rgba(214, 177, 92, 0.35), inset 0 1px 0 rgba(255,255,255,0.3);
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+}
+.btn-check-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(214, 177, 92, 0.45), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.btn-check-primary:active { transform: scale(0.97); }
+.btn-check-primary i { font-size: 0.9rem; }
 </style>
 </head>
 <body class="bg-[#f8f6f0] text-[#171e2c]">
@@ -763,18 +905,18 @@
                 <i class="fas fa-th-large w-4"></i> <span>Dashboard</span>
             </a>
             <a href="#" data-section="assignedsections" class="nav-link active-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[#d6b15c]">
-                <i class="fas fa-th-large w-4"></i> <span>Sections</span>
+                <i class="fas fa-th-large w-4"></i> <span>Assigned Sections</span>
             </a>
             <a href="#" data-section="sections" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
                 <i class="fas fa-layer-group w-4"></i> <span>Assigned Groups</span>
             </a>
+           
+            <a href="#" data-section="evaluate" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
+                <i class="fas fa-door-open w-4"></i> <span>Assigned Rooms</span>
+            </a>
             <a href="#" data-section="profile" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
                 <i class="fa-regular fa-user w-4"></i> <span>Profile</span>
             </a>
-            <a href="#" data-section="evaluate" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
-                <i class="fas fa-door-open w-4"></i> <span>Classrooms</span>
-            </a>
-
         </nav>
     </div>
     <div class="p-4 border-t border-[rgba(214,177,92,0.15)]">
@@ -943,28 +1085,98 @@
                 <div class="card-accent"></div>
                 <div class="p-6">
                     <div class="flex justify-between items-center mb-6"><h3>Recent Evaluations</h3><i class="fa-regular fa-file-lines text-[#b8b0a0]"></i></div>
-                    <div class="space-y-3 max-h-80 overflow-y-auto">
-                        @forelse($evaluations ?? [] as $eval)
-                            <div class="p-3 bg-[#faf8f4] rounded-lg border border-[#e2dacf] hover:border-[#d6b15c] transition">
-                                <div class="flex justify-between items-start">
-                                    <div><p class="font-semibold text-sm text-[#0a1428]">{{ $eval->group->group_name ?? 'Unknown' }}</p><p class="text-xs text-[#5b6375]">{{ $eval->milestone->milestone_title ?? '' }}</p></div>
-                                    <div class="text-right"><span class="text-sm font-bold text-[#1e6b3a]">{{ $eval->score }}/{{ $eval->max_score }}</span><p class="text-[10px] text-[#5b6375]">{{ \Carbon\Carbon::parse($eval->evaluation_date)->format('M d, Y') }}</p></div>
+                    <div class="space-y-3 max-h-96 overflow-y-auto">
+                        @php
+                            $completedGroups = ($adviserGroups ?? collect())->filter(function ($g) use ($milestones) {
+                                $completed = $g->groupMilestones->where('status', 'completed')->count();
+                                $total = $milestones->count() ?? 1;
+                                return round(($completed / max($total, 1)) * 100) >= 100;
+                            });
+                        @endphp
+                        @forelse($completedGroups as $cg)
+                            @php
+                                $cgEvaluations = \App\Models\Evaluation::where('group_id', $cg->id)
+                                    ->with('milestone')
+                                    ->orderByDesc('evaluation_date')
+                                    ->get();
+                                $cgSection = $cg->students->first()->section ?? 'No Section';
+                            @endphp
+                            <div class="p-4 bg-[#faf8f4] rounded-xl border border-[#e2dacf] hover:border-[#d6b15c] transition">
+                                <div class="flex justify-between items-start gap-2 mb-2">
+                                    <div>
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="font-bold text-sm text-[#0a1428]">{{ $cg->group_name }}</span>
+                                            <span class="badge badge-navy text-[9px]">{{ $cgSection }}</span>
+                                            <span class="badge badge-green text-[9px]"><i class="fa-solid fa-circle-check mr-1"></i> 100% Complete</span>
+                                        </div>
+                                        <p class="text-xs text-[#5b6375] mt-0.5">{{ $cg->capstone_title }}</p>
+                                    </div>
+                                    @if($cg->revision_status == 'needs_revision')
+                                        <span class="badge badge-amber text-[9px] whitespace-nowrap"><i class="fas fa-spinner fa-spin mr-1"></i> Needs Revision</span>
+                                    @elseif($cg->revision_status == 'revised')
+                                        <span class="badge badge-green text-[9px] whitespace-nowrap"><i class="fas fa-check-double mr-1"></i> Revised</span>
+                                    @else
+                                        <span class="badge badge-muted text-[9px] whitespace-nowrap">No Revision Needed</span>
+                                    @endif
                                 </div>
-                                <p class="text-xs text-[#5b6375] mt-1 truncate">{{ Str::limit($eval->feedback, 60) }}</p>
+
+                                @if($cg->students->isNotEmpty())
+                                <div class="flex flex-wrap gap-1 mb-2">
+                                    @foreach($cg->students as $mem)
+                                        <span class="badge badge-muted text-[9px]"><i class="fa-regular fa-user text-[8px] mr-1"></i>{{ $mem->student_first_name }} {{ $mem->student_last_name }}</span>
+                                    @endforeach
+                                </div>
+                                @endif
+
+                                @if($cgEvaluations->isNotEmpty())
+                                <div class="space-y-1.5 pt-2 border-t border-dashed border-[#e2dacf]">
+                                    @foreach($cgEvaluations as $ev)
+                                        <div class="flex justify-between items-center text-xs">
+                                            <span class="text-[#5b6375]">{{ $ev->milestone->milestone_title ?? 'Milestone' }}</span>
+                                            <span class="font-bold text-[#1e6b3a]">{{ $ev->score }}/{{ $ev->max_score }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                @else
+                                <p class="text-[11px] text-[#5b6375] italic pt-2 border-t border-dashed border-[#e2dacf]">No panelist scores recorded yet.</p>
+                                @endif
+
+                                <div class="flex justify-end mt-2">
+                                    <button onclick="openRubricScoresModal({{ $cg->id }}, '{{ addslashes($cg->group_name) }}')" class="text-[#b88d3a] hover:text-[#8b6914] text-xs font-semibold transition">
+                                        <i class="fas fa-star mr-1"></i>View Full Scores
+                                    </button>
+                                </div>
                             </div>
                         @empty
-                            <div class="text-center py-8 text-[#5b6375]"><i class="fa-regular fa-pen-to-square text-3xl mb-2"></i><p>No evaluations yet</p></div>
+                            <div class="text-center py-8 text-[#5b6375]"><i class="fa-regular fa-pen-to-square text-3xl mb-2"></i><p>No groups have completed the capstone yet</p></div>
                         @endforelse
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="content-card">
+         <div class="content-card">
             <div class="card-accent"></div>
             <div class="p-6">
-                <div class="flex justify-between items-center mb-5"><h3>All Assigned Groups</h3><span class="text-xs text-[#5b6375]">{{ $adviserGroups->count() ?? 0 }} groups</span></div>
-                <div class="space-y-3">
+                <div class="flex flex-wrap justify-between items-center mb-4 gap-3">
+                    <h3>All Assigned Groups</h3>
+                    <span class="text-xs text-[#5b6375]" id="ag_group_count">{{ $adviserGroups->count() ?? 0 }} groups</span>
+                </div>
+
+                <div class="flex flex-wrap gap-3 mb-5">
+                    <div class="relative flex-1 min-w-[200px]">
+                        <input type="text" id="ag_search_input" class="form-input text-xs w-full pl-9 py-2" placeholder="Search by group, title...">
+                        <i class="fas fa-search absolute left-3 top-2.5 text-[#b8b0a0] text-xs"></i>
+                    </div>
+                    <select id="ag_section_filter" class="form-select text-xs w-48">
+                        <option value="All">All Sections</option>
+                        @foreach($allSections ?? [] as $section)
+                            <option value="{{ $section->section_name }}">{{ $section->section_name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div id="ag_group_list" class="space-y-3">
                     
                     @forelse($adviserGroups ?? [] as $group)
                     @php
@@ -1010,7 +1222,8 @@
                             $progress = round(($completed/max($total,1))*100); 
                             $section = $group->students->first()->section ?? 'No Section';
                         @endphp
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-[#faf8f4] border border-[#e2dacf] rounded-xl text-sm group-item transition hover:shadow-sm" data-search="{{ strtolower($group->group_name . ' ' . $group->capstone_title . ' ' . $section) }}">
+                        @continue($progress >= 100)
+                          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-[#faf8f4] border border-[#e2dacf] rounded-xl text-sm group-item ag-row transition hover:shadow-sm" data-search="{{ strtolower($group->group_name . ' ' . $group->capstone_title . ' ' . $section) }}" data-ag-section="{{ $section }}">
                             <div class="flex flex-col gap-1">
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <span class="font-bold text-[#0a1428] text-base">{{ $group->group_name }}</span>
@@ -1029,8 +1242,8 @@
                                 $isPanelist = $group->room && $group->room->panelists->contains($teacher->id);
                             @endphp
                             <div class="mt-3 sm:mt-0 flex gap-2">
-                                <button onclick="window.openViewModal({{ $group->id }})" class="btn-primary text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 focus:outline-none transition shadow-sm font-bold border-none" style="background-color: var(--gold); border-color: var(--gold); color: #0a1428;">
-                                    <i class="fas fa-chart-line"></i> Check
+                                <button onclick="window.openViewModal({{ $group->id }})" class="btn-check-primary">
+                                    <i class="fas fa-chart-line"></i> Check Progress
                                 </button>
 
                                 @if($teacherRevision)
@@ -1066,6 +1279,10 @@
                         <div class="py-8 text-center text-[#5b6375]"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>No groups assigned</div>
                     @endforelse
                 </div>
+
+                <p id="ag_no_results" class="hidden text-center py-8 text-[#5b6375]"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>No groups match your filters</p>
+
+                <div id="ag_pagination" class="flex justify-center items-center gap-2 mt-5 pt-4 border-t border-[#e2dacf]"></div>
             </div>
         </div>
                 
@@ -1106,18 +1323,25 @@
                                         </button>
                                     </div>
                                 </div>
+                                <select id="as_group_filter_{{ $section->id }}" class="form-select text-xs w-44 as-group-filter" data-section-id="{{ $section->id }}">
+                                    <option value="All">Filter by Group: All</option>
+                                    @foreach($groupsInSection as $gfg)
+                                        <option value="{{ $gfg->group_name }}">{{ $gfg->group_name }}</option>
+                                    @endforeach
+                                    <option value="Unassigned">Unassigned</option>
+                                </select>
                             </div>
 
                             <!-- Groups View -->
                             <div id="as_section_groups_view_{{ $section->id }}" class="space-y-3">
-                                @forelse($groupsInSection as $g)
+                                                               @forelse($groupsInSection as $g)
                                     <div class="p-3 bg-[#faf8f4] rounded-lg border border-[#e2dacf]">
                                         <div class="flex justify-between items-center">
                                             <div><p class="font-semibold text-sm text-[#0a1428]">{{ $g->group_name }}</p><p class="text-xs text-[#5b6375]">{{ Str::limit($g->capstone_title,25) }}</p></div>
                                             <div class="text-right flex flex-col items-end gap-1">
                                                 <span class="text-xs text-[#5b6375]">{{ $g->students->count()??0 }} students</span>
                                                 <div class="flex gap-2">
-                                                    <button onclick="openViewModal({{ $g->id }})" class="text-[#b88d3a] hover:text-[#8b6914] text-xs font-semibold transition">
+                                                    <button onclick="openRubricScoresModal({{ $g->id }}, '{{ addslashes($g->group_name) }}')" class="text-[#b88d3a] hover:text-[#8b6914] text-xs font-semibold transition">
                                                         <i class="fas fa-star mr-1"></i>Rubric Scores
                                                     </button>
                                                     <button onclick="openViewModal({{ $g->id }})" class="text-[#5b6375] hover:text-[#0a1428] text-xs font-medium transition">
@@ -1127,7 +1351,13 @@
                                             </div>
                                         </div>
 
-                                        
+                                        @if($g->students->isNotEmpty())
+                                        <div class="flex flex-wrap gap-1 mt-2 pt-2 border-t border-dashed border-[#e2dacf]">
+                                            @foreach($g->students as $mem)
+                                                <span class="badge badge-muted text-[9px]"><i class="fa-regular fa-user text-[8px] mr-1"></i>{{ $mem->student_first_name }} {{ $mem->student_last_name }}</span>
+                                            @endforeach
+                                        </div>
+                                        @endif
                                     </div>
                                 @empty
                                     <div class="text-center py-6 text-[#5b6375] text-sm bg-[#faf8f4]/50 border border-[#e2dacf] border-dashed rounded-lg"><i class="fa-regular fa-folder-open mr-1.5"></i> No groups in this section</div>
@@ -1151,7 +1381,7 @@
                                             @php
                                                 $stGroup = $groupsInSection->first(fn($g) => $g->students->contains($st->id));
                                             @endphp
-                                            <tr class="hover:bg-[#faf8f4]/30">
+                                              <tr class="hover:bg-[#faf8f4]/30 as-student-row" data-group="{{ $stGroup->group_name ?? 'Unassigned' }}">
                                                 <td class="p-2 pl-3 font-semibold text-[#0a1428]">{{ $st->student_first_name }} {{ $st->student_last_name }}</td>
                                                 <td class="p-2 text-[#5b6375] font-mono">{{ $st->user->user_id ?? 'N/A' }}</td>
                                                 <td class="p-2">
@@ -1171,9 +1401,9 @@
                                                 </td>
                                                 <td class="p-2 pr-3 text-right">
                                                     @if($stGroup)
-                                                        <button onclick="openViewModal({{ $stGroup->id }})" class="text-[#b88d3a] hover:text-[#8b6914] text-[11px] font-semibold transition">
+                                                        <button onclick="openRubricScoresModal({{ $stGroup->id }}, '{{ addslashes($stGroup->group_name) }}')" class="text-[#b88d3a] hover:text-[#8b6914] text-[11px] font-semibold transition">
                                                             <i class="fas fa-star mr-1"></i>Rubric Scores
-                                                        </button>
+                                                        </button>  
                                                     @else
                                                         <span class="text-gray-400 italic text-[10px]">No Group</span>
                                                     @endif
@@ -1221,14 +1451,26 @@
                                         <div class="text-right flex flex-col items-end gap-1">
                                             <span class="text-xs text-[#5b6375]">{{ $g->students->count()??0 }} students</span>
                                             <div class="flex gap-2">
-                                                <button onclick="openViewModal({{ $g->id }})" class="text-[#5b6375] hover:text-[#0a1428] text-xs font-medium transition">
-                                                    <i class="fa-regular fa-eye mr-1"></i>{{ $g->adviser_id == $teacher->id ? 'Check' : 'Show' }}
-                                                </button>
+                                                @if($g->adviser_id == $teacher->id)
+                                                    <button onclick="openViewModal({{ $g->id }})" class="btn-check-primary !py-1.5 !px-3 !text-[11px]">
+                                                        <i class="fas fa-chart-line"></i> Check
+                                                    </button>
+                                                @else
+                                                    <button onclick="openViewModal({{ $g->id }})" class="text-[#5b6375] hover:text-[#0a1428] text-xs font-medium transition">
+                                                        <i class="fa-regular fa-eye mr-1"></i>Show
+                                                    </button>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
 
-                                    
+                                    @if($g->students->isNotEmpty())
+                                    <div class="flex flex-wrap gap-1 mt-2 pt-2 border-t border-dashed border-[#e2dacf]">
+                                        @foreach($g->students as $mem)
+                                            <span class="badge badge-muted text-[9px]"><i class="fa-regular fa-user text-[8px] mr-1"></i>{{ $mem->student_first_name }} {{ $mem->student_last_name }}</span>
+                                        @endforeach
+                                    </div>
+                                    @endif
                                 </div>
                                         @empty
                                             <div class="text-center py-4 text-[#5b6375] text-sm"><i class="fa-regular fa-folder-open mr-1"></i> No groups in this section</div>
@@ -1320,6 +1562,13 @@
                                                     <span class="text-xs text-[#3d4450]">{{ $rg->capstone_title ?? 'No title' }}</span>
                                                     @if($rg->revision_description)
                                                         <span class="text-xs text-[#5b6375] italic block mt-1"><span class="font-semibold">Revision Instructions:</span> "{{ $rg->revision_description }}"</span>
+                                                    @endif
+                                                    @if($rg->students->isNotEmpty())
+                                                    <div class="flex flex-wrap gap-1 mt-1.5">
+                                                        @foreach($rg->students as $mem)
+                                                            <span class="badge badge-muted text-[9px]"><i class="fa-regular fa-user text-[8px] mr-1"></i>{{ $mem->student_first_name }} {{ $mem->student_last_name }}</span>
+                                                        @endforeach
+                                                    </div>
                                                     @endif
                                                 </div>
                                                 <div class="mt-3 sm:mt-0 flex gap-2">
@@ -1476,6 +1725,13 @@
                                             <span class="text-xs text-[#3d4450]">{{ $g->capstone_title ?? 'No title' }}</span>
                                             @if($g->revision_status == 'needs_revision' && $g->revision_description)
                                                 <span class="text-xs text-[#5b6375] italic block mt-1"><span class="font-semibold">Revision Instructions:</span> "{{ $g->revision_description }}"</span>
+                                            @endif
+                                            @if($g->students->isNotEmpty())
+                                            <div class="flex flex-wrap gap-1 mt-1.5">
+                                                @foreach($g->students as $mem)
+                                                    <span class="badge badge-muted text-[9px]"><i class="fa-regular fa-user text-[8px] mr-1"></i>{{ $mem->student_first_name }} {{ $mem->student_last_name }}</span>
+                                                @endforeach
+                                            </div>
                                             @endif
                                         </div>
                                         <div class="mt-3 sm:mt-0 flex gap-2">
@@ -2550,6 +2806,32 @@
     </div>
 </div>
 
+
+
+<!-- RUBRIC SCORES MODAL (panelist scores only) -->
+<div id="rubricScoresModal" class="modal-overlay">
+    <div class="modal-box wide" style="max-width: 46rem;">
+        <div class="modal-accent" style="background: linear-gradient(90deg, var(--gold), var(--gold-dark));"></div>
+        <div class="flex justify-between items-center mb-1">
+            <div>
+                <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.5rem; font-weight:600; color:var(--navy);" id="rubricScoresTitle">
+                    Rubric Scores
+                </h2>
+                <p class="text-xs text-[#5b6375] mt-0.5" id="rubricScoresSubtitle">Panelist evaluation summary</p>
+            </div>
+            <button type="button" onclick="closeModal('rubricScoresModal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-xl leading-none">&times;</button>
+        </div>
+
+        <div id="rubricScoresContent" class="mt-5 max-h-[65vh] overflow-y-auto pr-1 space-y-4">
+            <p class="text-sm text-[#5b6375] text-center py-8">Loading…</p>
+        </div>
+
+        <div class="flex justify-end pt-4 mt-4 border-t border-[#e2dacf]">
+            <button type="button" onclick="closeModal('rubricScoresModal')" class="btn-ghost">Close</button>
+        </div>
+    </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════════
 // MODAL HELPERS
@@ -3464,6 +3746,104 @@ window.submitRevisionCheck = function (event) {
     if (absentContainer) absentContainer.classList.add('hidden');
 };
 
+
+window.openRubricScoresModal = function (groupId, groupName = null) {
+    openModal('rubricScoresModal');
+    const content = document.getElementById('rubricScoresContent');
+    const titleEl = document.getElementById('rubricScoresTitle');
+    const subtitleEl = document.getElementById('rubricScoresSubtitle');
+
+    titleEl.textContent = groupName ? `Rubric Scores — ${groupName}` : 'Rubric Scores';
+    subtitleEl.textContent = 'Panelist evaluation summary';
+    content.innerHTML = '<p class="text-sm text-[#5b6375] text-center py-8">Loading…</p>';
+
+    fetch(`/teacher/get-group-progress/${groupId}`)
+        .then(r => r.json())
+        .then(data => {
+            if (!groupName) titleEl.textContent = `Rubric Scores — ${data.group_name}`;
+
+            const evaluations = data.evaluations || [];
+
+            if (evaluations.length === 0) {
+                content.innerHTML = `
+                    <div class="rs-empty">
+                        <i class="fa-regular fa-folder-open"></i>
+                        No panelist evaluations have been submitted for this group yet.
+                    </div>
+                `;
+                return;
+            }
+
+            content.innerHTML = evaluations.map((ev, idx) => {
+                const initials = (ev.teacher_name || 'T')
+                    .split(' ')
+                    .map(w => w[0])
+                    .join('')
+                    .substring(0, 2)
+                    .toUpperCase();
+
+                let criteriaHtml = '';
+                if (ev.criteria && ev.criteria.length > 0) {
+                    criteriaHtml = `
+                        <div id="rs_criteria_${idx}" class="hidden">
+                            <table class="rs-criteria-table">
+                                <thead>
+                                    <tr>
+                                        <th>Criterion</th>
+                                        <th style="text-align:center;">Weight</th>
+                                        <th style="text-align:center;">Max</th>
+                                        <th style="text-align:center;">Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${ev.criteria.map(c => `
+                                        <tr>
+                                            <td>${c.criteria_name}</td>
+                                            <td style="text-align:center;">${c.weight}%</td>
+                                            <td style="text-align:center;">${c.max_score}</td>
+                                            <td style="text-align:center; font-weight:700; color:#1e6b3a;">${c.given_score}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        <span class="rs-criteria-toggle" onclick="document.getElementById('rs_criteria_${idx}').classList.toggle('hidden'); this.querySelector('i').classList.toggle('fa-chevron-down'); this.querySelector('i').classList.toggle('fa-chevron-up');">
+                            <i class="fas fa-chevron-down"></i> View criteria breakdown
+                        </span>
+                    `;
+                }
+
+                return `
+                    <div class="rs-card">
+                        <div class="rs-card-head">
+                            <div>
+                                <p class="rs-milestone">${ev.milestone_title || 'Milestone'}</p>
+                                <div class="rs-panelist mt-1.5">
+                                    <div class="rs-panelist-avatar">${initials}</div>
+                                    <span class="rs-panelist-name">${ev.teacher_name || 'Panelist'}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="rs-score">${ev.score} <small>/ ${ev.max_score}</small></div>
+                                <p class="rs-date">${fmtDate(ev.evaluation_date)}</p>
+                            </div>
+                        </div>
+                        ${ev.feedback ? `<div class="rs-feedback">"${ev.feedback}"</div>` : ''}
+                        ${criteriaHtml}
+                    </div>
+                `;
+            }).join('');
+        })
+        .catch(() => {
+            content.innerHTML = `
+                <div class="rs-empty">
+                    <i class="fa-solid fa-triangle-exclamation" style="color:#a12b2b;"></i>
+                    Failed to load rubric scores. Please try again.
+                </div>
+            `;
+        });
+};
+
     document.querySelectorAll('.evaluate-btn').forEach(btn =>
         btn.addEventListener('click', function (e) {
             e.preventDefault();
@@ -3676,6 +4056,120 @@ document.querySelectorAll('.room-group-filter').forEach(input => {
         }
     });
 });
+
+    // ── ASSIGNED SECTIONS: group filter for the Students table ──
+    document.querySelectorAll('.as-group-filter').forEach(select => {
+        select.addEventListener('change', function () {
+            const sectionId = this.dataset.sectionId;
+            const value = this.value;
+            const table = document.getElementById(`as_section_students_view_${sectionId}`);
+            if (!table) return;
+            const rows = table.querySelectorAll('.as-student-row');
+            let visibleCount = 0;
+            rows.forEach(row => {
+                const match = value === 'All' || row.dataset.group === value;
+                row.style.display = match ? '' : 'none';
+                if (match) visibleCount++;
+            });
+            let noResult = table.querySelector('.as-no-result');
+            if (visibleCount === 0) {
+                if (!noResult) {
+                    const tbody = table.querySelector('tbody');
+                    noResult = document.createElement('tr');
+                    noResult.className = 'as-no-result';
+                    noResult.innerHTML = `<td colspan="5" class="p-6 text-center text-[#5b6375]"><i class="fa-regular fa-folder-open text-xl mb-1 block"></i> No students in this group.</td>`;
+                    tbody.appendChild(noResult);
+                }
+                noResult.style.display = '';
+            } else if (noResult) {
+                noResult.style.display = 'none';
+            }
+        });
+    });
+
+
+
+     // ── ALL ASSIGNED GROUPS: search + section filter + pagination ──
+    (function () {
+        const searchInput = document.getElementById('ag_search_input');
+        const sectionFilter = document.getElementById('ag_section_filter');
+        const listEl = document.getElementById('ag_group_list');
+        const noResultsEl = document.getElementById('ag_no_results');
+        const paginationEl = document.getElementById('ag_pagination');
+        const countEl = document.getElementById('ag_group_count');
+        if (!listEl) return; // section not present on this page
+
+        const PAGE_SIZE = 5;
+        let currentPage = 1;
+
+        function getFilteredRows() {
+            const query = (searchInput?.value || '').trim().toLowerCase();
+            const section = sectionFilter?.value || 'All';
+            return Array.from(listEl.querySelectorAll('.ag-row')).filter(row => {
+                const matchesSearch = !query || (row.dataset.search || '').includes(query);
+                const matchesSection = section === 'All' || row.dataset.agSection === section;
+                return matchesSearch && matchesSection;
+            });
+        }
+
+        function render() {
+            const allRows = Array.from(listEl.querySelectorAll('.ag-row'));
+            const filtered = getFilteredRows();
+
+            // Hide every row first
+            allRows.forEach(r => r.style.display = 'none');
+
+            const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const pageRows = filtered.slice(start, start + PAGE_SIZE);
+            pageRows.forEach(r => r.style.display = '');
+
+            noResultsEl.classList.toggle('hidden', filtered.length !== 0);
+            if (countEl) countEl.textContent = `${filtered.length} group${filtered.length === 1 ? '' : 's'}`;
+
+            renderPagination(totalPages, filtered.length);
+        }
+
+        function renderPagination(totalPages, totalItems) {
+            paginationEl.innerHTML = '';
+            if (totalItems === 0 || totalPages <= 1) return;
+
+            const makeBtn = (label, page, opts = {}) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.textContent = label;
+                btn.className = opts.active
+                    ? 'px-3 py-1.5 rounded-lg text-xs font-bold text-white'
+                    : 'px-3 py-1.5 rounded-lg text-xs font-medium text-[#5b6375] hover:bg-[#faf8f4] border border-[#e2dacf]';
+                if (opts.active) btn.style.background = 'var(--navy)';
+                if (opts.disabled) {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-40', 'cursor-not-allowed');
+                }
+                btn.addEventListener('click', () => {
+                    currentPage = page;
+                    render();
+                });
+                return btn;
+            };
+
+            paginationEl.appendChild(makeBtn('‹ Prev', currentPage - 1, { disabled: currentPage === 1 }));
+
+            for (let p = 1; p <= totalPages; p++) {
+                paginationEl.appendChild(makeBtn(String(p), p, { active: p === currentPage }));
+            }
+
+            paginationEl.appendChild(makeBtn('Next ›', currentPage + 1, { disabled: currentPage === totalPages }));
+        }
+
+        if (searchInput) searchInput.addEventListener('input', () => { currentPage = 1; render(); });
+        if (sectionFilter) sectionFilter.addEventListener('change', () => { currentPage = 1; render(); });
+
+        render();
+    })();
 });
 
 // ── PASSWORD TOGGLE ────────────────────────────

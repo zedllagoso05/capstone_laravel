@@ -658,12 +658,16 @@
                 <a href="#" data-section="evaluation" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
                     <i class="fas fa-door-open w-4"></i><span>Evaluation Room</span>
                 </a>
-                <a href="#" data-section="profile" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
-                    <i class="fas fa-user w-4"></i><span>Profile</span>
-                </a>
+
                 <a href="#" data-section="capstone" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
                     <i class="fas fa-scroll w-4"></i><span>Capstones</span>
-        </a>
+                </a>
+                <a href="#" data-section="documents" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
+                    <i class="fas fa-user w-4"></i><span>Documents</span>
+                </a>
+                    <a href="#" data-section="profile" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
+                    <i class="fas fa-user w-4"></i><span>Profile</span>
+                </a>
             </nav>
         </div>
         <div class="p-4 border-t border-[rgba(214,177,92,0.15)]">
@@ -1129,7 +1133,9 @@
                         </div>
                         <div class="flex gap-3 text-[#5b6375] ml-2 opacity-0 group-hover:opacity-100 transition">
                             <button onclick="openEditMilestoneModal({{ $milestone->id }})" class="hover:text-[#0a1428]"><i class="fas fa-pen text-xs"></i></button>
-                            <button onclick="openDeleteMilestoneModal({{$milestone->id}})" class="hover:text-red-500"><i class="fas fa-trash text-xs"></i></button>
+                           <button onclick="openDeleteMilestoneModal({{$milestone->id}}, '{{ addslashes($milestone->milestone_title) }}')" class="hover:text-red-500">
+                            <i class="fas fa-trash text-xs"></i>
+                        </button>
                         </div>
                     </div>
                     <div class="flex flex-wrap gap-2 mt-3">
@@ -1800,7 +1806,7 @@
                     <div><label class="form-label">Middle Name</label><input type="text" name="teacher_middle_name" class="form-input"></div>
                     <div><label class="form-label">Last Name</label><input type="text" name="teacher_last_name" class="form-input" required></div>
                 </div>
-                <div><label class="form-label">Email</label><input type="email" name="teacher_email" class="form-input" required></div>
+    
                 <div class="flex justify-end gap-2 pt-3"><button type="button" onclick="closeModal('teacher_modal')" class="btn-ghost">Cancel</button><button type="submit" class="btn-primary">Save Teacher</button></div>
             </form>
         </div>
@@ -1961,8 +1967,7 @@
                     <div><label class="form-label">Middle Name</label><input type="text" name="student_middle_name" class="form-input"></div>
                     <div><label class="form-label">Last Name</label><input type="text" name="student_last_name" class="form-input" required></div>
                 </div>
-                <div><label class="form-label">Email</label><input type="email" name="student_email" class="form-input" required></div>
-                <div><label class="form-label">Contact Number</label><input type="text" name="contact_number" class="form-input" pattern="09[0-9]{9}" maxlength="11" minlength="11" required></div>
+  
                 <div class="grid grid-cols-2 gap-2">
                     <div><label class="form-label">Course</label><input type="text" name="course" value="BSIT" class="form-input opacity-70" readonly></div>
                     <div><label class="form-label">Section</label><select name="section" class="form-select" required><option value="East">East</option><option value="West">West</option><option value="North">North</option><option value="South">South</option><option value="SouthEast">SouthEast</option><option value="SouthWest">SouthWest</option><option value="NorthEast">NorthEast</option><option value="NorthWest">NorthWest</option></select></div>
@@ -2079,23 +2084,23 @@
                     </div>
                 </div>
 
-                <div class="border-t border-dashed border-[#e2dacf] pt-4">
+                <                <div class="border-t border-dashed border-[#e2dacf] pt-4">
                     <label class="flex items-center gap-2 cursor-pointer mb-3">
                         <input type="checkbox" name="has_certificate" id="edit_milestone_has_cert" value="1"
                             class="form-checkbox text-[#d6b15c] focus:ring-[#d6b15c]">
-                        <span class="text-sm font-medium text-[#0a1428]">Award a certificate when this milestone is completed</span>
+                        <span class="text-sm font-medium text-[#0a1428]">Add a Document when this milestone is completed</span>
                     </label>
                     <p class="text-xs text-[#9a9385] mb-3">
-                        The moment a group finishes this milestone (rubric evaluation or remark evaluation), this certificate is added to the group automatically — no extra step needed.
+                        The moment a group finishes this milestone (rubric evaluation or remark evaluation), this document is added to the group automatically — no extra step needed.
                     </p>
 
                     <div id="edit_milestone_cert_fields" class="space-y-3 hidden">
                         <div>
-                            <label class="form-label">Certificate Title</label>
+                            <label class="form-label">Document Title</label>
                             <input type="text" name="certificate_title" id="edit_certificate_title" class="form-input" placeholder="e.g. Certificate of Completion">
                         </div>
                         <div>
-                            <label class="form-label">Certificate Description</label>
+                            <label class="form-label">Document Description</label>
                             <textarea name="certificate_description" id="edit_certificate_description" rows="2" class="form-input resize-none" placeholder="Awarded for successfully completing..."></textarea>
                         </div>
                     </div>
@@ -2374,36 +2379,49 @@
     </div>
 
     <!-- REARRANGE MILESTONES MODAL -->
-    <div id="rearrange_milestones_modal" class="modal-overlay">
-        <div class="modal-box">
-            <div class="modal-accent"></div>
-            <div class="flex justify-between items-center mb-4">
-                <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">Rearrange Milestone Step Order</h2>
-                <button type="button" onclick="closeModal('rearrange_milestones_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
-            </div>
-            <p class="text-xs text-[#5b6375] mb-4">Rearrange the steps for Capstone 1 milestones. Milestones in Capstone 2 cannot be rearranged.</p>
-            <form action="{{ route('admin.reorder_milestones') }}" method="POST" class="space-y-4">
-                @csrf
-                <div id="reorder_list" class="space-y-2 max-h-80 overflow-y-auto pr-1">
-                    @php $c1StageId = $capstoneStages->firstWhere('stage_type', 1)->id ?? null; @endphp
-                    @foreach($milestones->where('capstone_stage_id', $c1StageId)->sortBy('step_order') as $m1)
-                    <div class="reorder-item flex items-center justify-between p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg" data-id="{{ $m1->id }}">
-                        <input type="hidden" name="milestone_ids[]" value="{{ $m1->id }}">
-                        <span class="text-sm font-semibold text-[#0a1428]">{{ $m1->milestone_title }}</span>
-                        <div class="flex gap-2">
-                            <button type="button" onclick="moveItemUp(this)" class="p-1 text-[#5b6375] hover:text-[#0a1428] transition" title="Move Up"><i class="fas fa-chevron-up"></i></button>
-                            <button type="button" onclick="moveItemDown(this)" class="p-1 text-[#5b6375] hover:text-[#0a1428] transition" title="Move Down"><i class="fas fa-chevron-down"></i></button>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
-                <div class="flex justify-end gap-2 pt-3">
-                    <button type="button" onclick="closeModal('rearrange_milestones_modal')" class="btn-ghost">Cancel</button>
-                    <button type="submit" class="btn-primary">Save Step Order</button>
-                </div>
-            </form>
+<div id="rearrange_milestones_modal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-accent"></div>
+        <div class="flex justify-between items-center mb-4">
+            <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">Rearrange Milestone Step Order</h2>
+            <button type="button" onclick="closeModal('rearrange_milestones_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
         </div>
+        <p class="text-xs text-[#5b6375] mb-4">Select a capstone stage, then reorder its milestones.</p>
+
+        <div class="flex gap-1.5 bg-[#f5f1e8] p-1 rounded-full w-fit mb-4">
+            <button type="button" class="reorder-stage-tab-btn stage-tab-btn text-xs font-medium py-1.5 px-4 rounded-full transition-smooth active" data-stage="1">Capstone 1</button>
+            <button type="button" class="reorder-stage-tab-btn stage-tab-btn text-xs font-medium py-1.5 px-4 rounded-full transition-smooth" data-stage="2">Capstone 2</button>
+        </div>
+
+        @foreach($capstoneStages->groupBy('stage_type') as $stageType => $stagesOfType)
+        @php $stageIdsOfType = $stagesOfType->pluck('id'); @endphp
+        <form action="{{ route('admin.reorder_milestones') }}" method="POST"
+              class="reorder-stage-form space-y-4"
+              data-stage="{{ $stageType }}"
+              style="{{ $stageType != 1 ? 'display:none;' : '' }}">
+            @csrf
+            <div class="reorder_list space-y-2 max-h-80 overflow-y-auto pr-1">
+                @forelse($milestones->whereIn('capstone_stage_id', $stageIdsOfType)->sortBy('step_order') as $m)
+                <div class="reorder-item flex items-center justify-between p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg" data-id="{{ $m->id }}">
+                    <input type="hidden" name="milestone_ids[]" value="{{ $m->id }}">
+                    <span class="text-sm font-semibold text-[#0a1428]">{{ $m->milestone_title }}</span>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="moveItemUp(this)" class="p-1 text-[#5b6375] hover:text-[#0a1428] transition" title="Move Up"><i class="fas fa-chevron-up"></i></button>
+                        <button type="button" onclick="moveItemDown(this)" class="p-1 text-[#5b6375] hover:text-[#0a1428] transition" title="Move Down"><i class="fas fa-chevron-down"></i></button>
+                    </div>
+                </div>
+                @empty
+                <p class="text-[#5b6375] text-sm text-center py-6">No milestones in this stage.</p>
+                @endforelse
+            </div>
+            <div class="flex justify-end gap-2 pt-3">
+                <button type="button" onclick="closeModal('rearrange_milestones_modal')" class="btn-ghost">Cancel</button>
+                <button type="submit" class="btn-primary">Save Step Order</button>
+            </div>
+        </form>
+        @endforeach
     </div>
+</div>
 
     {{-- evaluation modal --}}
 <div id="evaluation_modal" class="modal-overlay">
@@ -2492,7 +2510,7 @@
                 <label class="form-label">Excel File (.xlsx, .csv)</label>
                 <input type="file" name="file" accept=".xlsx,.csv" class="form-input" required>
                 <p class="text-xs text-[#9a9385] mt-1">
-                    Columns: student_id, student_first_name, student_middle_name, student_last_name, student_email, contact_number, course, section
+                    Columns: student_id, student_first_name, student_middle_name, student_last_name, course, section
                 </p>
             </div>
             <a href="{{ route('admin.download_student_template') }}" class="text-xs text-[#d6b15c] hover:text-[#b88d3a] font-medium inline-flex items-center gap-1">
@@ -2567,7 +2585,7 @@
                 <label class="form-label">Excel File (.xlsx, .csv)</label>
                 <input type="file" name="file" accept=".xlsx,.csv" class="form-input" required>
                 <p class="text-xs text-[#9a9385] mt-1">
-                    Columns: teacher_id, teacher_first_name, teacher_middle_name, teacher_last_name, teacher_email, contact_number
+                    Columns: teacher_id, teacher_first_name, teacher_middle_name, teacher_last_name
                 </p>
             </div>
             <a href="{{ route('admin.download_teacher_template') }}" class="text-xs text-[#d6b15c] hover:text-[#b88d3a] font-medium inline-flex items-center gap-1">
@@ -2667,7 +2685,37 @@
             </div>
         </div>
     </div>
-
+<!-- DELETE MILESTONE MODAL -->
+<div id="delete_milestone_modal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-accent" style="background: #a12b2b;"></div>
+        <div class="flex justify-between items-center mb-4">
+            <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);">Confirm Deletion</h2>
+            <button type="button" onclick="closeModal('delete_milestone_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
+        </div>
+        <form action="{{ route('admin.delete_milestone') }}" method="POST" class="space-y-3">
+            @csrf
+            <input type="hidden" name="milestone_id" id="delete_milestone_id">
+            <p class="text-sm text-[#5b6375]">
+                You are about to permanently delete <strong id="delete_milestone_name" class="text-[#171e2c]"></strong>.
+                This will also remove any associated rubrics and evaluation records. This cannot be undone.
+            </p>
+            <div>
+                <label class="form-label">Confirm Your Admin Password</label>
+                <div class="relative">
+                    <input type="password" name="admin_password" id="delete_milestone_admin_password" class="form-input pr-10" placeholder="Enter your password" required>
+                    <button type="button" class="password-toggle absolute right-3 top-1/2 -translate-y-1/2 text-[#5b6375] hover:text-[#0a1428]" onclick="toggleVisibility('delete_milestone_admin_password', this)">
+                        <i class="fa-regular fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-3">
+                <button type="button" onclick="closeModal('delete_milestone_modal')" class="btn-ghost">Cancel</button>
+                <button type="submit" class="btn-primary" style="background:#a12b2b;"><i class="fas fa-trash mr-1"></i> Delete Milestone</button>
+            </div>
+        </form>
+    </div>
+</div>
     <!-- SYSTEM DIRECTORY DETAIL MODAL (TABBED OVERVIEW) -->
     <div id="dashboard_detail_modal" class="modal-overlay">
         <div class="modal-box wide" style="max-width: 68rem;">
@@ -2979,6 +3027,9 @@ document.addEventListener('DOMContentLoaded', () => {
     @if ($errors->any() && session('import_students'))
         openModal('import_student_modal');
     @endif
+    @if ($errors->any() && session('add_milestone'))
+    openModal('milestone_modal');
+    @endif
 
     // animate fill bars on load
     document.querySelectorAll('.fill-animate').forEach(bar => {
@@ -2994,6 +3045,15 @@ document.addEventListener('DOMContentLoaded', () => {
             showStage(btn.dataset.stageType);
         });
     });
+    document.querySelectorAll('.reorder-stage-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.reorder-stage-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+        const stage = btn.dataset.stage;
+        document.querySelectorAll('.reorder-stage-form').forEach(f => {
+            f.style.display = f.dataset.stage === stage ? '' : 'none';
+        });
+    });
+});
     // ── RUBRICS: Toggle sections ──
  // ── RUBRICS & GROUPS: Toggle sections ──
 document.querySelectorAll('.toggle-section-btn').forEach(btn => {
@@ -3257,13 +3317,13 @@ function addCriteriaRow(listId = 'criteria-list', values = null) {
     row.innerHTML = `
         <input type="text" name="criteria_name[]" placeholder="Criteria name" class="form-input col-span-6" required value="${values?.criteria_name ?? ''}">
         <input type="number" name="weight[]" min="0" max="100" step="0.01" placeholder="Weight %" class="form-input col-span-2" required value="${values?.weight ?? ''}">
-        <input type="number" name="score[]" min="0" step="0.01" placeholder="Max score" class="form-input col-span-3" required value="${values?.max_score ?? ''}">
+        <input type="number" name="score[]" min="0" placeholder="Max score" class="form-input col-span-3" required value="${values?.max_score ?? 4}" readonly>
         <button type="button" onclick="this.closest('.criteria-row').remove()" class="col-span-1 text-[#5b6375] hover:text-red-500 flex items-center justify-center"><i class="fas fa-trash text-xs"></i></button>`;
     list.appendChild(row);
 }
 
 function toggleRubricSection(checked) {
-    const section = document.getElementById('milestone_rubric_section');
+    const section = document.getElementById('milestone_rubric_section');        
     section.classList.toggle('hidden', !checked);
     const nameInput = document.getElementById('milestone_rubric_name');
     nameInput.required = checked;
@@ -3490,6 +3550,12 @@ function openDeleterubricModal(rubricId) {
     document.getElementById('delete_rubric_id').value = rubricId;
     document.getElementById('delete_rubric_name').textContent = 'this rubric';
     openModal('delete_rubric_modal');
+}
+function openDeleteMilestoneModal(milestoneId, milestoneTitle) {
+    document.getElementById('delete_milestone_id').value = milestoneId;
+    document.getElementById('delete_milestone_name').textContent = milestoneTitle || 'this milestone';
+    document.getElementById('delete_milestone_admin_password').value = '';
+    openModal('delete_milestone_modal');
 }
 
 function openDeleteGroupModal(id, name) {
@@ -4192,9 +4258,11 @@ let studentsPaginate = null;
 function getVisibleStudentRows() {
     const tbody = document.getElementById('students-tbody');
     if (!tbody) return [];
-    // Select all rows that are not hidden (style.display !== 'none') and not the "no students" row
+    // Rows that pass the current section/group filter.
+    // Pagination hides/shows via style.display separately — never use style.display here,
+    // or pagination's own hides get mistaken for filtered-out rows.
     return Array.from(tbody.querySelectorAll('tr:not(.no-students-row)'))
-        .filter(row => row.style.display !== 'none');
+        .filter(row => !row.classList.contains('filter-hidden'));
 }
 
 function initStudentsPagination() {
@@ -4303,12 +4371,13 @@ function applyStudentFilters() {
         }
 
         if (show) {
-            row.style.display = '';
+            row.classList.remove('filter-hidden');
             anyVisible = true;
         } else {
+            row.classList.add('filter-hidden');
             row.style.display = 'none';
         }
-    });
+});
 
     // Handle "No students" message
     let noRow = document.querySelector('#students-tbody .no-students-row');
@@ -4330,6 +4399,13 @@ function applyStudentFilters() {
 
 // ---- Attach event listeners on DOM ready ----
 document.addEventListener('DOMContentLoaded', function() {
+
+    // ── AUTO-REOPEN MILESTONE MODAL ON VALIDATION ERROR ──
+    @if ($errors->any() && (old('milestone_title') || old('capstone_stage')))
+        openModal('milestone_modal');
+        showToast('{{ $errors->first() }}', true);
+    @endif
+
     // Students pagination
     studentsPaginate = initStudentsPagination();
 

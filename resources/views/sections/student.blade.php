@@ -1720,7 +1720,7 @@
                 </span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                @foreach($certificates as $cert)
+                @foreach($certificatesCap1 as $cert)
                 <div class="content-card {{ !$cert->unlocked ? 'locked-card' : '' }}">
                     <div class="card-accent"></div>
                     <div class="p-5">
@@ -1757,11 +1757,11 @@
                 </div>
                 @endforeach
                              
-           <!-- Approval Sheet Card -->
-<div class="content-card {{ !$isCapstoneComplete ? 'locked-card' : '' }}">
+<!-- Approval Sheet Card (standalone document — not part of the certificates loop) -->
+<div class="content-card {{ !$isApprovalSheetUnlocked ? 'locked-card' : '' }}">
     <div class="card-accent"></div>
     <div class="p-5 relative">
-        @if(!$isCapstoneComplete)
+        @if(!$isApprovalSheetUnlocked)
             <!-- Lock overlay when not complete -->
             <div class="absolute top-3 right-3 badge badge-muted">
                             <i class="fa-solid fa-lock"></i> Locked
@@ -1827,26 +1827,26 @@
 
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-    <!-- Recommendation Sheet -->
-    <div class="content-card {{ !$isCapstone2Complete ? 'locked-card' : '' }}">
+        <!-- Recommendation Sheet (standalone document — unlocked by its own milestone) -->
+    <div class="content-card {{ !$isRecommendationUnlocked ? 'locked-card' : '' }}">
         <div class="card-accent"></div>
         <div class="p-5">
-            @if(!$isCapstone2Complete)
+            @if(!$isRecommendationUnlocked)
             <div class="absolute top-3 right-3 badge badge-muted">
                 <i class="fa-solid fa-lock"></i> Locked
             </div>
             @endif
 
-            <h3 class="mt-3 text-lg {{ !$isCapstone2Complete ? 'text-[#5b6375]' : 'text-[#0a1428]' }}">Recommendation Sheet</h3>
+            <h3 class="mt-3 text-lg {{ !$isRecommendationUnlocked ? 'text-[#5b6375]' : 'text-[#0a1428]' }}">Recommendation Sheet</h3>
             <p class="text-[#5b6375] text-xs my-2">View the recommendation sheet for your capstone project.</p>
-            @if($isCapstone2Complete)
+            @if($isRecommendationUnlocked)
             <p class="text-[11px] text-[#5b6375]"><i class="fa-regular fa-circle-check"></i> Issued</p>
             @else
             <p class="text-xs" style="color:var(--gold-dark);"><i class="fa-regular fa-hourglass-half"></i> Not yet available</p>
             <p class="text-[10px] text-[#5b6375] mt-1">Complete the required milestone to unlock</p>
             @endif
             <div class="flex gap-3 mt-4">
-                @if($isCapstone2Complete)
+                @if($isRecommendationUnlocked)
                 <button onclick="openApprovalSheet({{ $groups->id }})" class="btn-outline text-xs py-1.5 px-3">
                     <i class="fas fa-eye mr-1"></i> View Recommendation
                 </button>
@@ -1860,25 +1860,25 @@
     </div>
 
     <!-- Approval Sheet -->
-    <div class="content-card {{ !$isCapstone2Complete ? 'locked-card' : '' }}">
+    <div class="content-card {{ !$isApprovalSheetUnlocked ? 'locked-card' : '' }}">
         <div class="card-accent"></div>
         <div class="p-5">
-            @if(!$isCapstone2Complete)
+            @if(!$isApprovalSheetUnlocked)
             <div class="absolute top-3 right-3 badge badge-muted">
                 <i class="fa-solid fa-lock"></i> Locked
             </div>
             @endif
 
-            <h3 class="mt-3 text-lg {{ !$isCapstone2Complete ? 'text-[#5b6375]' : 'text-[#0a1428]' }}">Approval Sheet</h3>
+            <h3 class="mt-3 text-lg {{ !$isApprovalSheetUnlocked ? 'text-[#5b6375]' : 'text-[#0a1428]' }}">Approval Sheet</h3>
             <p class="text-[#5b6375] text-xs my-2">View the final approval sheet for your capstone project.</p>
-            @if($isCapstone2Complete)
+            @if($isApprovalSheetUnlocked)
             <p class="text-[11px] text-[#5b6375]"><i class="fa-regular fa-circle-check"></i> Issued</p>
             @else
             <p class="text-xs" style="color:var(--gold-dark);"><i class="fa-regular fa-hourglass-half"></i> Not yet available</p>
             <p class="text-[10px] text-[#5b6375] mt-1">Complete the required milestone to unlock</p>
             @endif
             <div class="flex gap-3 mt-4">
-                @if($isCapstone2Complete)
+                @if($isApprovalSheetUnlocked)
                 <button onclick="openApprovalSheet({{ $groups->id }})" class="btn-outline text-xs py-1.5 px-3">
                     <i class="fas fa-eye mr-1"></i> View Approval
                 </button>

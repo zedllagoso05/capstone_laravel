@@ -34,8 +34,6 @@ class StudentsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOn
             'student_first_name' => $row['student_first_name'],
             'student_middle_name' => $row['student_middle_name'] ?? null,
             'student_last_name' => $row['student_last_name'],
-            'student_email' => $row['student_email'] ?? null,
-            'contact_number' => $row['contact_number'] ?? null,
             'course' => $row['course'] ?? 'BSIT',
             'section' => $row['section'],
         ]);
@@ -47,7 +45,6 @@ class StudentsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOn
             'student_id' => 'required|string|unique:students,user_id',
             'student_first_name' => 'required|string',
             'student_last_name' => 'required|string',
-            'student_email' => 'nullable|email',
             'section' => 'required|string',
         ];
     }
