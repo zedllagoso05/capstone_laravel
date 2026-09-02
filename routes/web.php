@@ -186,6 +186,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/group/{group}/verify-revision', [user_controller::class, 'verifyRevision'])->name('teacher.verify_revision');
 
         Route::get('/get-my-evaluation/{groupId}', [App\Http\Controllers\user_controller::class, 'getMyEvaluation'])->name('teacher.get_my_evaluation');
+        Route::get('/get-all-revisions/{groupId}', [user_controller::class, 'getAllRevisionsForGroup'])->name('teacher.get_all_revisions');
     });
 
     /*
@@ -205,6 +206,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/get-group/{groupId}', [user_controller::class, 'getStudentGroup'])->name('student.group.details');
         Route::get('/get-revision/{groupId}/{revisionId}', [user_controller::class, 'getStudentRevisionById'])->name('student.revision.details');
         Route::get('/get-approval-sheet/{groupId}', [user_controller::class, 'getApprovalSheet'])->name('student.approval_sheet');
+        Route::get('/get-recommendation-sheet/{groupId}', [user_controller::class, 'getRecommendationSheet'])
+    ->middleware(['auth', 'role:student'])
+    ->name('student.get-recommendation-sheet');
     });
 
     /*

@@ -1140,6 +1140,88 @@
 .modal-overlay.active {
     display: flex !important;
 }
+@media print {
+    body * { visibility: hidden; }
+    #recommendationSheetModal,
+    #recommendationSheetModal * { visibility: visible; }
+    #recommendationSheetModal {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: auto;
+        background: white;
+        padding: 2rem;
+        display: block !important;
+    }
+    #recommendationSheetModal .modal-box {
+        box-shadow: none;
+        border: none;
+        max-width: 100%;
+        max-height: none;      /* was 90vh — clipping the sheet */
+        overflow: visible;      /* was auto — clipping the sheet */
+        width: 100%;
+        padding: 0;
+    }
+    #recommendationSheetModal .modal-accent { display: none; }
+    #recommendationSheetModal .btn-outline,
+    #recommendationSheetModal .btn-primary,
+    #recommendationSheetModal .flex.justify-end.gap-3 { display: none !important; }
+}
+@media print {
+    #recommendationSheetModal .modal-box {
+        padding: 0 !important;          /* remove all inner padding */
+        max-width: 100% !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    #recommendationSheetContent {
+        padding: 0 !important;
+        border: none !important;
+        width: 100% !important;
+    }
+}
+/* ── RECOMMENDATION SHEET ── FULL HEIGHT MODAL ── */
+.recommendation-sheet-modal {
+    display: flex;
+    flex-direction: column;
+    min-height: 85vh;          /* screen: takes most of the viewport */
+    max-height: 90vh;
+}
+
+.recommendation-content {
+    flex: 1;                   /* fills the remaining vertical space */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.recommendation-footer {
+    text-align: center;
+    margin-top: auto;          /* pushes the adviser to the bottom */
+}
+
+@media print {
+    #recommendationSheetModal .modal-box.recommendation-sheet-modal {
+        min-height: 100vh;      /* full printed page */
+        height: 100vh;
+        max-height: none;
+        overflow: visible;
+        padding: 1rem !important;
+    }
+    #recommendationSheetContent {
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+    }
+    #recommendationSheetModal .modal-box {
+        padding: 0 !important;
+        max-width: 100% !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+}
     </style>
 </head>
 <body class="bg-[#f8f6f0] text-[#171e2c]">
@@ -1697,6 +1779,41 @@
             </div>
         </div>
 
+        @php
+            // Capstone 1 is intentionally hard-coded below. Resolve the active
+            // stage type from the controller value first, then the first milestone.
+            $firstMilestone = $milestones->first();
+            $activeCapstoneStage = data_get($firstMilestone, 'capstoneStage');
+            $activeCapstoneStageType = $capstoneStageType
+                ?? $capstone_stage_type
+                ?? data_get($activeCapstoneStage, 'stage_type')
+                ?? data_get($activeCapstoneStage, 'capstone_stage_type')
+                ?? data_get($activeCapstoneStage, 'type');
+            $normalizedStageType = strtolower(trim((string) $activeCapstoneStageType));
+            $isCapstone1Stage = in_array($normalizedStageType, ['1', 'capstone 1', 'capstone1'], true);
+            $isCapstone2Stage = in_array($normalizedStageType, ['2', 'capstone 2', 'capstone2'], true);
+
+            $revisionItems = collect();
+            foreach (collect($revisions ?? []) as $revision) {
+                foreach (['documentation', 'enhancements', 'objectives'] as $relation) {
+                    $items = data_get($revision, $relation, []);
+                    if ($items instanceof \Illuminate\Support\Collection) {
+                        $revisionItems = $revisionItems->merge($items);
+                    } elseif (is_iterable($items)) {
+                        $revisionItems = $revisionItems->merge(collect($items));
+                    }
+                }
+            }
+            $allRevisionSheetsComplete = $revisionItems->isEmpty()
+                || $revisionItems->every(fn ($item) => strtolower(trim((string) data_get($item, 'remarks', ''))) === 'completed');
+            $hasCompletedEvaluation = $groups
+                ? \App\Models\Evaluation::where('group_id', $groups->id)->exists()
+                : false;
+            $approvalLetterUnlocked = $hasCompletedEvaluation && $allRevisionSheetsComplete;
+            $capstone1Certificate = collect($certificatesCap1 ?? [])->first();
+            $capstone1CertificateUnlocked = $capstone1Certificate && (bool) $capstone1Certificate->unlocked;
+        @endphp
+
         <!-- ═══════ CERTIFICATES ═══════ -->
         <div id="certificates-section" class="section-container hidden section-card max-w-7xl mx-auto">
             <div class="mb-8">
@@ -1704,117 +1821,89 @@
                 <div class="gold-accent-line"></div>
                 <p class="text-[#5b6375] mt-2 text-sm">Download certificates, evaluation results, and progress reports</p>
             </div>
-            <hr>
             <br>
-            <h2 class="text-xl font-bold text-[#0a1428] mb-4 flex items-center gap-2" style="font-family:'Cormorant Garamond',serif;">
+        @if($isCapstone1Stage)
+        <h2 class="text-xl font-bold text-[#0a1428] mb-4 flex items-center gap-2" style="font-family:'Cormorant Garamond',serif;">
             <i class="fas fa-scroll w-4"></i> Capstone 1
-            </h2>
-            <hr>
-            <br>
-            <div class="flex gap-3 mb-6 text-sm">
-                @php
-                $availableCount = $certificates->where('unlocked', true)->count();
-                @endphp
-                <span class="badge badge-green">
-                    Available: <strong>{{ $availableCount }}/{{ $certificates->count() }}</strong>
-                </span>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                @foreach($certificatesCap1 as $cert)
-                <div class="content-card {{ !$cert->unlocked ? 'locked-card' : '' }}">
-                    <div class="card-accent"></div>
-                    <div class="p-5">
-                        @if(!$cert->unlocked)
-                        <div class="absolute top-3 right-3 badge badge-muted">
-                            <i class="fa-solid fa-lock"></i> Locked
-                        </div>
-                        @endif
-
-                        <h3 class="mt-3 text-lg {{ !$cert->unlocked ? 'text-[#5b6375]' : 'text-[#0a1428]' }}">{{ $cert->certificate_title }}</h3>
-                        <p class="text-[#5b6375] text-xs my-2">{{ $cert->certificate_description }}</p>
-                        @if($cert->completion_date)
-                        <p class="text-[11px] text-[#5b6375]"><i class="fa-regular fa-calendar"></i> {{ \Carbon\Carbon::parse($cert->issued_date)->format('M d, Y') }}</p>
-                        @elseif($cert->unlocked)
-                        <p class="text-xs" style="color:var(--gold-dark);"><i class="fa-regular fa-hourglass-half"></i> Not yet issued</p>
+        </h2>
+        <br>
+        <div class="flex gap-3 mb-6 text-sm">
+            <span class="badge badge-green">
+                Available: <strong>{{ $capstone1CertificateUnlocked ? '1/1' : '0/1' }}</strong>
+            </span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Capstone 1 is intentionally one hard-coded document, not a loop. -->
+            <div class="content-card {{ !$capstone1CertificateUnlocked ? 'locked-card' : '' }}">
+                <div class="card-accent"></div>
+                <div class="p-5">
+                    @if(!$capstone1CertificateUnlocked)
+                    <div class="absolute top-3 right-3 badge badge-muted">
+                        <i class="fa-solid fa-lock"></i> Disabled
+                    </div>
+                    @endif
+                    <h3 class="mt-3 text-lg {{ !$capstone1CertificateUnlocked ? 'text-[#5b6375]' : 'text-[#0a1428]' }}">Capstone 1 Certificate</h3>
+                    <p class="text-[#5b6375] text-xs my-2">Official completion certificate for Capstone 1.</p>
+                    @if($capstone1CertificateUnlocked)
+                    <p class="text-[11px] text-[#1e6b3a]"><i class="fa-regular fa-circle-check"></i> Available</p>
+                    @else
+                    <p class="text-xs" style="color:var(--gold-dark);"><i class="fa-solid fa-lock"></i> Disabled</p>
+                    <p class="text-[10px] text-[#5b6375] mt-1">Capstone 1 is available only during capstone stage type 1 after completion.</p>
+                    @endif
+                    <div class="flex gap-3 mt-4">
+                        @if($capstone1CertificateUnlocked && $groups && $capstone1Certificate)
+                        <a href="{{ route('certificate.show', ['groupId' => $groups->id, 'certificateId' => $capstone1Certificate->id]) }}"
+                           target="_blank"
+                           class="btn-outline text-xs py-1.5 px-3">
+                            <i class="fas fa-print mr-1"></i> Print / Download
+                        </a>
                         @else
-                        <p class="text-xs" style="color:var(--gold-dark);"><i class="fa-regular fa-hourglass-half"></i> Not yet available</p>
-                        <p class="text-[10px] text-[#5b6375] mt-1">Complete the required milestone to unlock</p>
+                        <button class="btn-outline text-xs py-1.5 px-3" disabled>
+                            <i class="fas fa-lock mr-1"></i> Disabled
+                        </button>
                         @endif
-                        <div class="flex gap-3 mt-4">
-                            @if($cert->unlocked && $groups)
-                            <a href="{{ route('certificate.show', ['groupId' => $groups->id, 'certificateId' => $cert->id]) }}"
-                               target="_blank"
-                               class="btn-outline text-xs py-1.5 px-3">
-                                <i class="fas fa-print mr-1"></i> Print / Download
-                            </a>
-                            @else
-                            <button class="btn-outline text-xs py-1.5 px-3" disabled>
-                                <i class="fas fa-print mr-1"></i> Print / Download
-                            </button>
-                            @endif
-                        </div>
                     </div>
                 </div>
-                @endforeach
-                             
-<!-- Approval Sheet Card (standalone document — not part of the certificates loop) -->
-<div class="content-card {{ !$isApprovalSheetUnlocked ? 'locked-card' : '' }}">
-    <div class="card-accent"></div>
-    <div class="p-5 relative">
-        @if(!$isApprovalSheetUnlocked)
-            <!-- Lock overlay when not complete -->
-            <div class="absolute top-3 right-3 badge badge-muted">
-                            <i class="fa-solid fa-lock"></i> Locked
-                        </div>
+            </div>
+
+            <!-- Approval Letter: available only after evaluation and all revision items are completed. -->
+            <div class="content-card {{ !$approvalLetterUnlocked ? 'locked-card' : '' }}">
+                <div class="card-accent"></div>
+                <div class="p-5 relative">
+                    @if(!$approvalLetterUnlocked)
+                    <div class="absolute top-3 right-3 badge badge-muted">
+                        <i class="fa-solid fa-lock"></i> Locked
+                    </div>
+                    @endif
+                    <h3 class="mt-3 text-lg {{ !$approvalLetterUnlocked ? 'text-[#5b6375]' : 'text-[#0a1428]' }}">Approval Letter</h3>
+                    <p class="text-[#5b6375] text-xs my-2">View and print the official approval letter for your capstone project.</p>
+                    @if($approvalLetterUnlocked)
+                    <p class="text-[11px] text-[#1e6b3a]"><i class="fa-regular fa-circle-check"></i> Issued</p>
+                    @else
+                    <p class="text-xs" style="color:var(--gold-dark);"><i class="fa-regular fa-hourglass-half"></i> Not yet available</p>
+                    <p class="text-[10px] text-[#5b6375] mt-1">Complete the evaluation and all revision-sheet items first.</p>
+                    @endif
+                    <div class="flex gap-3 mt-4">
+                        @if($approvalLetterUnlocked && $groups)
+                        <button onclick="openApprovalSheet({{ $groups->id }})" class="btn-outline text-xs py-1.5 px-4 mt-1">
+                            <i class="fas fa-eye mr-1"></i> View Approval Letter
+                        </button>
+                        @else
+                        <button class="btn-outline text-xs py-1.5 px-3" disabled>
+                            <i class="fa-solid fa-lock mr-1"></i> Locked
+                        </button>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
         @endif
 
-                    <div class="flex items-start gap-4">
-                       
-                        <div class="flex-1">
-
-                            <h3 class="mt-3 text-lg font-bold text-[#0a1428]">Approval Sheet</h3>
-                            <p class="text-[#5b6375] text-xs my-2">
-                                View and print the official approval sheet for your capstone project.
-                            </p>
-                            @if($isCapstoneComplete)
-                            <p class="text-xs" style="color:var(--gold-dark);"><i class="fa-regular fa-hourglass-half"></i>  issued</p>
-                           
-                            @else
-                            <p class="text-xs" style="color:var(--gold-dark);"><i class="fa-regular fa-hourglass-half"></i> Not yet available</p>
-                            <p class="text-[10px] text-[#5b6375] mt-1">Complete the required milestone to unlock</p>
-                            @endif
-                             <div class="flex gap-3 mt-4">
-                            @if($isCapstoneComplete)
-                                <button onclick="openApprovalSheet({{ $groups->id }})"
-                                        class="btn-outline text-xs py-1.5 px-4 mt-1">
-                                    <i class="fas fa-eye mr-1"></i> View Approval Sheet
-                                </button>
-                            @else
-                            <button class="btn-outline text-xs py-1.5 px-3" disabled>
-                                <i class="fas fa-print mr-1"></i> Unable to View 
-                            </button>
-                            @endif
-                        </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-
-
-            </div>
-            <br>
-            <br>
-            <br>
-           
-
-<!-- Capstone 2: Recommendation & Approval Sheets -->
-<hr>
+        <!-- Capstone 2: Recommendation & Approval Sheets -->
 <br>
 <h2 class="text-xl font-bold text-[#0a1428] mb-4 flex items-center gap-2" style="font-family:'Cormorant Garamond',serif;">
     <i class="fas fa-scroll w-4"></i> Capstone 2
 </h2>
-<hr>
 <br>
 <div class="flex gap-3 mb-6 text-sm">
     @php
@@ -1847,7 +1936,7 @@
             @endif
             <div class="flex gap-3 mt-4">
                 @if($isRecommendationUnlocked)
-                <button onclick="openApprovalSheet({{ $groups->id }})" class="btn-outline text-xs py-1.5 px-3">
+                <button onclick="openRecommendationSheet({{ $groups->id }})" class="btn-outline text-xs py-1.5 px-3">
                     <i class="fas fa-eye mr-1"></i> View Recommendation
                 </button>
                 @else
@@ -1860,25 +1949,25 @@
     </div>
 
     <!-- Approval Sheet -->
-    <div class="content-card {{ !$isApprovalSheetUnlocked ? 'locked-card' : '' }}">
+    <div class="content-card {{ !$approvalLetterUnlocked ? 'locked-card' : '' }}">
         <div class="card-accent"></div>
         <div class="p-5">
-            @if(!$isApprovalSheetUnlocked)
+            @if(!$approvalLetterUnlocked)
             <div class="absolute top-3 right-3 badge badge-muted">
                 <i class="fa-solid fa-lock"></i> Locked
             </div>
             @endif
 
-            <h3 class="mt-3 text-lg {{ !$isApprovalSheetUnlocked ? 'text-[#5b6375]' : 'text-[#0a1428]' }}">Approval Sheet</h3>
+            <h3 class="mt-3 text-lg {{ !$approvalLetterUnlocked ? 'text-[#5b6375]' : 'text-[#0a1428]' }}">Approval Sheet</h3>
             <p class="text-[#5b6375] text-xs my-2">View the final approval sheet for your capstone project.</p>
-            @if($isApprovalSheetUnlocked)
+            @if($approvalLetterUnlocked)
             <p class="text-[11px] text-[#5b6375]"><i class="fa-regular fa-circle-check"></i> Issued</p>
             @else
             <p class="text-xs" style="color:var(--gold-dark);"><i class="fa-regular fa-hourglass-half"></i> Not yet available</p>
             <p class="text-[10px] text-[#5b6375] mt-1">Complete the required milestone to unlock</p>
             @endif
             <div class="flex gap-3 mt-4">
-                @if($isApprovalSheetUnlocked)
+                @if($approvalLetterUnlocked)
                 <button onclick="openApprovalSheet({{ $groups->id }})" class="btn-outline text-xs py-1.5 px-3">
                     <i class="fas fa-eye mr-1"></i> View Approval
                 </button>
@@ -2133,6 +2222,61 @@
 
     </div>
 </div>
+
+<!-- ── RECOMMENDATION SHEET MODAL ── -->
+<div id="recommendationSheetModal" class="modal-overlay">
+    <div class="modal-box wide recommendation-sheet-modal" style="max-width: 52rem; padding: 1.5rem;">
+        <!-- Header Image -->
+        <div class="text-center mb-4">
+            <img src="{{ asset('pictures/mccheader.jpg') }}" alt="MCC Header" class="w-full max-h-24 object-contain">
+        </div>
+        <br>
+        <br>
+        <br>
+        <!-- Title -->
+        <h2 class="text-center text-2xl font-bold tracking-widest text-[#0a1428] mb-4" style="font-family:'Cormorant Garamond',serif;">
+            <b>RECOMMENDATION SHEET</b>
+        </h2>
+    
+        <br>
+        <br>
+        <br>
+
+        <!-- Main Content - full height, no box -->
+        <div id="recommendationSheetContent" class="recommendation-content">
+            <!-- This Capstone Project 1 hereto entitled -->
+            <p class="text-center text-sm">This Capstone Project hereto entitled:</p>
+            <p class="text-center text-xl font-bold mt-1" id="recommendationTitle" style="font-family:'Cormorant Garamond',serif;">—</p>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+
+            <p class="text-center text-sm mt-3">prepared and submitted by</p>
+            <p class="text-center text-sm mt-3" id="recommendationProponents">—</p>
+            <p class="text-center text-sm mt-3">
+                in partial fulfillment of the requirements for the degree of
+                <strong>Bachelor of Science in Information Technology</strong>
+                has been examined, accepted, and recommended for Oral Presentation.
+            </p>
+
+            <!-- Adviser (pushed to bottom) -->
+            <div class="recommendation-footer">
+                <span class="font-bold text-sm uppercase tracking-wide" id="recommendationAdviser">—</span>
+                <span class="text-xs text-[#5b6375] mt-0.5">Capstone Adviser</span>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex justify-end gap-2 pt-4 border-t border-[#e2dacf] mt-4">
+            <button type="button" onclick="printModalContent('recommendationSheetModal')" class="btn-outline text-xs py-2 px-4">
+                <i class="fas fa-print mr-1"></i> Print
+            </button>
+            <button type="button" onclick="closeModal('recommendationSheetModal')" class="btn-primary text-xs py-2 px-4">Close</button>
+        </div>
+    </div>
+</div>
 <!-- ═══════════════ APPROVAL SHEET MODAL ═══════════════ -->
 <div id="approvalSheetModal" class="modal-overlay">
     <div class="modal-box wide" style="max-width: 52rem; padding: 1.5rem;">
@@ -2143,7 +2287,7 @@
         </div>
 
         <!-- Title -->
-        <h2 class="text-center text-2xl font-bold tracking-widest text-[#0a1428] mb-4" style="font-family:'Cormorant Garamond',serif;">
+        <h2 id="approvalSheetHeading" class="text-center text-2xl font-bold tracking-widest text-[#0a1428] mb-4" style="font-family:'Cormorant Garamond',serif;">
             APPROVAL SHEET
         </h2>
 
@@ -2156,7 +2300,7 @@
             <ol id="approvalProponents" class="list-decimal list-inside text-sm font-medium text-center">
                 <li class="text-[#5b6375] italic">Loading...</li>
             </ol>
-            <p class="text-center text-sm mt-2">
+            <p id="approvalSheetStatement" class="text-center text-sm mt-2">
                 in partial fulfillment of the requirements for the degree of
                 <strong>Bachelor of Science in Information Technology</strong>
                 has been examined, accepted and recommended for Oral Presentation.
@@ -2471,8 +2615,11 @@ window.printRevisionSheet = function() {
 };
 // ── Open Approval Sheet Modal ──
 // ── Open Approval Sheet Modal ──
-window.openApprovalSheet = function(groupId) {
+window.openApprovalSheet = function(groupId, documentType = 'approval') {
     const modal = document.getElementById('approvalSheetModal');
+    const heading = document.getElementById('approvalSheetHeading');
+    const statement = document.getElementById('approvalSheetStatement');
+    const isRecommendation = documentType === 'recommendation';
     const title = document.getElementById('approvalTitle');
     const proponents = document.getElementById('approvalProponents');
     const adviser = document.getElementById('approvalAdviser');
@@ -2482,6 +2629,10 @@ window.openApprovalSheet = function(groupId) {
     const president = document.getElementById('approvalPresident');
 
     // Reset loading states
+    heading.textContent = isRecommendation ? 'RECOMMENDATION SHEET' : 'APPROVAL SHEET';
+    statement.innerHTML = isRecommendation
+        ? 'has been examined, accepted and recommended for the next capstone stage.'
+        : 'in partial fulfillment of the requirements for the degree of <strong>Bachelor of Science in Information Technology</strong> has been examined, accepted and recommended for Oral Presentation.';
     title.textContent = '—';
     proponents.innerHTML = '<li class="text-[#5b6375] italic">Loading...</li>';
     adviser.textContent = '—';
@@ -2529,6 +2680,47 @@ window.openApprovalSheet = function(groupId) {
         });
 };
 
+// ── Open Recommendation Sheet Modal ──
+window.openRecommendationSheet = function(groupId) {
+    const modal = document.getElementById('recommendationSheetModal');
+    const title = document.getElementById('recommendationTitle');
+    const proponents = document.getElementById('recommendationProponents');
+    const adviser = document.getElementById('recommendationAdviser');
+
+    // Reset loading states
+    title.textContent = '—';
+    proponents.textContent = 'Loading...';
+    adviser.textContent = '—';
+
+    openModal('recommendationSheetModal');
+
+    fetch(`/student/get-recommendation-sheet/${groupId}`)
+        .then(response => response.json())
+        .then(data => {
+            title.textContent = data.capstone_title || '—';
+
+            // Format members as comma-separated: "Name1, Name2, and Name3"
+            if (data.members && data.members.length) {
+                if (data.members.length === 1) {
+                    proponents.textContent = data.members[0];
+                } else if (data.members.length === 2) {
+                    proponents.textContent = `${data.members[0]} and ${data.members[1]}`;
+                } else {
+                    const names = data.members.slice(0, -1).join(', ');
+                    proponents.textContent = `${names}, and ${data.members[data.members.length - 1]}`;
+                }
+            } else {
+                proponents.textContent = '—';
+            }
+
+            adviser.textContent = data.adviser || '—';
+        })
+        .catch(err => {
+            console.error('Recommendation sheet error:', err);
+            proponents.textContent = 'Error loading data';
+            adviser.textContent = 'Error loading data';
+        });
+};
 // ── Open Revision Sheet Modal ──
 window.openRevisionSheet = function(groupId, revisionId, panelistName) {
     // panelistName is passed from the button (the teacher who requested the revision)

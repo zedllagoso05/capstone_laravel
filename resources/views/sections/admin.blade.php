@@ -611,7 +611,62 @@
     padding-top: 0 !important;
     border-top: none !important;
 }
+/* ── FIX: Groups Section Filter Dropdown ── */
+#admin-group-section-filter {
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: #faf8f4;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235b6375' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 10px 10px;
+    padding-right: 2.2rem !important;
+    border: 1.5px solid #e2dacf;
+    border-radius: 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #0a1428;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    min-width: 140px;
+    max-width: 180px;
+    height: 38px;
+}
 
+#admin-group-section-filter:hover {
+    border-color: #d6b15c;
+}
+
+#admin-group-section-filter:focus {
+    border-color: #d6b15c;
+    box-shadow: 0 0 0 3px rgba(214, 177, 92, 0.15);
+    outline: none;
+}
+
+/* ── Selected option text ── */
+#admin-group-section-filter option:checked {
+    background: #0a1428;
+    color: #f0e0b0;
+}
+
+/* ── All options ── */
+#admin-group-section-filter option {
+    background: #ffffff;    
+    color: #171e2c;
+    padding: 0.4rem 0.6rem;
+    font-weight: 500;
+}
+
+#admin-group-section-filter option:hover {
+    background: #f0ece4;
+}
+
+/* ── Make the selected value stand out in the closed state ── */
+#admin-group-section-filter:not(:focus) {
+    background-color: #faf8f4;
+    color: #0a1428;
+    font-weight: 600;
+}
     </style>
 </head>
 <body class="bg-[#f8f6f0] text-[#171e2c]">
@@ -852,6 +907,13 @@
             <div class="content-card">
                 <div class="card-accent"></div>
                 <div class="p-6">
+                    <div class="flex flex-wrap justify-between items-center mb-4 gap-3">
+                        <div class="relative flex-1 min-w-[200px]">
+                            <input type="text" id="teacher-search" class="form-input text-xs w-full pl-9 py-2" placeholder="Search by name, ID, email…">
+                            <i class="fas fa-search absolute left-3 top-2.5 text-[#b8b0a0] text-xs"></i>
+                        </div>
+                        <div class="text-xs text-[#5b6375]" id="teacher-count">{{ count($allTeachers ?? []) }} teachers</div>
+                    </div>
                     <div class="flex justify-between items-center mb-5 flex-wrap gap-3">
                         <h3>All Teachers</h3>
                         <div class="flex gap-2">
@@ -930,6 +992,12 @@
         <div id="sg-students-view" class="content-card">
             <div class="card-accent"></div>
             <div class="p-6">
+                <div class="flex flex-wrap items-center gap-2 mb-4">
+                    <div class="relative flex-1 min-w-[160px]">
+                        <input type="text" id="student-search" class="form-input text-xs w-full pl-9 py-2" placeholder="Search by name, ID, section, group…">
+                        <i class="fas fa-search absolute left-3 top-2.5 text-[#b8b0a0] text-xs"></i>
+                    </div>
+                </div>
                 <div class="flex justify-between items-center mb-5 flex-wrap gap-3">
                     <h3>All Students</h3>
                     <div class="flex gap-2 flex-wrap">
@@ -1015,85 +1083,118 @@
                 </div>
             </div>
         </div>
-    <!-- ========== GROUPS VIEW (unchanged – no filter, no pagination) ========== -->
-    <div id="sg-groups-view" class="content-card hidden">
-        <div class="card-accent"></div>
-        <div class="p-6">
-            <div class="flex justify-between items-center mb-5 flex-wrap gap-3">
-                <h3>All Groups</h3>
+    <!-- ========== GROUPS VIEW (now with section filter + pagination) ========== -->
+<div id="sg-groups-view" class="content-card hidden">
+    <div class="card-accent"></div>
+    <div class="p-6">
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+            <div class="relative flex-1 min-w-[160px]">
+                <input type="text" id="group-search" class="form-input text-xs w-full pl-9 py-2" placeholder="Search by group, title, adviser, room…">
+                <i class="fas fa-search absolute left-3 top-2.5 text-[#b8b0a0] text-xs"></i>
+            </div>
+        </div>
+        <div class="flex justify-between items-center mb-5 flex-wrap gap-3">
+            <h3>All Groups</h3>
+            <div class="flex gap-2 flex-wrap items-center">
+
                 <button onclick="openModal('createGroupModal')" class="btn-primary text-sm"><i class="fas fa-plus mr-1"></i> Create Group</button>
             </div>
-            <div class="overflow-x-auto">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Group</th>
-                            <th>Capstone Title</th>
-                            <th>Section</th>
-                            <th>Adviser</th>
-                            <th>Members</th>
-                            <th>Capstone 1</th>
-                            <th>Capstone 2</th>
-                            <th>Room</th>
-                            <th class="pr-2">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($groupsData ?? [] as $group)
-                        <tr>
-                            <td class="text-sm font-semibold text-[#171e2c]">{{ $group['name'] }}</td>
-                            <td class="text-sm text-[#3d4450]">{{ $group['capstone_title'] ?? '—' }}</td>
-                            <td class="text-sm text-[#3d4450]">{{ $group['section_name'] }}</td>
-                            <td class="text-sm text-[#3d4450]">{{ $group['assigned_teacher_name'] ?? 'Unassigned' }}</td>
-                            <td class="text-sm text-[#3d4450]">
-                                <div class="space-y-1">
-                                    @foreach($group['members'] as $m)
-                                        <div class="flex items-center gap-1">
-                                            <span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0"></span>
-                                            <span class="text-xs font-medium text-[#171e2c]">{{ $m['name'] }}</span>
-                                        </div>
-                                    @endforeach
-                                    @if(empty($group['members']))
-                                        <span class="text-[#5b6375] italic text-xs">No members</span>
-                                    @endif
-                                </div>
-                            </td>
-                            <td class="text-xs">
-                                @if($group['completed_c1'])
-                                    <span class="badge badge-green"><i class="fa-solid fa-circle-check mr-0.5"></i> Completed</span>
-                                @else
-                                    <span class="badge badge-amber"><i class="fa-regular fa-clock mr-0.5"></i> In Progress</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Group</th>
+                        <th>Capstone Title</th>
+                        <th>                
+                            <select id="admin-group-section-filter" class="form-select text-xs py-1 px-2 border border-[#e2dacf] rounded-lg bg-[#faf8f4] font-semibold" style="color: var(--navy); max-width: 140px;">
+                    <option value="All">All Sections</option>
+                    @forelse ($allSections as $section)
+                        <option value="{{ $section->section_name }}">{{ $section->section_name }}</option>
+                    @empty
+                        <option disabled>No section available</option>
+                    @endforelse
+                </select></th>
+                        <th>Adviser</th>
+                        <th>Members</th>
+                        <th>Capstone 1</th>
+                        <th>Capstone 2</th>
+                        <th>Room</th>
+                        <th class="pr-2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="groups-tbody">
+                    @forelse($groupsData ?? [] as $group)
+                    <tr class="groups-row" data-section="{{ $group['section_name'] }}">
+                        <td class="text-sm font-semibold text-[#171e2c]">{{ $group['name'] }}</td>
+                        <td class="text-sm text-[#3d4450]">{{ $group['capstone_title'] ?? '—' }}</td>
+                        <td class="text-sm text-[#3d4450]">{{ $group['section_name'] }}</td>
+                        <td class="text-sm text-[#3d4450]">{{ $group['assigned_teacher_name'] ?? 'Unassigned' }}</td>
+                        <td class="text-sm text-[#3d4450]">
+                            <div class="space-y-1">
+                                @foreach($group['members'] as $m)
+                                    <div class="flex items-center gap-1">
+                                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0"></span>
+                                        <span class="text-xs font-medium text-[#171e2c]">{{ $m['name'] }}</span>
+                                    </div>
+                                @endforeach
+                                @if(empty($group['members']))
+                                    <span class="text-[#5b6375] italic text-xs">No members</span>
                                 @endif
-                            </td>
-                            <td class="text-xs">
-                                @if($group['completed_c2'])
-                                    <span class="badge badge-green"><i class="fa-solid fa-circle-check mr-0.5"></i> Completed</span>
-                                @else
-                                    <span class="badge badge-amber"><i class="fa-regular fa-clock mr-0.5"></i> In Progress</span>
-                                @endif
-                            </td>
-                            <td class="text-sm text-[#3d4450]">
-                                <span class="badge {{ $group['room_name'] !== 'Unassigned' ? 'badge-gold' : 'badge-muted' }}">
-                                    {{ $group['room_name'] }}
-                                </span>
-                            </td>
-                            <td class="pr-2">
-                                <div class="flex gap-3 text-[#5b6375]">
-                                    <button onclick="openEditGroupModal({{ $group['id'] }})" class="hover:text-[#0a1428] transition"><i class="fas fa-pen"></i></button>
-                                    <button type="button" onclick="openDeleteGroupModal({{ $group['id'] }}, '{{ addslashes($group['name']) }}')" class="hover:text-red-500 transition"><i class="fas fa-trash"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="9" class="py-6 text-center text-[#5b6375]">No groups found.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                            </div>
+                        </td>
+                        <td class="text-xs">
+                            @if($group['completed_c1'])
+                                <span class="badge badge-green"><i class="fa-solid fa-circle-check mr-0.5"></i> Completed</span>
+                            @else
+                                <span class="badge badge-amber"><i class="fa-regular fa-clock mr-0.5"></i> In Progress</span>
+                            @endif
+                        </td>
+                        <td class="text-xs">
+                            @if($group['completed_c2'])
+                                <span class="badge badge-green"><i class="fa-solid fa-circle-check mr-0.5"></i> Completed</span>
+                            @else
+                                <span class="badge badge-amber"><i class="fa-regular fa-clock mr-0.5"></i> In Progress</span>
+                            @endif
+                        </td>
+                        <td class="text-sm text-[#3d4450]">
+                            <span class="badge {{ $group['room_name'] !== 'Unassigned' ? 'badge-gold' : 'badge-muted' }}">
+                                {{ $group['room_name'] }}
+                            </span>
+                        </td>
+                        <td class="pr-2">
+                            <div class="flex gap-3 text-[#5b6375]">
+                                <button onclick="openEditGroupModal({{ $group['id'] }})" class="hover:text-[#0a1428] transition"><i class="fas fa-pen"></i></button>
+                                <button type="button" onclick="openDeleteGroupModal({{ $group['id'] }}, '{{ addslashes($group['name']) }}')" class="hover:text-red-500 transition"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr class="no-groups-row">
+                        <td colspan="9" class="py-6 text-center text-[#5b6375]">No groups found.</td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+
+            <!-- Pagination Controls -->
+            <div class="flex items-center justify-between mt-5 pt-4 border-t border-[#e2dacf]">
+                <span class="text-xs text-[#5b6375]">
+                    Showing <span id="groups-start">0</span> – <span id="groups-end">0</span> of <span id="groups-total">0</span>
+                </span>
+                <div class="flex gap-2">
+                    <button id="groups-prev" class="btn-ghost text-xs px-3 py-1 border border-[#e2dacf] rounded-lg hover:bg-[#faf8f4] disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+                        <i class="fas fa-chevron-left mr-1"></i> Previous
+                    </button>
+                    <span id="groups-page-info" class="text-xs text-[#5b6375] self-center">Page 1</span>
+                    <button id="groups-next" class="btn-ghost text-xs px-3 py-1 border border-[#e2dacf] rounded-lg hover:bg-[#faf8f4] disabled:opacity-40 disabled:cursor-not-allowed">
+                        Next <i class="fas fa-chevron-right ml-1"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
+</div>
 </div>
 
        <!-- ==================== RUBRICS ==================== -->
@@ -1412,6 +1513,68 @@
                 </div>
             </div>
         </div>
+        <!-- ==================== DOCUMENTS ==================== -->
+<div id="documents-section" class="section-container hidden section-card max-w-7xl mx-auto">
+    <div class="mb-8">
+        <h1>Documents</h1>
+        <div class="gold-accent-line"></div>
+        <p class="text-[#5b6375] mt-2 text-sm">Certificates and documents that unlock automatically when a group completes their linked milestone — each carries a unique serial number for verification.</p>
+    </div>
+
+    <div class="content-card">
+        <div class="card-accent"></div>
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-5 flex-wrap gap-3">
+                <h3>Issued Documents</h3>
+                <div class="relative">
+                    <input type="text" id="documents-search" class="form-input text-xs pl-9 py-2 w-64" placeholder="Search by serial, group, or document...">
+                    <i class="fas fa-search absolute left-3 top-2.5 text-[#b8b0a0] text-xs"></i>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Serial Number</th>
+                            <th>Document</th>
+                            <th>Group</th>
+                            <th>Section</th>
+                            <th>Issued Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="documents-tbody">
+                        @forelse($issuedDocuments ?? [] as $doc)
+                        <tr class="documents-row" data-search="{{ strtolower($doc['serial_number'] . ' ' . $doc['certificate_title'] . ' ' . $doc['group_name'] . ' ' . $doc['section_name']) }}">
+                            <td>
+                                <span class="badge badge-gold font-mono tracking-wider">{{ $doc['serial_number'] }}</span>
+                            </td>
+                            <td class="text-sm font-semibold text-[#171e2c]">
+                                <i class="fa-regular fa-file-lines text-[#d6b15c] mr-1.5"></i>{{ $doc['certificate_title'] }}
+                            </td>
+                            <td class="text-sm text-[#3d4450]">{{ $doc['group_name'] }}</td>
+                            <td class="text-sm text-[#3d4450]">{{ $doc['section_name'] }}</td>
+                            <td class="text-sm text-[#3d4450]">
+                                {{ $doc['issued_date'] ? \Carbon\Carbon::parse($doc['issued_date'])->format('M d, Y') : '—' }}
+                            </td>
+                        </tr>
+                        @empty
+                        <tr id="documents-empty-row">
+                            <td colspan="5" class="py-8 text-center text-[#5b6375]">
+                                <i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>
+                                No documents have been issued yet. They unlock automatically once a group completes the milestone linked to a document.
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+                <p id="documents-no-match" class="hidden text-center py-8 text-[#5b6375]">
+                    <i class="fa-regular fa-folder-open text-2xl mb-2 block"></i> No documents match your search.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
         <!-- ==================== PROFILE ==================== -->
         <div id="profile-section" class="section-container hidden section-card max-w-7xl mx-auto">
             <div class="mb-8"><h1>Profile</h1><div class="gold-accent-line"></div><p class="text-[#5b6375] mt-2 text-sm">Manage your personal information and contact details</p></div>
@@ -2961,6 +3124,7 @@ const sections = {
     evaluation: document.getElementById('evaluation-section'),
     profile: document.getElementById('profile-section'),
     capstone: document.getElementById('capstone-section'),
+     documents: document.getElementById('documents-section'), 
 };
 const navLinks = document.querySelectorAll('.nav-link');
 const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
@@ -2995,6 +3159,9 @@ document.querySelectorAll('.sg-tab-btn').forEach(btn => {
         if (view === 'students' && studentsPaginate) {
             setTimeout(studentsPaginate, 50);
         }
+        if (view === 'groups' && groupsPaginate) {   
+                groupsPaginate();
+            }
     });
 });
 
@@ -3092,6 +3259,53 @@ document.querySelectorAll('.toggle-section-btn').forEach(btn => {
             });
         });
     }
+
+    const docSearch = document.getElementById('documents-search');
+if (docSearch) {
+    docSearch.addEventListener('input', function () {
+        const q = this.value.trim().toLowerCase();
+        const rows = document.querySelectorAll('.documents-row');
+        let visible = 0;
+        rows.forEach(row => {
+            const match = !q || (row.dataset.search || '').includes(q);
+            row.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+        document.getElementById('documents-no-match')?.classList.toggle('hidden', visible !== 0 || rows.length === 0);
+    });
+}
+
+// ── TEACHERS SEARCH ──
+const teacherSearch = document.getElementById('teacher-search');
+if (teacherSearch) {
+    teacherSearch.addEventListener('input', function () {
+        const query = this.value.trim().toLowerCase();
+        const rows = document.querySelectorAll('#teachers-section tbody tr');
+        let visible = 0;
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const match = !query || text.includes(query);
+            row.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+        document.getElementById('teacher-count').textContent = `${visible} teachers`;
+    });
+}
+const studentSearch = document.getElementById('student-search');
+if (studentSearch) {
+    studentSearch.addEventListener('input', function () {
+        applyStudentFilters();
+    });
+}
+
+
+const groupSearch = document.getElementById('group-search');
+if (groupSearch) {
+    groupSearch.addEventListener('input', function () {
+        applyGroupFilters();
+    });
+}
+
 });
 
 [...navLinks, ...mobileNavLinks].forEach(el => {
@@ -3461,16 +3675,26 @@ document.getElementById('edit_milestone_form').addEventListener('submit', functi
         },
         body: new FormData(form)
     })
-    .then(async r => {
-        if (r.redirected) { window.location.href = r.url; return; }
-        const data = await r.json().catch(() => null);
-        if (data?.errors) {
-            errorsBox.innerHTML = Object.values(data.errors).flat().join('<br>');
-            errorsBox.classList.remove('hidden');
-        } else {
-            showToast('Failed to update milestone.', true);
-        }
-    })
+ .then(async r => {
+    if (r.redirected) {
+        window.location.href = r.url;
+        return;
+    }
+    const data = await r.json().catch(() => null);
+
+    // ── UPDATED LOGIC ──
+    if (data?.success) {
+        showToast(data.message, false);
+        closeModal('edit_milestone_modal');
+        // optionally reload the milestone list (or just reload the page)
+        window.location.reload(); // or fetch the list again
+    } else if (data?.errors) {
+        errorsBox.innerHTML = Object.values(data.errors).flat().join('<br>');
+        errorsBox.classList.remove('hidden');
+    } else {
+        showToast('Something went wrong.', true);
+    }
+})
     .catch(() => showToast('Failed to update milestone.', true));
 });
 
@@ -3534,15 +3758,23 @@ document.getElementById('edit_rubric_form').addEventListener('submit', function(
         body: new FormData(form)
     })
     .then(async r => {
-        if (r.redirected) { window.location.href = r.url; return; }
-        const data = await r.json().catch(() => null);
-        if (data?.errors) {
-            errorsBox.innerHTML = Object.values(data.errors).flat().join('<br>');
-            errorsBox.classList.remove('hidden');
-        } else {
-            showToast('Failed to update rubric.');
-        }
-    })
+    if (r.redirected) {
+        window.location.href = r.url;
+        return;
+    }
+    const data = await r.json().catch(() => null);
+
+    if (data?.success) {
+        showToast(data.message, false);          // ✅ Success toast
+        closeModal('rubrics_edit_modal');
+        window.location.reload();                // or refresh only the rubrics list
+    } else if (data?.errors) {
+        errorsBox.innerHTML = Object.values(data.errors).flat().join('<br>');
+        errorsBox.classList.remove('hidden');
+    } else {
+        showToast('Something went wrong.', true); // Fallback
+    }
+})
     .catch(() => showToast('Failed to update rubric.'));
 });
 
@@ -4159,9 +4391,17 @@ document.getElementById('edit_group_add_students_btn').addEventListener('click',
 document.getElementById('edit_group_form').addEventListener('submit', function(e) {
     e.preventDefault();
     const form = this;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    // ── Show loading state ──
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saving...';
+
     const errorsBox = document.getElementById('edit_group_errors');
     errorsBox.classList.add('hidden');
     errorsBox.innerHTML = '';
+
     fetch(form.action, {
         method: 'POST',
         headers: {
@@ -4171,18 +4411,36 @@ document.getElementById('edit_group_form').addEventListener('submit', function(e
         body: new FormData(form)
     })
     .then(async r => {
-        if (r.redirected) { window.location.href = r.url; return; }
+        if (r.redirected) {
+            window.location.href = r.url;
+            return;
+        }
         const data = await r.json().catch(() => null);
+
         if (data?.errors) {
+            // ── Validation errors ──
             errorsBox.innerHTML = Object.values(data.errors).flat().join('<br>');
             errorsBox.classList.remove('hidden');
+            // Re‑enable button
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
         } else if (data?.success) {
-            window.location.reload();
+            // ── Success: show toast, then reload ──
+            showToast(data.message, false);
+            // Reload after the toast has been visible for a moment
+            setTimeout(() => window.location.reload(), 1200);
         } else {
-            showToast('Failed to update group.');
+            // ── Unknown error ──
+            showToast('Failed to update group.', true);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
         }
     })
-    .catch(() => showToast('Failed to update group.'));
+    .catch(() => {
+        showToast('Failed to update group.', true);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
 });
 
 function regenerateRoomCode(roomId, btn) {
@@ -4251,8 +4509,8 @@ function filterGroups() {
     }
 }
 
-// ---- STUDENTS: PAGINATION + FILTER (corrected) ----
-const STUDENT_PAGE_SIZE = 30;
+// ---- STUDENTS: PAGINATION + FILTER (corrected) ----  
+const STUDENT_PAGE_SIZE = 20;
 let studentsPaginate = null;
 
 function getVisibleStudentRows() {
@@ -4324,6 +4582,112 @@ function initStudentsPagination() {
         update();
     };
 }
+// ---- GROUPS: PAGINATION + SECTION FILTER (mirrors students pattern) ----
+const GROUP_PAGE_SIZE = 10;
+let groupsPaginate = null;
+
+function getVisibleGroupRows() {
+    const tbody = document.getElementById('groups-tbody');
+    if (!tbody) return [];
+    return Array.from(tbody.querySelectorAll('tr.groups-row'))
+        .filter(row => !row.classList.contains('filter-hidden'));
+}
+
+function initGroupsPagination() {
+    const tbody = document.getElementById('groups-tbody');
+    if (!tbody) return null;
+
+    let currentPage = 1;
+
+    function update() {
+        const visibleRows = getVisibleGroupRows();
+        const totalVisible = visibleRows.length;
+        const totalPages = Math.ceil(totalVisible / GROUP_PAGE_SIZE) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const start = (currentPage - 1) * GROUP_PAGE_SIZE;
+        const end = Math.min(start + GROUP_PAGE_SIZE, totalVisible);
+
+        visibleRows.forEach(row => row.style.display = 'none');
+        for (let i = start; i < end; i++) {
+            visibleRows[i].style.display = '';
+        }
+
+        document.getElementById('groups-start').textContent = totalVisible === 0 ? 0 : start + 1;
+        document.getElementById('groups-end').textContent = end;
+        document.getElementById('groups-total').textContent = totalVisible;
+        document.getElementById('groups-prev').disabled = currentPage === 1;
+        document.getElementById('groups-next').disabled = currentPage === totalPages;
+        document.getElementById('groups-page-info').textContent = `Page ${currentPage} of ${totalPages}`;
+    }
+
+    function goTo(page) {
+        const totalVisible = getVisibleGroupRows().length;
+        const totalPages = Math.ceil(totalVisible / GROUP_PAGE_SIZE) || 1;
+        if (page < 1 || page > totalPages) return;
+        currentPage = page;
+        update();
+    }
+
+    document.getElementById('groups-prev').addEventListener('click', () => goTo(currentPage - 1));
+    document.getElementById('groups-next').addEventListener('click', () => goTo(currentPage + 1));
+
+    update();
+
+    return function rePaginate() {
+        const visibleRows = getVisibleGroupRows();
+        const totalVisible = visibleRows.length;
+        const totalPages = Math.ceil(totalVisible / GROUP_PAGE_SIZE) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        update();
+    };
+}
+
+function applyGroupFilters() {
+     const sectionFilter = document.getElementById('admin-group-section-filter');
+    const searchInput = document.getElementById('group-search');
+    const selectedSection = sectionFilter.value;
+    const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+    const rows = document.querySelectorAll('#groups-tbody tr.groups-row');
+    let anyVisible = false;
+
+    rows.forEach(row => {
+        const rowSection = row.dataset.section || '';
+        const rowText = row.textContent.toLowerCase();
+        let show = true;
+
+        if (selectedSection !== 'All' && normText(rowSection) !== normText(selectedSection)) {
+            show = false;
+        }
+        if (show && query && !rowText.includes(query)) {
+            show = false;
+        }
+
+        if (show) {
+            row.classList.remove('filter-hidden');
+            anyVisible = true;
+        } else {
+            row.classList.add('filter-hidden');
+            row.style.display = 'none';
+        }
+    });
+
+    let noRow = document.querySelector('#groups-tbody .no-groups-match-row');
+    if (!anyVisible && rows.length > 0) {
+        if (!noRow) {
+            noRow = document.createElement('tr');
+            noRow.className = 'no-groups-match-row';
+            noRow.innerHTML = '<td colspan="9" class="py-6 text-center text-[#5b6375]">No groups match the selected section.</td>';
+            document.querySelector('#groups-tbody').appendChild(noRow);
+        }
+        noRow.style.display = '';
+    } else if (noRow) {
+        noRow.style.display = 'none';
+    }
+
+    if (groupsPaginate) groupsPaginate();
+}
 
 // ── Populate Group dropdown based on selected Section ──
 function populateGroupFilter(selectedSection) {
@@ -4350,10 +4714,12 @@ function populateGroupFilter(selectedSection) {
 
 // ── Apply filters (section + group) ──
 function applyStudentFilters() {
-    const sectionFilter = document.getElementById('admin-student-section-filter');
+const sectionFilter = document.getElementById('admin-student-section-filter');
     const groupFilter = document.getElementById('admin-student-group-filter');
+    const searchInput = document.getElementById('student-search');
     const selectedSection = sectionFilter.value;
     const selectedGroup = groupFilter.value;
+    const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
     const rows = document.querySelectorAll('#students-tbody tr:not(.no-students-row)');
     let anyVisible = false;
@@ -4361,12 +4727,16 @@ function applyStudentFilters() {
     rows.forEach(row => {
         const rowSection = row.dataset.section || '';
         const rowGroup = row.dataset.group || '';
+        const rowText = row.textContent.toLowerCase();
         let show = true;
 
         if (selectedSection !== 'All' && normText(rowSection) !== normText(selectedSection)) {
             show = false;
         }
         if (show && selectedGroup !== 'All' && normText(rowGroup) !== normText(selectedGroup)) {
+            show = false;
+        }
+        if (show && query && !rowText.includes(query)) {
             show = false;
         }
 
@@ -4377,7 +4747,7 @@ function applyStudentFilters() {
             row.classList.add('filter-hidden');
             row.style.display = 'none';
         }
-});
+    });
 
     // Handle "No students" message
     let noRow = document.querySelector('#students-tbody .no-students-row');
@@ -4440,6 +4810,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial filter application
     applyStudentFilters();
+
+    // Groups pagination + filter
+groupsPaginate = initGroupsPagination();
+
+const groupSectionFilter = document.getElementById('admin-group-section-filter');
+if (groupSectionFilter) {
+    groupSectionFilter.addEventListener('change', applyGroupFilters);
+}
+applyGroupFilters();
 });
 
 window.moveItemUp = function(btn) {

@@ -139,7 +139,7 @@ Schema::create('admin', function (Blueprint $table) {
             $table->id();
             $table->string('certificate_title');
             $table->text('certificate_description');
-            $table->foreignId('milestone_id')->constrained('milestones');   
+            $table->text('milestone_id')->nullable();   
             $table->boolean('is_locked')->default(true);
             $table->timestamps();
         });

@@ -10,6 +10,7 @@ class GroupCertificate extends Model
         'group_id',
         'certificate_id',
         'issued_date',
+        'serial_number',
     ];
 
     public function group()

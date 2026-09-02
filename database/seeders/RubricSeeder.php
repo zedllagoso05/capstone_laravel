@@ -67,22 +67,22 @@ class RubricSeeder extends Seeder
                 [
                     'criteria_name' => 'Final System Quality, Usability & Completeness',
                     'weight' => 0.40,
-                    'max_score' => 100.00,
+                    'max_score' => 4.00,
                 ],
                 [
                     'criteria_name' => 'Research Contribution & Evaluation Results',
                     'weight' => 0.25,
-                    'max_score' => 100.00,
+                    'max_score' => 4.00,
                 ],
                 [
                     'criteria_name' => 'Presentation Delivery & Defense Performance',
                     'weight' => 0.20,
-                    'max_score' => 100.00,
+                    'max_score' => 4.00,
                 ],
                 [
                     'criteria_name' => 'Technical Documentation & Design Completeness',
                     'weight' => 0.15,
-                    'max_score' => 100.00,
+                    'max_score' => 4.00,
                 ],
             ];
 

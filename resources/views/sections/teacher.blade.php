@@ -1087,11 +1087,15 @@
                     <div class="flex justify-between items-center mb-6"><h3>Recent Evaluations</h3><i class="fa-regular fa-file-lines text-[#b8b0a0]"></i></div>
                     <div class="space-y-3 max-h-96 overflow-y-auto">
                         @php
-                            $completedGroups = ($adviserGroups ?? collect())->filter(function ($g) use ($milestones) {
-                                $completed = $g->groupMilestones->where('status', 'completed')->count();
-                                $total = $milestones->count() ?? 1;
-                                return round(($completed / max($total, 1)) * 100) >= 100;
-                            });
+                           $enabledMilestoneIdsForCompleted = $milestones->pluck('id')->toArray();
+                                $completedGroups = ($adviserGroups ?? collect())->filter(function ($g) use ($milestones, $enabledMilestoneIdsForCompleted) {
+                                    $completed = $g->groupMilestones
+                                        ->where('status', 'completed')
+                                        ->whereIn('milestone_id', $enabledMilestoneIdsForCompleted)
+                                        ->count();
+                                    $total = $milestones->count() ?: 1;
+                                    return round(($completed / $total) * 100) >= 100;
+                                });
                         @endphp
                         @forelse($completedGroups as $cg)
                             @php
@@ -1111,12 +1115,16 @@
                                         </div>
                                         <p class="text-xs text-[#5b6375] mt-0.5">{{ $cg->capstone_title }}</p>
                                     </div>
-                                    @if($cg->revision_status == 'needs_revision')
+                                   @if($cg->revision_status == 'needs_revision')
                                         <span class="badge badge-amber text-[9px] whitespace-nowrap"><i class="fas fa-spinner fa-spin mr-1"></i> Needs Revision</span>
                                     @elseif($cg->revision_status == 'revised')
                                         <span class="badge badge-green text-[9px] whitespace-nowrap"><i class="fas fa-check-double mr-1"></i> Revised</span>
                                     @else
-                                        <span class="badge badge-muted text-[9px] whitespace-nowrap">No Revision Needed</span>
+                                        <button type="button"
+                                            onclick="openGroupRevisionsModal({{ $cg->id }}, '{{ addslashes($cg->group_name) }}')"
+                                           class="badge bg-green-600 text-white text-[9px] whitespace-nowrap hover:bg-green-700 transition cursor-pointer">
+    <i class="fas fa-file-lines mr-1"></i> View Revisions
+                                        </button>
                                     @endif
                                 </div>
 
@@ -1217,9 +1225,12 @@
                         }
                     @endphp
                         @php 
-                            $completed = $group->groupMilestones->where('status','completed')->count(); 
-                            $total = $milestones->count()??1; 
-                            $progress = round(($completed/max($total,1))*100); 
+                            $completed = $group->groupMilestones
+                                ->where('status','completed')
+                                ->whereIn('milestone_id', $milestones->pluck('id'))
+                                ->count();
+                            $total = $milestones->count() ?: 1;
+                            $progress = round(($completed/$total)*100);
                             $section = $group->students->first()->section ?? 'No Section';
                         @endphp
                         @continue($progress >= 100)
@@ -1231,11 +1242,21 @@
                                     <span class="text-xs text-[#5b6375]">• {{ $group->students->count()??0 }} members</span>
                                 </div>
                                 <span class="text-xs text-[#3d4450]">{{ $group->capstone_title }}</span>
-                                <div class="flex items-center gap-2 mt-1">
-                                    <span class="text-xs text-[#5b6375]">Progress:</span>
-                                    <div class="w-24 progress-bar-bg h-1.5"><div class="progress-fill h-1.5" style="width:{{ $progress }}%; background:var(--gold);"></div></div>
-                                    <span class="text-xs font-semibold">{{ $progress }}%</span>
-                                </div>
+                                @forelse($groupProgress ??[] as $z)
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <span class="text-xs text-[#5b6375]">Progress:</span>
+                                            <div class="w-24 progress-bar-bg h-1.5"><div class="progress-fill h-1.5" style="width:{{ $z->progress }}%; background:var(--gold);"></div></div>
+                                            <span class="text-xs font-semibold">{{ $z->progress }}%</span>
+                                        </div>
+                                @empty
+                                
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <span class="text-xs text-[#5b6375]">Progress:</span>
+                                            <div class="w-24 progress-bar-bg h-1.5"><div class="progress-fill h-1.5" style="width:0%; background:var(--gold);"></div></div>
+                                            <span class="text-xs font-semibold">0%</span>
+                                        </div>
+                                @endforelse
+ 
 
                             </div>
                            @php
@@ -1280,7 +1301,7 @@
                     @endforelse
                 </div>
 
-                <p id="ag_no_results" class="hidden text-center py-8 text-[#5b6375]"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>No groups match your filters</p>
+                <p id="ag_no_results" class="hidden text-center py-8 text-[#5b6375]"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>No groups found </p>
 
                 <div id="ag_pagination" class="flex justify-center items-center gap-2 mt-5 pt-4 border-t border-[#e2dacf]"></div>
             </div>
@@ -1949,7 +1970,7 @@
                                     <i class="fas fa-ban text-red-500"></i>
                                     @if($roomIsFull)
                                         Classroom Full
-                                    @else
+                                    @elseif($isTeacherAlreadyAssigned)
                                         Already Assigned
                                     @endif
                                 </div>
@@ -2338,7 +2359,7 @@
 </div>
 </div>
 
-<!-- EVALUATION MODAL -->
+<!-- EVALUATION MODAL ON GOING -->
 <div id="evaluationModal" class="modal-overlay">
     <div class="modal-box wide" style="max-width: 82rem;">
 
@@ -2353,6 +2374,7 @@
                 </div>
                 <button type="button" onclick="closeModal('evaluationModal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-xl leading-none flex-shrink-0 mt-1">&times;</button>
             </div>
+
         </div>
 
         <div class="eval-modal-body">
@@ -2367,80 +2389,126 @@
                 </div>
 
                 <form id="evaluation_form" action="/teacher/submit-evaluation" method="POST" class="space-y-5">
-                    @csrf
-                    <input type="hidden" name="form_type" value="evaluation">
-                    <div id="evalErrors" class="hidden p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm"></div>
-                    <input type="hidden" name="group_id" id="eval_group_id">
-                    <input type="hidden" name="milestone_id" id="eval_milestone_id">
-                    <input type="hidden" name="score" id="eval_total_score">
-                    <input type="hidden" name="max_score" id="eval_max_score">
+    @csrf
+    <input type="hidden" name="form_type" value="evaluation">
+    <div id="evalErrors" class="hidden p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm"></div>
+    <input type="hidden" name="group_id" id="eval_group_id">
+    <input type="hidden" name="milestone_id" id="eval_milestone_id">
+    <input type="hidden" name="score" id="eval_total_score">
+    <input type="hidden" name="max_score" id="eval_max_score">
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="form-label">Group</label><input type="text" id="eval_group_name" class="form-input" readonly></div>
-                        <div>
-                            <label class="form-label">Milestone</label>
-                            <select id="milestone_select" class="form-select" required>
-                                <option value="">-- Select Milestone --</option>
-                                @foreach($allRooms as $milestone)
-                                    <option value="{{ $milestone->required_milestone_id }}">{{ $milestone->activity_name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
 
-                    <!-- Attendance -->
-                    <div>
-                        <label class="form-label">Attendance</label>
-                        <div class="flex gap-4 mt-1.5">
-                            <label class="flex items-center gap-2 text-xs cursor-pointer">
-                                <input type="radio" name="attendance" value="present" checked class="form-radio text-[#d6b15c] focus:ring-[#d6b15c]">
-                                <span>All members present</span>
-                            </label>
-                            <label class="flex items-center gap-2 text-xs cursor-pointer">
-                                <input type="radio" name="attendance" value="absent" class="form-radio text-[#d6b15c] focus:ring-[#d6b15c]">
-                                <span>Some members absent</span>
-                            </label>
-                        </div>
-                    </div>
 
-                    <!-- Absent Students Checklist -->
-                    <div id="absent_students_container" class="hidden">
-                        <label class="form-label">Select Absent Student(s)</label>
-                        <div id="student_checklist" class="grid grid-cols-2 gap-2 mt-1.5 p-3 border border-[#e2dacf] rounded-xl bg-[#faf8f4] max-h-36 overflow-y-auto">
-                            <!-- Loaded dynamically via JS -->
-                        </div>
-                    </div>
+    <!-- ═══ EVALUATE MODE FIELDS ═══ -->
+    <div id="eval_mode_evaluate_fields" class="space-y-5">
+        <div class="grid grid-cols-2 gap-4">
+            <div><label class="form-label">Group</label><input type="text" id="eval_group_name" class="form-input" readonly></div>
+            <div>
+                <label class="form-label">Milestone</label>
+                <select id="milestone_select" class="form-select">
+                    <option value="">-- Select Milestone --</option>
+                    @foreach($allRooms as $milestone)
+                        <option value="{{ $milestone->required_milestone_id }}">{{ $milestone->activity_name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
 
-                    <div id="rubric_container" class="hidden">
-                        <label class="form-label">Rubric: <span id="rubric_name_display" class="text-[#b88d3a]"></span></label>
-                        <div class="overflow-x-auto rounded-lg border border-[#e2dacf]">
-                            <table class="w-full text-sm">
-                                <thead>
-                                    <tr class="text-[#5b6375] bg-[#faf8f4] border-b border-[#e2dacf]">
-                                        <th class="text-left py-2 px-3 text-xs">Criteria</th>
-                                        <th class="text-center py-2 text-xs">Weight</th>
-                                        <th class="text-center py-2 text-xs">Max Score</th>
-                                        <th class="text-center py-2 px-3 text-xs">Your Score</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="criteria_tbody"></tbody>
-                                <tfoot>
-                                    <tr class="border-t border-[#e2dacf] font-semibold bg-[#faf8f4]">
-                                        <td class="py-2 px-3">Total</td>
-                                        <td class="text-center" id="total_weight">100%</td>
-                                        <td class="text-center" id="total_max">0</td>
-                                        <td class="text-center px-3" id="total_score_display">0</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </div>
+        <!-- Attendance -->
+        <div>
+            <label class="form-label">Attendance</label>
+            <div class="flex gap-4 mt-1.5">
+                <label class="flex items-center gap-2 text-xs cursor-pointer">
+                    <input type="radio" name="attendance" value="present" checked class="form-radio text-[#d6b15c] focus:ring-[#d6b15c]">
+                    <span>All members present</span>
+                </label>
+                <label class="flex items-center gap-2 text-xs cursor-pointer">
+                    <input type="radio" name="attendance" value="absent" class="form-radio text-[#d6b15c] focus:ring-[#d6b15c]">
+                    <span>Some members absent</span>
+                </label>
+            </div>
+        </div>
 
-                    <div>
-                        <label class="form-label">Feedback</label>
-                        <textarea name="feedback" rows="3" class="form-input" placeholder="Overall feedback for this milestone..."></textarea>
-                    </div>
-                </form>
+        <!-- Absent Students Checklist -->
+        <div id="absent_students_container" class="hidden">
+            <label class="form-label">Select Absent Student(s)</label>
+            <div id="student_checklist" class="grid grid-cols-2 gap-2 mt-1.5 p-3 border border-[#e2dacf] rounded-xl bg-[#faf8f4] max-h-36 overflow-y-auto">
+                <!-- Loaded dynamically via JS -->
+            </div>
+        </div>
+
+        <div id="rubric_container" class="hidden">
+            <label class="form-label">Rubric: <span id="rubric_name_display" class="text-[#b88d3a]"></span></label>
+            <p class="text-[10px] text-[#9a9385] mb-1.5">Max score per criteria: 4</p>
+            <div class="overflow-x-auto rounded-lg border border-[#e2dacf]">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-[#5b6375] bg-[#faf8f4] border-b border-[#e2dacf]">
+                            <th class="text-left py-2 px-3 text-xs">Criteria</th>
+                            <th class="text-center py-2 text-xs">1</th>
+                            <th class="text-center py-2 text-xs">2</th>
+                            <th class="text-center py-2 px-3 text-xs">3</th>
+                            <th class="text-center py-2 px-3 text-xs">4</th>
+                        </tr>
+                    </thead>
+                    <tbody id="criteria_tbody"></tbody>
+                    <tfoot>
+                        <tr class="border-t border-[#e2dacf] font-semibold bg-[#faf8f4]">
+                            <td class="py-2 px-3">Total</td>
+                            <td colspan="4" class="text-center py-2">
+                                <span id="total_score_display">0</span> / <span id="total_max">0</span>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div>
+            <label class="form-label">Feedback</label>
+            <textarea name="feedback" rows="3" class="form-input" placeholder="Overall feedback for this milestone..."></textarea>
+        </div>
+    </div>
+
+    <!-- ═══ REVISE MODE FIELDS ═══ -->
+    <div id="eval_mode_revise_fields" class="hidden space-y-5">
+        <div>
+            <label class="form-label">Proponents</label>
+            <div id="eval_rev_proponents_list" class="flex flex-wrap gap-2 mt-1">
+                <span class="text-xs text-[#5b6375] italic">Loading team members…</span>
+            </div>
+        </div>
+
+        <div class="border-t border-[#e2dacf] pt-4">
+            <p class="form-fieldset-title"><i class="fa-solid fa-book"></i> Chapter / Document Findings</p>
+            <div id="eval_rev_chapter_rows" class="space-y-2"></div>
+            <button type="button" onclick="addEvalRevChapterRow()" class="btn-outline text-xs mt-2">
+                <i class="fas fa-plus mr-1"></i> Add Chapter Finding
+            </button>
+        </div>
+
+        <div class="border-t border-[#e2dacf] pt-4">
+            <p class="form-fieldset-title"><i class="fa-solid fa-microchip"></i> System / IoT Findings</p>
+            <div id="eval_rev_iot_rows" class="space-y-2"></div>
+            <button type="button" onclick="addEvalRevIotRow()" class="btn-outline text-xs mt-2">
+                <i class="fas fa-plus mr-1"></i> Add System / IoT Finding
+            </button>
+        </div>
+
+        <div class="border-t border-[#e2dacf] pt-4">
+            <p class="form-fieldset-title"><i class="fa-solid fa-list-check"></i> Additional Objectives</p>
+            <div id="eval_rev_objectives_list" class="space-y-2"></div>
+            <button type="button" onclick="addEvalRevObjective()" class="btn-outline text-xs mt-2">
+                <i class="fas fa-plus mr-1"></i> Add Objective
+            </button>
+        </div>
+
+        <div>
+            <label class="form-label">Overall Remarks / Instructions</label>
+            <textarea id="eval_rev_description_input" class="form-input h-24" placeholder="Provide clear instructions for the group and their adviser..."></textarea>
+        </div>
+    </div>
+    </form>
             </div>
 
             <!-- ═══ RIGHT: REVISION SHEET (VIEW ONLY) ═══ -->
@@ -2450,7 +2518,7 @@
                         <span class="icon-badge"><i class="fa-solid fa-file-lines"></i></span>
                         Revision Sheet
                     </div>
-                    <span class="readonly-pill"><i class="fa-solid fa-lock"></i> View Only</span>
+                    <span id="eval_revision_access_label" class="readonly-pill"><i class="fa-solid fa-pen"></i> Editable if no revision exists</span>
                 </div>
                 <div id="eval_revision_sheet_content" class="text-sm">
                     <p class="text-sm text-[#5b6375]">Loading…</p>
@@ -2462,11 +2530,15 @@
         <!-- Footer -->
         <div class="eval-modal-footer">
             <button type="button" onclick="closeModal('evaluationModal')" class="btn-ghost">Cancel</button>
-            <button type="submit" form="evaluation_form" class="btn-primary"><i class="fa-regular fa-floppy-disk mr-1"></i> Submit Evaluation</button>
+            <button type="button" id="eval_submit_btn" onclick="submitEvalModal()" class="btn-primary">
+            <i class="fa-regular fa-floppy-disk mr-1"></i> Submit Evaluation
+            </button>
         </div>
 
     </div>
 </div>
+
+
 {{-- edit group modal --}}
 <div id="editGroupModal" class="modal-overlay">
     <div class="modal-box wide">
@@ -2768,7 +2840,7 @@
 
             <!-- Additional Objectives for Capstone 2 -->
             <div class="border-t border-[#e2dacf] pt-4">
-                <p class="form-fieldset-title"><i class="fa-solid fa-list-check"></i> Additional Objectives for Capstone Project 2</p>
+                <p class="form-fieldset-title"><i class="fa-solid fa-list-check"></i> Additional Objectives ( If Any)</p>
                 <div id="revision_objectives_list" class="space-y-2">
                     <!-- Dynamic list -->
                 </div>
@@ -2831,6 +2903,26 @@
         </div>
     </div>
 </div>
+<!-- ALL-PANELISTS REVISIONS MODAL -->
+<div id="groupRevisionsModal" class="modal-overlay">
+    <div class="modal-box wide" style="max-width: 56rem;">
+        <div class="modal-accent" style="background-color: #d6b15c;"></div>
+        <div class="flex justify-between items-center mb-4">
+            <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.4rem; font-weight:600; color:var(--navy);" id="grm_title">
+                All Revisions
+            </h2>
+            <button type="button" onclick="closeModal('groupRevisionsModal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-lg">&times;</button>
+        </div>
+
+        <div id="grm_content" class="space-y-5 max-h-[65vh] overflow-y-auto pr-1">
+            <p class="text-sm text-[#5b6375] text-center py-8">Loading…</p>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 mt-4 border-t border-[#e2dacf]">
+            <button type="button" onclick="closeModal('groupRevisionsModal')" class="btn-ghost">Close</button>
+        </div>
+    </div>
+</div>
 
 <script>
 // ══════════════════════════════════════════════
@@ -2869,18 +2961,12 @@ window.toggleSectionView = function(prefix, sectionId, viewType) {
     if (viewType === 'groups') {
         groupsView.classList.remove('hidden');
         studentsView.classList.add('hidden');
-
-        // Style groups button active
         groupsBtn.className = 'px-2.5 py-1 rounded-md font-semibold text-[#b88d3a] bg-white shadow-sm transition-all focus:outline-none';
-        // Style students button inactive
         studentsBtn.className = 'px-2.5 py-1 rounded-md font-semibold text-[#5b6375] hover:text-[#0a1428] transition-all focus:outline-none';
     } else {
         groupsView.classList.add('hidden');
         studentsView.classList.remove('hidden');
-
-        // Style students button active
         studentsBtn.className = 'px-2.5 py-1 rounded-md font-semibold text-[#b88d3a] bg-white shadow-sm transition-all focus:outline-none';
-        // Style groups button inactive
         groupsBtn.className = 'px-2.5 py-1 rounded-md font-semibold text-[#5b6375] hover:text-[#0a1428] transition-all focus:outline-none';
     }
 };
@@ -2888,7 +2974,6 @@ window.toggleSectionView = function(prefix, sectionId, viewType) {
 window.openDashboardDetailModal = function(tabName) {
     openModal('dashboard_detail_modal');
     switchDdmTab(tabName);
-    // Reset search input
     const sInput = document.getElementById('ddm_search_input');
     if (sInput) {
         sInput.value = '';
@@ -2897,22 +2982,15 @@ window.openDashboardDetailModal = function(tabName) {
 };
 
 window.switchDdmTab = function(tabName) {
-    // Hide all tab contents
     document.querySelectorAll('.ddm-tab-content').forEach(el => el.classList.add('hidden'));
-    
-    // Reset all tab button styles to default state
     document.querySelectorAll('.ddm-tab-btn').forEach(btn => {
         btn.style.borderColor = '#e2dacf';
         btn.style.color = '#5b6375';
         btn.style.backgroundColor = 'transparent';
         btn.classList.remove('active');
     });
-
-    // Show selected content
     const content = document.getElementById(`ddm_content_${tabName}`);
     if (content) content.classList.remove('hidden');
-
-    // Set active button style
     const activeBtn = document.getElementById(`ddm_tab_${tabName}`);
     if (activeBtn) {
         activeBtn.style.borderColor = 'var(--gold)';
@@ -2920,8 +2998,6 @@ window.switchDdmTab = function(tabName) {
         activeBtn.style.backgroundColor = '#faf8f4';
         activeBtn.classList.add('active');
     }
-
-    // Update modal title prefix based on selected tab
     const modalTitle = document.getElementById('ddm_modal_title');
     if (modalTitle) {
         const titleMap = {
@@ -2932,8 +3008,6 @@ window.switchDdmTab = function(tabName) {
         };
         modalTitle.textContent = titleMap[tabName] || 'Teacher System Directory Details';
     }
-
-    // Run search filter on switch to apply current filter to the active table
     filterDdmTable();
 };
 
@@ -2941,14 +3015,11 @@ window.filterDdmTable = function() {
     const query = document.getElementById('ddm_search_input').value.trim().toLowerCase();
     const activeTab = document.querySelector('.ddm-tab-btn.active');
     if (!activeTab) return;
-
     const tabIdName = activeTab.id.replace('ddm_tab_', '');
     const activeContent = document.getElementById(`ddm_content_${tabIdName}`);
     if (!activeContent) return;
-
     const rows = activeContent.querySelectorAll('.ddm-row-item');
     let visibleCount = 0;
-
     rows.forEach(row => {
         const searchVal = row.dataset.searchText || '';
         if (!query || searchVal.includes(query)) {
@@ -2958,8 +3029,6 @@ window.filterDdmTable = function() {
             row.style.display = 'none';
         }
     });
-
-    // Update counter in active tab
     const counterEl = document.getElementById(`ddm_count_${tabIdName}`);
     if (counterEl) {
         const originalTotal = rows.length;
@@ -2970,6 +3039,7 @@ window.filterDdmTable = function() {
         }
     }
 };
+
 document.addEventListener('click', function (e) {
     if (e.target.classList.contains('modal-overlay') && e.target.classList.contains('active')) {
         e.target.classList.remove('active');
@@ -3076,7 +3146,6 @@ function openViewModal(groupId) {
                     remarksHtml = `
                         <div class="flex flex-col gap-1.5 items-start">
                             <span class="task-status next" style="background-color: rgba(10,20,40,0.08); color: var(--navy); border: 1px solid rgba(10,20,40,0.15);"><i class="fa-solid fa-circle-info mr-1"></i> Panelist Evaluation Only</span>
-                          
                         </div>
                     `;
                 } else {
@@ -3155,7 +3224,6 @@ function openViewModal(groupId) {
                                     <thead>
                                         <tr class="border-b border-[#e2dacf] text-left text-[#5b6375]">
                                             <th class="py-1 text-left">Criterion</th>
-                                            <th class="py-1 text-center font-normal">Weight</th>
                                             <th class="py-1 text-center font-normal">Max</th>
                                             <th class="py-1 text-center font-normal">Score</th>
                                         </tr>
@@ -3164,7 +3232,6 @@ function openViewModal(groupId) {
                                         ${evaluation.criteria.map(c => `
                                             <tr class="border-b border-[#faf1e0]">
                                                 <td class="py-1 text-left text-[#171e2c] font-medium">${c.criteria_name}</td>
-                                                <td class="py-1 text-center text-[#5b6375]">${c.weight}%</td>
                                                 <td class="py-1 text-center text-[#5b6375]">${c.max_score}</td>
                                                 <td class="py-1 text-center font-bold text-[#1e6b3a]">${c.given_score}</td>
                                             </tr>
@@ -3203,7 +3270,7 @@ function openViewModal(groupId) {
             row.innerHTML = `<td>${dateHtml}</td><td>${taskHtml}</td><td>${remarksHtml}${evaluationHtml}</td>`;
             tbody.appendChild(row);
 
-           if (!m.remarks && m.is_next && data.is_adviser) {
+            if (!m.remarks && m.is_next && data.is_adviser) {
                 const submitBtn = row.querySelector('.submit-remark-btn');
                 if (submitBtn) {
                     const absentList = row.querySelector(`#absent_list_${m.id}`);
@@ -3231,8 +3298,7 @@ function openViewModal(groupId) {
                         submitRemarkEvaluation(groupId, m.id, this, row);
                     });
                 }
-           }
-            
+            }
         });
 
         // ── Load and render earned certificates for this group ──
@@ -3273,7 +3339,8 @@ function openViewModal(groupId) {
         dataDiv.classList.add('hidden');
         showToast('Failed to load group progress.', true);
     });
-}   
+}
+
 function submitRemarkEvaluation(groupId, milestoneId, btn, row) {
     const attendance = row.querySelector(`input[name="attendance_${milestoneId}"]:checked`)?.value || 'present';
     const absentIds = Array.from(row.querySelectorAll('.absent-checkbox:checked')).map(cb => cb.value);
@@ -3301,7 +3368,7 @@ function submitRemarkEvaluation(groupId, milestoneId, btn, row) {
         showToast('Milestone evaluated — ' + data.remarks.remarks_status);
         const pctEl = document.querySelector(`.progress-complete-label[data-group-id="${groupId}"] .progress-pct`);
         if (pctEl) pctEl.textContent = data.overall_progress;
-        openViewModal(groupId); // re-render with the row now marked completed
+        openViewModal(groupId);
     })
     .catch(err => {
         btn.disabled = false;
@@ -3342,7 +3409,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const sections = {
         dashboard: document.getElementById('dashboard-section'),
         assignedsections: document.getElementById('assignedsections-section'),
-
         sections: document.getElementById('sections-section'),
         evaluate: document.getElementById('evaluate-section'),
         profile: document.getElementById('profile-section'),
@@ -3445,183 +3511,176 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-  if (addBtn && studentSelect) {
-    addBtn.addEventListener('click', () => {
-        Array.from(studentSelect.selectedOptions).forEach(o => {
-            if (o.value) addRow(o.value, o.textContent);
+    if (addBtn && studentSelect) {
+        addBtn.addEventListener('click', () => {
+            Array.from(studentSelect.selectedOptions).forEach(o => {
+                if (o.value) addRow(o.value, o.textContent);
+            });
+            studentSelect.selectedIndex = -1;
         });
-        studentSelect.selectedIndex = -1;
-    });
-}
+    }
 
     // ── REVISION HELPER FUNCTIONS ────────────────
-window.openRevisionModal = function (groupId, groupName, capstoneTitle) {
-    document.getElementById('revision_group_id').value = groupId;
-    document.getElementById('revision_group_name').value = groupName || '';
-    document.getElementById('revision_capstone_title').value = capstoneTitle || '';
-    document.getElementById('revision_description_input').value = '';
+    window.openRevisionModal = function (groupId, groupName, capstoneTitle) {
+        document.getElementById('revision_group_id').value = groupId;
+        document.getElementById('revision_group_name').value = groupName || '';
+        document.getElementById('revision_capstone_title').value = capstoneTitle || '';
+        document.getElementById('revision_description_input').value = '';
 
-    // Reset dynamic rows from any previous open
-    document.getElementById('revision_chapter_rows').innerHTML = '';
-    document.getElementById('revision_iot_rows').innerHTML = '';
-    document.getElementById('revision_objectives_list').innerHTML = '';
+        document.getElementById('revision_chapter_rows').innerHTML = '';
+        document.getElementById('revision_iot_rows').innerHTML = '';
+        document.getElementById('revision_objectives_list').innerHTML = '';
 
-    const proponentsContainer = document.getElementById('revision_proponents_list');
-    proponentsContainer.innerHTML = '<span class="text-xs text-[#5b6375] italic">Loading team members…</span>';
+        const proponentsContainer = document.getElementById('revision_proponents_list');
+        proponentsContainer.innerHTML = '<span class="text-xs text-[#5b6375] italic">Loading team members…</span>';
 
-    openModal('revisionModal');
+        openModal('revisionModal');
 
-    fetch(`/teacher/get-group/${groupId}`)
-        .then(r => r.json())
-        .then(data => {
-            proponentsContainer.innerHTML = '';
-
-            if (data.error || !data.members || data.members.length === 0) {
-                proponentsContainer.innerHTML = '<span class="text-xs text-[#5b6375] italic">No team members found.</span>';
-                return;
-            }
-
-            data.members.forEach(m => {
-                const badge = document.createElement('span');
-                badge.className = 'badge badge-navy';
-                badge.innerHTML = `<i class="fa-regular fa-user mr-1"></i> ${m.name}${m.role ? ` (${m.role})` : ''}`;
-                proponentsContainer.appendChild(badge);
+        fetch(`/teacher/get-group/${groupId}`)
+            .then(r => r.json())
+            .then(data => {
+                proponentsContainer.innerHTML = '';
+                if (data.error || !data.members || data.members.length === 0) {
+                    proponentsContainer.innerHTML = '<span class="text-xs text-[#5b6375] italic">No team members found.</span>';
+                    return;
+                }
+                data.members.forEach(m => {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge badge-navy';
+                    badge.innerHTML = `<i class="fa-regular fa-user mr-1"></i> ${m.name}${m.role ? ` (${m.role})` : ''}`;
+                    proponentsContainer.appendChild(badge);
+                });
+            })
+            .catch(() => {
+                proponentsContainer.innerHTML = '<span class="text-xs text-red-500 italic">Failed to load team members.</span>';
             });
+    };
+
+    window.submitRevisionCheck = function (event) {
+        event.preventDefault();
+        const groupId = document.getElementById('check_group_id').value;
+        const approvedBy = document.querySelector('#revision_check_form input[name="approved_by"]').value;
+
+        const chapters = [];
+        document.querySelectorAll('#check_chapters_tbody tr').forEach(row => {
+            if (!row.dataset.chapter) return;
+            chapters.push({
+                chapter: row.dataset.chapter,
+                findings: row.dataset.findings,
+                completed: row.querySelector('[data-role="chapter-completed"]')?.checked || false,
+                remarks: row.querySelector('[data-role="chapter-remarks"]')?.value || '',
+            });
+        });
+
+        const iot = [];
+        document.querySelectorAll('#check_iot_tbody tr').forEach(row => {
+            if (!row.dataset.finding) return;
+            iot.push({
+                finding: row.dataset.finding,
+                completed: row.querySelector('[data-role="iot-completed"]')?.checked || false,
+                remarks: row.querySelector('[data-role="iot-remarks"]')?.value || '',
+            });
+        });
+
+        const objectives = [];
+        document.querySelectorAll('#check_objectives_list tbody tr').forEach(row => {
+            if (!row.dataset.objective) return;
+            objectives.push({
+                objective: row.dataset.objective,
+                completed: row.querySelector('[data-role="objective-completed"]')?.checked || false,
+                remarks: row.querySelector('[data-role="objective-remarks"]')?.value || '',
+            });
+        });
+
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        const originalHtml = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Submitting...';
+
+        fetch(`/teacher/group/${groupId}/verify-revision`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ approved_by: approvedBy, chapters, iot, objectives })
         })
-        .catch(() => {
-            proponentsContainer.innerHTML = '<span class="text-xs text-red-500 italic">Failed to load team members.</span>';
-        });
-};
-window.submitRevisionCheck = function (event) {
-    event.preventDefault();
-    const groupId = document.getElementById('check_group_id').value;
-    const approvedBy = document.querySelector('#revision_check_form input[name="approved_by"]').value;
-
-    const chapters = [];
-    document.querySelectorAll('#check_chapters_tbody tr').forEach(row => {
-        if (!row.dataset.chapter) return;
-        chapters.push({
-            chapter:   row.dataset.chapter,
-            findings:  row.dataset.findings,
-            completed: row.querySelector('[data-role="chapter-completed"]')?.checked || false,
-            remarks:   row.querySelector('[data-role="chapter-remarks"]')?.value || '',
-        });
-    });
-
-    const iot = [];
-    document.querySelectorAll('#check_iot_tbody tr').forEach(row => {
-        if (!row.dataset.finding) return;
-        iot.push({
-            finding:   row.dataset.finding,
-            completed: row.querySelector('[data-role="iot-completed"]')?.checked || false,
-            remarks:   row.querySelector('[data-role="iot-remarks"]')?.value || '',
-        });
-    });
-
-    // FIXED: objectives now live in a table, not bare divs
-    const objectives = [];
-    document.querySelectorAll('#check_objectives_list tbody tr').forEach(row => {
-        if (!row.dataset.objective) return;
-        objectives.push({
-            objective: row.dataset.objective,
-            completed: row.querySelector('[data-role="objective-completed"]')?.checked || false,
-            remarks:   row.querySelector('[data-role="objective-remarks"]')?.value || '',
-        });
-    });
-
-    // ...rest unchanged
-
-    const submitBtn = event.target.querySelector('button[type="submit"]');
-    const originalHtml = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Submitting...';
-
-    fetch(`/teacher/group/${groupId}/verify-revision`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify({ approved_by: approvedBy, chapters, iot, objectives })
-    })
-    .then(async r => {
-        const data = await r.json().catch(() => null);
-        if (!r.ok) throw new Error(data?.error || 'Failed to submit verification.');
-        return data;
-    })
-    .then(data => {
-        closeModal('revisionCheckModal');
-        showToast(data.message || 'Revision verified successfully!');
-        setTimeout(() => window.location.reload(), 1000);
-    })
-    .catch(err => {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalHtml;
-        showToast(err.message || 'Failed to submit verification.', true);
-    });
-};
-    window.submitRevisionRequest = function (event) {
-    event.preventDefault();
-    const groupId = document.getElementById('revision_group_id').value;
-    const description = document.getElementById('revision_description_input').value;
-
-    // Collect chapter findings
-    const chapters = [];
-    document.querySelectorAll('#revision_chapter_rows > div').forEach(row => {
-        const inputs = row.querySelectorAll('input[type="text"]');
-        if (inputs[0]?.value) {
-            chapters.push({ chapter: inputs[0].value, findings: inputs[1]?.value || '' });
-        }
-    });
-
-    // Collect IoT/system findings
-    const iotFindings = [];
-    document.querySelectorAll('#revision_iot_rows > div').forEach(row => {
-        const input = row.querySelector('input[type="text"]');
-        if (input?.value) {
-            iotFindings.push({ finding: input.value });
-        }
-    });
-
-    // Collect additional objectives
-    const objectives = [];
-    document.querySelectorAll('#revision_objectives_list > div').forEach(row => {
-        const input = row.querySelector('input[type="text"]');
-        if (input?.value) {
-            objectives.push(input.value);
-        }
-    });
-
-    fetch(`/teacher/group/${groupId}/request-revision`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({
-            revision_description: description,
-            chapters: chapters,
-            iot_findings: iotFindings,
-            additional_objectives: objectives
+        .then(async r => {
+            const data = await r.json().catch(() => null);
+            if (!r.ok) throw new Error(data?.error || 'Failed to submit verification.');
+            return data;
         })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            closeModal('revisionModal');
-            showToast(data.message || 'Revision request submitted successfully!');
+        .then(data => {
+            closeModal('revisionCheckModal');
+            showToast(data.message || 'Revision verified successfully!');
             setTimeout(() => window.location.reload(), 1000);
-        } else {
-            showToast(data.error || 'Failed to submit revision request.', true);
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        showToast('An error occurred while submitting revision request.', true);
-    });
-};
+        })
+        .catch(err => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalHtml;
+            showToast(err.message || 'Failed to submit verification.', true);
+        });
+    };
+
+    window.submitRevisionRequest = function (event) {
+        event.preventDefault();
+        const groupId = document.getElementById('revision_group_id').value;
+        const description = document.getElementById('revision_description_input').value;
+
+        const chapters = [];
+        document.querySelectorAll('#revision_chapter_rows > div').forEach(row => {
+            const inputs = row.querySelectorAll('input[type="text"]');
+            if (inputs[0]?.value) {
+                chapters.push({ chapter: inputs[0].value, findings: inputs[1]?.value || '' });
+            }
+        });
+
+        const iotFindings = [];
+        document.querySelectorAll('#revision_iot_rows > div').forEach(row => {
+            const input = row.querySelector('input[type="text"]');
+            if (input?.value) {
+                iotFindings.push({ finding: input.value });
+            }
+        });
+
+        const objectives = [];
+        document.querySelectorAll('#revision_objectives_list > div').forEach(row => {
+            const input = row.querySelector('input[type="text"]');
+            if (input?.value) {
+                objectives.push(input.value);
+            }
+        });
+
+        fetch(`/teacher/group/${groupId}/request-revision`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                revision_description: description,
+                chapters: chapters,
+                iot_findings: iotFindings,
+                additional_objectives: objectives
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeModal('revisionModal');
+                showToast(data.message || 'Revision request submitted successfully!');
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showToast(data.error || 'Failed to submit revision request.', true);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('An error occurred while submitting revision request.', true);
+        });
+    };
 
     window.markGroupAsRevised = function (groupId) {
         if (!confirm('Are you sure you have addressed all revisions and want to mark this group as revised?')) {
@@ -3653,196 +3712,514 @@ window.submitRevisionCheck = function (event) {
         });
     };
 
-    // ── EVALUATION MODAL ────────────────────────
-    window.openEvaluationModal = function (groupId, milestoneId = null) {
-    // ── Set the hidden group ID ──
-    document.getElementById('eval_group_id').value = groupId;
+    // ══════════════════════════════════════════════
+    // NEW HELPER FUNCTIONS FOR EVAL MODAL
+    // ══════════════════════════════════════════════
+    function escHtml(str) {
+        return String(str ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
 
-     const container = document.querySelector(`.group-item[data-group-id="${groupId}"]`);
-    const groupNameField = document.getElementById('eval_group_name');
-    if (container) {
-        const name = container.dataset.groupName;
-        if (name) {
-            groupNameField.value = name;
-        } else {
-            // Fallback: try to find name from inner text
-            const nameEl = container.querySelector('.font-bold, .font-semibold, h4');
-            if (nameEl) {
-                groupNameField.value = nameEl.textContent.trim();
+    function populateReviseFields(data, readOnly) {
+        const chaptersContainer = document.getElementById('eval_rev_chapter_rows');
+        const iotContainer = document.getElementById('eval_rev_iot_rows');
+        const objectivesContainer = document.getElementById('eval_rev_objectives_list');
+        const descriptionInput = document.getElementById('eval_rev_description_input');
+
+        chaptersContainer.innerHTML = '';
+        iotContainer.innerHTML = '';
+        objectivesContainer.innerHTML = '';
+
+        if (!data) {
+            if (!readOnly) {
+                addEvalRevChapterRow();
+                addEvalRevIotRow();
+                addEvalRevObjective();
             }
+            descriptionInput.value = '';
+            return;
+        }
+
+        // Chapters
+        if (data.chapters && data.chapters.length) {
+            data.chapters.forEach(ch => {
+                const row = document.createElement('div');
+                row.className = 'flex flex-col md:flex-row gap-2 p-2 bg-[#faf8f4] rounded-lg border border-[#e2dacf]';
+                row.innerHTML = `
+                    <input type="text" class="form-input flex-1 text-sm eval-rev-chapter" value="${escHtml(ch.chapter)}" placeholder="Chapter" ${readOnly ? 'disabled' : ''}>
+                    <input type="text" class="form-input flex-1 text-sm eval-rev-findings" value="${escHtml(ch.findings)}" placeholder="Document Findings" ${readOnly ? 'disabled' : ''}>
+                    <button type="button" onclick="this.parentElement.remove()" class="text-[#5b6375] hover:text-red-500 px-2" ${readOnly ? 'disabled' : ''}><i class="fas fa-times"></i></button>
+                `;
+                chaptersContainer.appendChild(row);
+            });
+        } else if (!readOnly) {
+            addEvalRevChapterRow();
+        }
+
+        // IoT
+        if (data.iot_findings && data.iot_findings.length) {
+            data.iot_findings.forEach(iot => {
+                const row = document.createElement('div');
+                row.className = 'flex flex-col md:flex-row gap-2 p-2 bg-[#faf8f4] rounded-lg border border-[#e2dacf]';
+                row.innerHTML = `
+                    <input type="text" class="form-input flex-1 text-sm eval-rev-iot" value="${escHtml(iot.finding)}" placeholder="Finding / Enhancement" ${readOnly ? 'disabled' : ''}>
+                    <button type="button" onclick="this.parentElement.remove()" class="text-[#5b6375] hover:text-red-500 px-2" ${readOnly ? 'disabled' : ''}><i class="fas fa-times"></i></button>
+                `;
+                iotContainer.appendChild(row);
+            });
+        } else if (!readOnly) {
+            addEvalRevIotRow();
+        }
+
+        // Objectives
+        if (data.additional_objectives && data.additional_objectives.length) {
+            data.additional_objectives.forEach(obj => {
+                const text = typeof obj === 'object' ? obj.objective : obj;
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-2 p-2 bg-[#faf8f4] rounded-lg border border-[#e2dacf]';
+                row.innerHTML = `
+                    <input type="text" class="form-input flex-1 text-sm eval-rev-objective" value="${escHtml(text)}" placeholder="Additional objective" ${readOnly ? 'disabled' : ''}>
+                    <button type="button" onclick="this.parentElement.remove()" class="text-[#5b6375] hover:text-red-500 px-2" ${readOnly ? 'disabled' : ''}><i class="fas fa-times"></i></button>
+                `;
+                objectivesContainer.appendChild(row);
+            });
+        } else if (!readOnly) {
+            addEvalRevObjective();
+        }
+
+        if (data.overall_remarks) {
+            descriptionInput.value = data.overall_remarks;
+        } else {
+            descriptionInput.value = '';
+        }
+        if (readOnly) {
+            descriptionInput.disabled = true;
+            descriptionInput.classList.add('bg-[#f0ece4]');
+        } else {
+            descriptionInput.disabled = false;
+            descriptionInput.classList.remove('bg-[#f0ece4]');
         }
     }
 
-    // ── Reset the form ──
-    const milestoneSelect = document.getElementById('milestone_select');
-    milestoneSelect.value = milestoneId || '';
-    if (milestoneId) {
-        document.getElementById('eval_milestone_id').value = milestoneId;
-        setTimeout(() => {
-            milestoneSelect.dispatchEvent(new Event('change'));
-        }, 100);
-    } else {
-        document.getElementById('rubric_container').classList.add('hidden');
-        document.getElementById('criteria_tbody').innerHTML = '';
-        document.getElementById('eval_total_score').value = '';
-        document.getElementById('eval_max_score').value = '';
+    function setEvalModeReadOnly(message) {
+        document.querySelectorAll('#evaluation_form input, #evaluation_form select, #evaluation_form textarea').forEach(el => {
+            if (el.type !== 'hidden') el.disabled = true;
+        });
+        document.querySelectorAll('#eval_revision_sheet_content input, #eval_revision_sheet_content select, #eval_revision_sheet_content textarea, #eval_revision_sheet_content button').forEach(el => {
+            el.disabled = true;
+        });
+        document.getElementById('eval_submit_btn').style.display = 'none';
+        const footer = document.querySelector('.eval-modal-footer');
+        const msg = document.createElement('p');
+        msg.className = 'text-sm text-[#5b6375] italic flex-1';
+        msg.textContent = message;
+        footer.insertBefore(msg, footer.firstChild);
     }
 
-    // ── Open the modal first (user sees it immediately) ──
-    openModal('evaluationModal');
-        // ── Load the read-only revision sheet on the right ──
-    const revisionSheetEl = document.getElementById('eval_revision_sheet_content');
-    if (revisionSheetEl) renderRevisionSheet(revisionSheetEl, groupId);
+    function displayEvaluation(evalData) {
+        const rubricContainer = document.getElementById('rubric_container');
+        const tbody = document.getElementById('criteria_tbody');
+        const criteria = Array.isArray(evalData.criteria) ? evalData.criteria : [];
+        const score = evalData.score ?? 0;
+        const maxScore = evalData.max_score ?? (criteria.length * 4);
 
-    // ── Then load group members in the background ──
-    const checklist = document.getElementById('student_checklist');
-    checklist.innerHTML = '<p class="text-xs text-[#5b6375] col-span-2 text-center py-2">Loading students…</p>';
-    fetch(`/teacher/get-group/${groupId}`)
-        .then(r => r.json())
-        .then(data => {
-            checklist.innerHTML = '';
-            if (data.error || !data.members || data.members.length === 0) {
-                checklist.innerHTML = '<p class="text-xs text-[#5b6375] col-span-2 text-center py-2">No members found.</p>';
-                return;
-            }
-            data.members.forEach(m => {
-                const label = document.createElement('label');
-                label.className = 'flex items-center gap-2 cursor-pointer text-sm text-[#171e2c]';
-                label.innerHTML = `<input type="checkbox" name="absent_students[]" value="${m.user_id}" class="form-checkbox text-[#d6b15c] focus:ring-[#d6b15c]">
-                    <span>${m.name} <span class="text-[#5b6375] text-xs">(${m.user_id})</span></span>`;
-                checklist.appendChild(label);
-            });
-        })
-        .catch(() => {
-            checklist.innerHTML = '<p class="text-xs text-red-500 col-span-2 text-center py-2">Failed to load students.</p>';
-        });
+        rubricContainer.classList.remove('hidden');
+        const rubricName = document.getElementById('rubric_name_display');
+        if (rubricName) rubricName.textContent = evalData.rubric_name || evalData.milestone_title || 'Submitted Rubric';
 
-    // ── Disable already evaluated milestones in the background ──
-    Array.from(milestoneSelect.options).forEach(opt => {
-        opt.disabled = false;
-        opt.textContent = opt.textContent.replace(' (Already Evaluated)', '');
-    });
+        if (criteria.length) {
+            tbody.innerHTML = criteria.map((criterion, index) => {
+                const criterionId = criterion.id ?? criterion.criteria_id ?? index;
+                const givenScore = Number(criterion.given_score ?? criterion.score ?? 0);
+                return `<tr class="border-b border-[#e2dacf]" data-crit-id="${escHtml(criterionId)}">
+                    <td class="py-2">${escHtml(criterion.criteria_name || criterion.name || `Criterion ${index + 1}`)}</td>
+                    ${[1, 2, 3, 4].map(value => `<td class="text-center"><input type="radio" name="readonly_rubric_scores_${escHtml(criterionId)}" value="${value}" class="criteria-score" ${givenScore === value ? 'checked' : ''} disabled></td>`).join('')}
+                </tr>`;
+            }).join('');
+        } else {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-[#1e6b3a]">Evaluation already submitted: Score ${escHtml(score)} / ${escHtml(maxScore)}</td></tr>`;
+        }
 
-    fetch(`/teacher/get-evaluated-milestones/${groupId}`)
-        .then(r => r.json())
-        .then(evaluatedIds => {
-            evaluatedIds.forEach(id => {
-                if (id == milestoneId) return; // Keep current milestone option active
-                const opt = milestoneSelect.querySelector(`option[value="${id}"]`);
-                if (opt) {
-                    opt.disabled = true;
-                    opt.textContent += ' (Already Evaluated)';
-                }
-            });
-        })
-        .catch(() => {
-            // If we can't get evaluated milestones, just leave them enabled – not a dealbreaker
-        });
+        document.getElementById('total_score_display').textContent = score;
+        document.getElementById('total_max').textContent = maxScore;
+        document.getElementById('eval_total_score').value = score;
+        document.getElementById('eval_max_score').value = maxScore;
+        const feedback = document.querySelector('#evaluation_form textarea[name="feedback"]');
+        if (feedback) {
+            feedback.value = evalData.feedback || '';
+            feedback.disabled = true;
+        }
+        document.querySelectorAll('#evaluation_form input[name="attendance"]').forEach(r => r.disabled = true);
+    }
 
-    // Reset attendance radio (if present)
-    const presentRadio = document.querySelector('input[name="attendance"][value="present"]');
-    if (presentRadio) presentRadio.checked = true;
-    const absentContainer = document.getElementById('absent_students_container');
-    if (absentContainer) absentContainer.classList.add('hidden');
-};
-
-
-window.openRubricScoresModal = function (groupId, groupName = null) {
-    openModal('rubricScoresModal');
-    const content = document.getElementById('rubricScoresContent');
-    const titleEl = document.getElementById('rubricScoresTitle');
-    const subtitleEl = document.getElementById('rubricScoresSubtitle');
-
-    titleEl.textContent = groupName ? `Rubric Scores — ${groupName}` : 'Rubric Scores';
-    subtitleEl.textContent = 'Panelist evaluation summary';
+    // ── EVALUATION MODAL ────────────────────────
+    window.openGroupRevisionsModal = function (groupId, groupName) {
+    document.getElementById('grm_title').textContent = `Revisions — ${groupName}`;
+    const content = document.getElementById('grm_content');
     content.innerHTML = '<p class="text-sm text-[#5b6375] text-center py-8">Loading…</p>';
 
-    fetch(`/teacher/get-group-progress/${groupId}`)
-        .then(r => r.json())
+    openModal('groupRevisionsModal');
+
+    fetch(`/teacher/get-all-revisions/${groupId}`)
+        .then(async r => {
+            const data = await r.json();
+            if (!r.ok) throw new Error(data.error || 'Failed to load revisions.');
+            return data;
+        })
         .then(data => {
-            if (!groupName) titleEl.textContent = `Rubric Scores — ${data.group_name}`;
+            const revisions = data.revisions || [];
 
-            const evaluations = data.evaluations || [];
-
-            if (evaluations.length === 0) {
+            if (revisions.length === 0) {
                 content.innerHTML = `
-                    <div class="rs-empty">
-                        <i class="fa-regular fa-folder-open"></i>
-                        No panelist evaluations have been submitted for this group yet.
+                    <div class="text-center py-10 text-[#5b6375]">
+                        <i class="fa-regular fa-folder-open text-3xl mb-2 block"></i>
+                        No panelist has submitted a revision for this group.
                     </div>
                 `;
                 return;
             }
 
-            content.innerHTML = evaluations.map((ev, idx) => {
-                const initials = (ev.teacher_name || 'T')
-                    .split(' ')
-                    .map(w => w[0])
-                    .join('')
-                    .substring(0, 2)
-                    .toUpperCase();
+            content.innerHTML = revisions.map(rev => {
+                const chapterRows = (rev.chapters && rev.chapters.length)
+                    ? rev.chapters.map(ch => `
+                        <tr class="border-b border-[#e2dacf]">
+                            <td class="p-2 pl-3 font-semibold">${escHtml(ch.chapter)}</td>
+                            <td class="p-2">${escHtml(ch.findings)}</td>
+                            <td class="p-2 pr-3 text-center">
+                                <span class="badge ${String(ch.remarks).toLowerCase() === 'completed' ? 'badge-green' : 'badge-amber'}">${escHtml(ch.remarks)}</span>
+                            </td>
+                        </tr>
+                    `).join('')
+                    : `<tr><td colspan="3" class="p-3 text-center text-[#5b6375]">No chapter findings.</td></tr>`;
 
-                let criteriaHtml = '';
-                if (ev.criteria && ev.criteria.length > 0) {
-                    criteriaHtml = `
-                        <div id="rs_criteria_${idx}" class="hidden">
-                            <table class="rs-criteria-table">
-                                <thead>
-                                    <tr>
-                                        <th>Criterion</th>
-                                        <th style="text-align:center;">Weight</th>
-                                        <th style="text-align:center;">Max</th>
-                                        <th style="text-align:center;">Score</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${ev.criteria.map(c => `
-                                        <tr>
-                                            <td>${c.criteria_name}</td>
-                                            <td style="text-align:center;">${c.weight}%</td>
-                                            <td style="text-align:center;">${c.max_score}</td>
-                                            <td style="text-align:center; font-weight:700; color:#1e6b3a;">${c.given_score}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                        <span class="rs-criteria-toggle" onclick="document.getElementById('rs_criteria_${idx}').classList.toggle('hidden'); this.querySelector('i').classList.toggle('fa-chevron-down'); this.querySelector('i').classList.toggle('fa-chevron-up');">
-                            <i class="fas fa-chevron-down"></i> View criteria breakdown
-                        </span>
-                    `;
-                }
+                const iotRows = (rev.iot_findings && rev.iot_findings.length)
+                    ? rev.iot_findings.map(iot => `
+                        <tr class="border-b border-[#e2dacf]">
+                            <td class="p-2 pl-3">${escHtml(iot.finding)}</td>
+                            <td class="p-2 pr-3 text-center">
+                                <span class="badge ${String(iot.remarks).toLowerCase() === 'completed' ? 'badge-green' : 'badge-amber'}">${escHtml(iot.remarks)}</span>
+                            </td>
+                        </tr>
+                    `).join('')
+                    : `<tr><td colspan="2" class="p-3 text-center text-[#5b6375]">No IoT findings.</td></tr>`;
+
+                const objectiveRows = (rev.additional_objectives && rev.additional_objectives.length)
+                    ? rev.additional_objectives.map(obj => `
+                        <tr class="border-b border-[#e2dacf]">
+                            <td class="p-2 pl-3">${escHtml(obj.objective)}</td>
+                            <td class="p-2 pr-3 text-center">
+                                <span class="badge ${String(obj.remarks).toLowerCase() === 'completed' ? 'badge-green' : 'badge-amber'}">${escHtml(obj.remarks)}</span>
+                            </td>
+                        </tr>
+                    `).join('')
+                    : `<tr><td colspan="2" class="p-3 text-center text-[#5b6375]">No additional objectives.</td></tr>`;
 
                 return `
-                    <div class="rs-card">
-                        <div class="rs-card-head">
-                            <div>
-                                <p class="rs-milestone">${ev.milestone_title || 'Milestone'}</p>
-                                <div class="rs-panelist mt-1.5">
-                                    <div class="rs-panelist-avatar">${initials}</div>
-                                    <span class="rs-panelist-name">${ev.teacher_name || 'Panelist'}</span>
+                    <div class="content-card">
+                        <div class="card-accent"></div>
+                        <div class="p-5">
+                            <div class="flex justify-between items-start gap-3 mb-3">
+                                <div>
+                                    <p class="font-bold text-sm text-[#0a1428]"><i class="fa-regular fa-user mr-1 text-[#d6b15c]"></i> ${escHtml(rev.panelist_name)}</p>
+                                    <p class="text-xs text-[#5b6375]">${fmtDate(rev.created_at)}</p>
                                 </div>
                             </div>
-                            <div>
-                                <div class="rs-score">${ev.score} <small>/ ${ev.max_score}</small></div>
-                                <p class="rs-date">${fmtDate(ev.evaluation_date)}</p>
+
+                            ${rev.overall_remarks ? `<div class="mb-3 p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg text-sm italic text-[#5b6375]">"${escHtml(rev.overall_remarks)}"</div>` : ''}
+
+                            <p class="form-fieldset-title mt-2"><i class="fa-solid fa-book"></i> Chapter / Document Findings</p>
+                            <div class="overflow-x-auto mb-3">
+                                <table class="w-full text-left border-collapse text-xs">
+                                    <thead>
+                                        <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold border-b border-[#e2dacf]">
+                                            <th class="p-2 pl-3">Chapter</th><th class="p-2">Findings</th><th class="p-2 pr-3 text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${chapterRows}</tbody>
+                                </table>
+                            </div>
+
+                            <p class="form-fieldset-title"><i class="fa-solid fa-microchip"></i> System / IoT Findings</p>
+                            <div class="overflow-x-auto mb-3">
+                                <table class="w-full text-left border-collapse text-xs">
+                                    <thead>
+                                        <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold border-b border-[#e2dacf]">
+                                            <th class="p-2 pl-3">Finding</th><th class="p-2 pr-3 text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${iotRows}</tbody>
+                                </table>
+                            </div>
+
+                            <p class="form-fieldset-title"><i class="fa-solid fa-list-check"></i> Additional Objectives</p>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse text-xs">
+                                    <thead>
+                                        <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold border-b border-[#e2dacf]">
+                                            <th class="p-2 pl-3">Objective</th><th class="p-2 pr-3 text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${objectiveRows}</tbody>
+                                </table>
                             </div>
                         </div>
-                        ${ev.feedback ? `<div class="rs-feedback">"${ev.feedback}"</div>` : ''}
-                        ${criteriaHtml}
                     </div>
                 `;
             }).join('');
         })
-        .catch(() => {
-            content.innerHTML = `
-                <div class="rs-empty">
-                    <i class="fa-solid fa-triangle-exclamation" style="color:#a12b2b;"></i>
-                    Failed to load rubric scores. Please try again.
-                </div>
-            `;
+        .catch(err => {
+            content.innerHTML = `<p class="text-sm text-red-500 text-center py-8">❌ ${err.message}</p>`;
         });
 };
+    window.openEvaluationModal = function (groupId, milestoneId = null) {
+        document.getElementById('eval_group_id').value = groupId;
+        revisionSheetDirty = false;
+        revisionEditorReadOnly = false;
+
+        const container = document.querySelector(`.group-item[data-group-id="${groupId}"]`);
+        const groupNameField = document.getElementById('eval_group_name');
+        if (container) {
+            const name = container.dataset.groupName;
+            if (name) groupNameField.value = name;
+            else {
+                const nameEl = container.querySelector('.font-bold, .font-semibold, h4');
+                if (nameEl) groupNameField.value = nameEl.textContent.trim();
+            }
+        }
+
+        const milestoneSelect = document.getElementById('milestone_select');
+        milestoneSelect.value = milestoneId || '';
+        if (milestoneId) {
+            document.getElementById('eval_milestone_id').value = milestoneId;
+            setTimeout(() => milestoneSelect.dispatchEvent(new Event('change')), 100);
+        } else {
+            document.getElementById('rubric_container').classList.add('hidden');
+            document.getElementById('criteria_tbody').innerHTML = '';
+            document.getElementById('eval_total_score').value = '';
+            document.getElementById('eval_max_score').value = '';
+        }
+
+        openModal('evaluationModal');
+
+        // ── Fetch all needed data ──
+        Promise.all([
+            fetch(`/teacher/get-group/${groupId}`).then(r => r.json()),
+            fetch(`/teacher/get-revision-details/${groupId}`).then(r => r.json()).catch(() => null),
+            fetch(`/teacher/get-my-evaluation/${groupId}`).then(r => r.json()).catch(() => null)
+        ])
+        .then(([groupData, revisionData, evalData]) => {
+            window.currentGroupData = groupData;
+            window.currentRevisionData = revisionData;
+            window.currentEvaluationData = evalData;
+
+            
+
+            // ── Check if evaluation already exists ──
+            if (evalData && evalData.score !== undefined) {
+                setEvalModeReadOnly('This group has already been evaluated. All fields are read-only.');
+                displayEvaluation(evalData);
+                const readOnlyRevisionSheet = document.getElementById('eval_revision_sheet_content');
+                if (readOnlyRevisionSheet) renderRevisionSheet(readOnlyRevisionSheet, groupId, true);
+                return;
+            }
+
+                        // The existing modal remains unchanged structurally. The right-side
+            // revision sheet controls whether notes are editable or read-only.
+
+
+
+            // ── Load group members for attendance checklist ──
+            const checklist = document.getElementById('student_checklist');
+            checklist.innerHTML = '<p class="text-xs text-[#5b6375] col-span-2 text-center py-2">Loading students…</p>';
+            fetch(`/teacher/get-group/${groupId}`)
+                .then(r => r.json())
+                .then(data => {
+                    checklist.innerHTML = '';
+                    if (data.error || !data.members || data.members.length === 0) {
+                        checklist.innerHTML = '<p class="text-xs text-[#5b6375] col-span-2 text-center py-2">No members found.</p>';
+                        return;
+                    }
+                    data.members.forEach(m => {
+                        const label = document.createElement('label');
+                        label.className = 'flex items-center gap-2 cursor-pointer text-sm text-[#171e2c]';
+                        label.innerHTML = `<input type="checkbox" name="absent_students[]" value="${m.user_id}" class="form-checkbox text-[#d6b15c] focus:ring-[#d6b15c]">
+                            <span>${m.name} <span class="text-[#5b6375] text-xs">(${m.user_id})</span></span>`;
+                        checklist.appendChild(label);
+                    });
+                })
+                .catch(() => checklist.innerHTML = '<p class="text-xs text-red-500 col-span-2 text-center py-2">Failed to load students.</p>');
+
+            // ── Disable already evaluated milestones ──
+            Array.from(milestoneSelect.options).forEach(opt => {
+                opt.disabled = false;
+                opt.textContent = opt.textContent.replace(' (Already Evaluated)', '');
+            });
+            fetch(`/teacher/get-evaluated-milestones/${groupId}`)
+                .then(r => r.json())
+                .then(evaluatedIds => {
+                    evaluatedIds.forEach(id => {
+                        if (id == milestoneId) return;
+                        const opt = milestoneSelect.querySelector(`option[value="${id}"]`);
+                        if (opt) {
+                            opt.disabled = true;
+                            opt.textContent += ' (Already Evaluated)';
+                        }
+                    });
+                })
+                .catch(() => {});
+
+            // Reset attendance radio
+            const presentRadio = document.querySelector('input[name="attendance"][value="present"]');
+            if (presentRadio) presentRadio.checked = true;
+            const absentContainer = document.getElementById('absent_students_container');
+            if (absentContainer) absentContainer.classList.add('hidden');
+
+            // ── Load revision sheet on the right ──
+            const revisionSheetEl = document.getElementById('eval_revision_sheet_content');
+            if (revisionSheetEl) renderRevisionSheet(revisionSheetEl, groupId);
+        })
+        .catch(err => {
+            showToast('Failed to load data.', true);
+            console.error(err);
+        });
+    };
+
+    
+
+    // ── Dynamic row adders (global) ──
+    window.addEvalRevChapterRow = function() {
+        const container = document.getElementById('eval_rev_chapter_rows');
+        const row = document.createElement('div');
+        row.className = 'flex flex-col md:flex-row gap-2 p-2 bg-[#faf8f4] rounded-lg border border-[#e2dacf]';
+        row.innerHTML = `
+            <input type="text" class="form-input flex-1 text-sm eval-rev-chapter" placeholder="Chapter (e.g., Chapter 1, Chapter 2)">
+            <input type="text" class="form-input flex-1 text-sm eval-rev-findings" placeholder="Document Findings">
+            <button type="button" onclick="this.parentElement.remove()" class="text-[#5b6375] hover:text-red-500 px-2"><i class="fas fa-times"></i></button>
+        `;
+        container.appendChild(row);
+    };
+
+    window.addEvalRevIotRow = function() {
+        const container = document.getElementById('eval_rev_iot_rows');
+        const row = document.createElement('div');
+        row.className = 'flex flex-col md:flex-row gap-2 p-2 bg-[#faf8f4] rounded-lg border border-[#e2dacf]';
+        row.innerHTML = `
+            <input type="text" class="form-input flex-1 text-sm eval-rev-iot" placeholder="Findings / Enhancements / Recommendations">
+            <button type="button" onclick="this.parentElement.remove()" class="text-[#5b6375] hover:text-red-500 px-2"><i class="fas fa-times"></i></button>
+        `;
+        container.appendChild(row);
+    };
+
+    window.addEvalRevObjective = function() {
+        const container = document.getElementById('eval_rev_objectives_list');
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2 p-2 bg-[#faf8f4] rounded-lg border border-[#e2dacf]';
+        row.innerHTML = `
+            <input type="text" class="form-input flex-1 text-sm eval-rev-objective" placeholder="Enter objective">
+            <button type="button" onclick="this.parentElement.remove()" class="text-[#5b6375] hover:text-red-500 px-2"><i class="fas fa-times"></i></button>
+        `;
+        container.appendChild(row);
+    };
+
+    // ── Open Rubric Scores Modal ──
+    window.openRubricScoresModal = function (groupId, groupName = null) {
+        openModal('rubricScoresModal');
+        const content = document.getElementById('rubricScoresContent');
+        const titleEl = document.getElementById('rubricScoresTitle');
+        const subtitleEl = document.getElementById('rubricScoresSubtitle');
+
+        titleEl.textContent = groupName ? `Rubric Scores — ${groupName}` : 'Rubric Scores';
+        subtitleEl.textContent = 'Panelist evaluation summary';
+        content.innerHTML = '<p class="text-sm text-[#5b6375] text-center py-8">Loading…</p>';
+
+        fetch(`/teacher/get-group-progress/${groupId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (!groupName) titleEl.textContent = `Rubric Scores — ${data.group_name}`;
+
+                const evaluations = data.evaluations || [];
+
+                if (evaluations.length === 0) {
+                    content.innerHTML = `
+                        <div class="rs-empty">
+                            <i class="fa-regular fa-folder-open"></i>
+                            No panelist evaluations have been submitted for this group yet.
+                        </div>
+                    `;
+                    return;
+                }
+
+                content.innerHTML = evaluations.map((ev, idx) => {
+                    const initials = (ev.teacher_name || 'T')
+                        .split(' ')
+                        .map(w => w[0])
+                        .join('')
+                        .substring(0, 2)
+                        .toUpperCase();
+
+                    let criteriaHtml = '';
+                    if (ev.criteria && ev.criteria.length > 0) {
+                        criteriaHtml = `
+                            <div id="rs_criteria_${idx}" class="hidden">
+                                <table class="rs-criteria-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Criterion</th>
+                                            <th style="text-align:center;">Max</th>
+                                            <th style="text-align:center;">Score</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${ev.criteria.map(c => `
+                                            <tr>
+                                                <td>${c.criteria_name}</td>
+                                                <td style="text-align:center;">${c.max_score}</td>
+                                                <td style="text-align:center; font-weight:700; color:#1e6b3a;">${c.given_score}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <span class="rs-criteria-toggle" onclick="document.getElementById('rs_criteria_${idx}').classList.toggle('hidden'); this.querySelector('i').classList.toggle('fa-chevron-down'); this.querySelector('i').classList.toggle('fa-chevron-up');">
+                                <i class="fas fa-chevron-down"></i> View criteria breakdown
+                            </span>
+                        `;
+                    }
+
+                    return `
+                        <div class="rs-card">
+                            <div class="rs-card-head">
+                                <div>
+                                    <p class="rs-milestone">${ev.milestone_title || 'Milestone'}</p>
+                                    <div class="rs-panelist mt-1.5">
+                                        <div class="rs-panelist-avatar">${initials}</div>
+                                        <span class="rs-panelist-name">${ev.teacher_name || 'Panelist'}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="rs-score">${ev.score} <small>/ ${ev.max_score}</small></div>
+                                    <p class="rs-date">${fmtDate(ev.evaluation_date)}</p>
+                                </div>
+                            </div>
+                            ${ev.feedback ? `<div class="rs-feedback">"${ev.feedback}"</div>` : ''}
+                            ${criteriaHtml}
+                        </div>
+                    `;
+                }).join('');
+            })
+            .catch(() => {
+                content.innerHTML = `
+                    <div class="rs-empty">
+                        <i class="fa-solid fa-triangle-exclamation" style="color:#a12b2b;"></i>
+                        Failed to load rubric scores. Please try again.
+                    </div>
+                `;
+            });
+    };
 
     document.querySelectorAll('.evaluate-btn').forEach(btn =>
         btn.addEventListener('click', function (e) {
@@ -3852,6 +4229,7 @@ window.openRubricScoresModal = function (groupId, groupName = null) {
         })
     );
 
+    // ── Milestone Select Change ──
     const milestoneSelect = document.getElementById('milestone_select');
     if (milestoneSelect) {
         milestoneSelect.addEventListener('change', function () {
@@ -3865,51 +4243,66 @@ window.openRubricScoresModal = function (groupId, groupName = null) {
                 tbody.innerHTML = '';
                 return;
             }
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-[#5b6375]">Loading rubric...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-[#5b6375]">Loading rubric...</td></tr>';
             rubricContainer.classList.remove('hidden');
             fetch(`/teacher/get-rubric/${milestoneId}`)
                 .then(r => r.json())
                 .then(data => {
                     if (data.error) {
-                        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">${data.error}</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-500">${data.error}</td></tr>`;
                         return;
                     }
                     rubricName.textContent = data.rubric_name;
                     let html = '';
                     data.criteria.forEach((c) => {
-                        html += `<tr class="border-b border-[#e2dacf]">
+                        html += `<tr class="border-b border-[#e2dacf]" data-crit-id="${c.id}">
                             <td class="py-2">${c.criteria_name}</td>
-                            <td class="text-center">${c.weight}%</td>
-                            <td class="text-center">${c.max_score}</td>
-                            <td class="text-center">
-                                <input type="number" name="rubric_scores[${c.id}]" class="criteria-score w-20 form-input text-center" data-weight="${c.weight}" data-max="${c.max_score}" min="0" max="${c.max_score}" step="0.01" value="0">
-                            </td>
+                            ${[1, 2, 3, 4].map(v => `
+                                <td class="text-center">
+                                    <input type="radio" name="rubric_scores[${c.id}]" value="${v}" class="criteria-score">
+                                </td>
+                            `).join('')}
                         </tr>`;
                     });
                     tbody.innerHTML = html;
-                    document.querySelectorAll('.criteria-score').forEach(inp => inp.addEventListener('input', recalcTotals));
+                    document.querySelectorAll('.criteria-score').forEach(inp => inp.addEventListener('change', recalcTotals));
                     recalcTotals();
                 })
-                .catch(() => tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-red-500">Failed to load rubric.</td></tr>');
+                .catch(() => tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-500">Failed to load rubric.</td></tr>');
         });
     }
 
     function recalcTotals() {
         let totalScore = 0;
-        document.querySelectorAll('.criteria-score').forEach(inp => {
-            const max = parseFloat(inp.dataset.max) || 0;
-            const weight = parseFloat(inp.dataset.weight) || 0;
-            let score = parseFloat(inp.value) || 0;
-            if (score > max) score = max;
-            if (score < 0) score = 0;
-            totalScore += max > 0 ? (score / max) * weight : 0;
+        let critCount = 0;
+        document.querySelectorAll('#criteria_tbody tr[data-crit-id]').forEach(row => {
+            critCount++;
+            const checked = row.querySelector('.criteria-score:checked');
+            totalScore += checked ? parseInt(checked.value, 10) : 0;
         });
-        document.getElementById('total_score_display').textContent = totalScore.toFixed(2);
-        document.getElementById('total_max').textContent = '100';
-        document.getElementById('total_weight').textContent = '100%';
-        document.getElementById('eval_total_score').value = totalScore.toFixed(2);
-        document.getElementById('eval_max_score').value = '100';
+        const totalMax = critCount * 4;
+        document.getElementById('total_score_display').textContent = totalScore;
+        document.getElementById('total_max').textContent = totalMax;
+        document.getElementById('eval_total_score').value = totalScore;
+        document.getElementById('eval_max_score').value = totalMax;
     }
+
+    window.submitEvalModal = function() {
+        const submitEvaluation = () => {
+            const form = document.getElementById('evaluation_form');
+            form.requestSubmit ? form.requestSubmit() : form.submit();
+        };
+
+        // The modal has one action: submit the evaluation. If the panelist
+        // created a revision sheet while grading, persist it first.
+        if (revisionSheetDirty) {
+            saveRevisionSheet({ silent: true })
+                .then(submitEvaluation)
+                .catch(error => showToast(error.message || 'Save the revision notes before evaluating.', true));
+        } else {
+            submitEvaluation();
+        }
+    };
 
     // ── EDIT TEAM MEMBERS ───────────────────────
     let editIdx = 0;
@@ -4024,38 +4417,35 @@ window.openRubricScoresModal = function (groupId, groupName = null) {
         })
     );
 
-    // classroom
-    // Classroom join submits via standard HTML form and redirects back
-// ── FILTER GROUPS IN ROOMS (by name, capstone title, section) ──
-document.querySelectorAll('.room-group-filter').forEach(input => {
-    input.addEventListener('input', function () {
-        const roomId = this.dataset.roomId;
-        const searchTerm = this.value.toLowerCase().trim();
-        const list = document.querySelector(`.room-group-list[data-room-id="${roomId}"]`);
-        if (!list) return;
-        const items = list.querySelectorAll('.group-item');
-        let visibleCount = 0;
-        items.forEach(item => {
-            const searchData = item.dataset.search || '';
-            const match = !searchTerm || searchData.includes(searchTerm);
-            item.style.display = match ? 'flex' : 'none';
-            if (match) visibleCount++;
-        });
-        // Show "no results" message if none visible
-        let noResult = list.querySelector('.no-result-msg');
-        if (visibleCount === 0) {
-            if (!noResult) {
-                noResult = document.createElement('p');
-                noResult.className = 'text-xs text-[#5b6375] col-span-full text-center py-2 no-result-msg';
-                noResult.textContent = 'No groups match your filter.';
-                list.appendChild(noResult);
+    // ── FILTER GROUPS IN ROOMS ──
+    document.querySelectorAll('.room-group-filter').forEach(input => {
+        input.addEventListener('input', function () {
+            const roomId = this.dataset.roomId;
+            const searchTerm = this.value.toLowerCase().trim();
+            const list = document.querySelector(`.room-group-list[data-room-id="${roomId}"]`);
+            if (!list) return;
+            const items = list.querySelectorAll('.group-item');
+            let visibleCount = 0;
+            items.forEach(item => {
+                const searchData = item.dataset.search || '';
+                const match = !searchTerm || searchData.includes(searchTerm);
+                item.style.display = match ? 'flex' : 'none';
+                if (match) visibleCount++;
+            });
+            let noResult = list.querySelector('.no-result-msg');
+            if (visibleCount === 0) {
+                if (!noResult) {
+                    noResult = document.createElement('p');
+                    noResult.className = 'text-xs text-[#5b6375] col-span-full text-center py-2 no-result-msg';
+                    noResult.textContent = 'No groups match your filter.';
+                    list.appendChild(noResult);
+                }
+                noResult.style.display = 'block';
+            } else if (noResult) {
+                noResult.style.display = 'none';
             }
-            noResult.style.display = 'block';
-        } else if (noResult) {
-            noResult.style.display = 'none';
-        }
+        });
     });
-});
 
     // ── ASSIGNED SECTIONS: group filter for the Students table ──
     document.querySelectorAll('.as-group-filter').forEach(select => {
@@ -4087,9 +4477,7 @@ document.querySelectorAll('.room-group-filter').forEach(input => {
         });
     });
 
-
-
-     // ── ALL ASSIGNED GROUPS: search + section filter + pagination ──
+    // ── ALL ASSIGNED GROUPS: search + section filter + pagination ──
     (function () {
         const searchInput = document.getElementById('ag_search_input');
         const sectionFilter = document.getElementById('ag_section_filter');
@@ -4097,7 +4485,7 @@ document.querySelectorAll('.room-group-filter').forEach(input => {
         const noResultsEl = document.getElementById('ag_no_results');
         const paginationEl = document.getElementById('ag_pagination');
         const countEl = document.getElementById('ag_group_count');
-        if (!listEl) return; // section not present on this page
+        if (!listEl) return;
 
         const PAGE_SIZE = 5;
         let currentPage = 1;
@@ -4116,7 +4504,6 @@ document.querySelectorAll('.room-group-filter').forEach(input => {
             const allRows = Array.from(listEl.querySelectorAll('.ag-row'));
             const filtered = getFilteredRows();
 
-            // Hide every row first
             allRows.forEach(r => r.style.display = 'none');
 
             const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -4170,610 +4557,601 @@ document.querySelectorAll('.room-group-filter').forEach(input => {
 
         render();
     })();
-});
 
-// ── PASSWORD TOGGLE ────────────────────────────
-document.querySelectorAll('.password-toggle').forEach(btn => {
-    btn.addEventListener('click', function () {
-        const targetId = this.dataset.target;
-        const input = document.getElementById(targetId);
-        if (!input) return;
-        const icon = this.querySelector('i');
-        if (input.type === 'password') {
-            input.type = 'text';
-            icon.classList.remove('fa-eye');
-            icon.classList.add('fa-eye-slash');
-        } else {
-            input.type = 'password';
-            icon.classList.remove('fa-eye-slash');
-            icon.classList.add('fa-eye');
-        }
+    // ── PASSWORD TOGGLE ────────────────────────────
+    document.querySelectorAll('.password-toggle').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const targetId = this.dataset.target;
+            const input = document.getElementById(targetId);
+            if (!input) return;
+            const icon = this.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
     });
-});
 
-// ── PASSWORD STRENGTH METER ─────────────────────
-const newPasswordInput = document.getElementById('new_password');
-const strengthBar = document.getElementById('password_strength_bar');
-if (newPasswordInput && strengthBar) {
-    newPasswordInput.addEventListener('input', function () {
-        const val = this.value;
-        let score = 0;
-        if (val.length >= 6) score++;
-        if (val.length >= 10) score++;
-        if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
-        if (/[0-9]/.test(val)) score++;
-        if (/[^A-Za-z0-9]/.test(val)) score++;
+    // ── PASSWORD STRENGTH METER ─────────────────────
+    const newPasswordInput = document.getElementById('new_password');
+    const strengthBar = document.getElementById('password_strength_bar');
+    if (newPasswordInput && strengthBar) {
+        newPasswordInput.addEventListener('input', function () {
+            const val = this.value;
+            let score = 0;
+            if (val.length >= 6) score++;
+            if (val.length >= 10) score++;
+            if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+            if (/[0-9]/.test(val)) score++;
+            if (/[^A-Za-z0-9]/.test(val)) score++;
 
-        const levels = [
-            { width: '0%', color: '#e8e3d7' },
-            { width: '20%', color: '#d9534f' },
-            { width: '40%', color: '#e8935a' },
-            { width: '60%', color: '#e8c25a' },
-            { width: '80%', color: '#9bc27a' },
-            { width: '100%', color: '#1e6b3a' }
-        ];
-        const level = levels[Math.min(score, 5)];
-        strengthBar.style.width = val.length ? level.width : '0%';
-        strengthBar.style.background = level.color;
-    });
-}
-// ── Dynamic row adders for revision modal ──
-function addRevisionChapterRow() {
-    const container = document.getElementById('revision_chapter_rows');
-    const row = document.createElement('div');
-    row.className = 'flex flex-col md:flex-row gap-2 p-2 bg-[#faf8f4] rounded-lg border border-[#e2dacf]';
-    row.innerHTML = `
-        <input type="text" name="chapters[][chapter]" class="form-input flex-1 text-sm" placeholder="Chapter (e.g., Chapter 1, Chapter 2)" required>
-        <input type="text" name="chapters[][findings]" class="form-input flex-1 text-sm" placeholder="Document Findings" required>
-        <button type="button" onclick="this.parentElement.remove()" class="text-[#5b6375] hover:text-red-500 px-2"><i class="fas fa-times"></i></button>
-    `;
-    container.appendChild(row);
-}
+            const levels = [
+                { width: '0%', color: '#e8e3d7' },
+                { width: '20%', color: '#d9534f' },
+                { width: '40%', color: '#e8935a' },
+                { width: '60%', color: '#e8c25a' },
+                { width: '80%', color: '#9bc27a' },
+                { width: '100%', color: '#1e6b3a' }
+            ];
+            const level = levels[Math.min(score, 5)];
+            strengthBar.style.width = val.length ? level.width : '0%';
+            strengthBar.style.background = level.color;
+        });
+    }
 
-function addRevisionIotRow() {
-    const container = document.getElementById('revision_iot_rows');
-    const row = document.createElement('div');
-    row.className = 'flex flex-col md:flex-row gap-2 p-2 bg-[#faf8f4] rounded-lg border border-[#e2dacf]';
-    row.innerHTML = `
-        <input type="text" name="iot[][finding]" class="form-input flex-1 text-sm" placeholder="Findings / Enhancements / Recommendations" required>
-        <button type="button" onclick="this.parentElement.remove()" class="text-[#5b6375] hover:text-red-500 px-2"><i class="fas fa-times"></i></button>
-    `;
-    container.appendChild(row);
-}
+    // ── Dynamic row adders for revision modal ──
+    window.addRevisionChapterRow = function() {
+        const container = document.getElementById('revision_chapter_rows');
+        const row = document.createElement('div');
+        row.className = 'flex flex-col md:flex-row gap-2 p-2 bg-[#faf8f4] rounded-lg border border-[#e2dacf]';
+        row.innerHTML = `
+            <input type="text" name="chapters[][chapter]" class="form-input flex-1 text-sm" placeholder="Chapter (e.g., Chapter 1, Chapter 2)" required>
+            <input type="text" name="chapters[][findings]" class="form-input flex-1 text-sm" placeholder="Document Findings" required>
+            <button type="button" onclick="this.parentElement.remove()" class="text-[#5b6375] hover:text-red-500 px-2"><i class="fas fa-times"></i></button>
+        `;
+        container.appendChild(row);
+    };
 
-function addRevisionObjective() {
-    const container = document.getElementById('revision_objectives_list');
-    const row = document.createElement('div');
-    row.className = 'flex items-center gap-2 p-2 bg-[#faf8f4] rounded-lg border border-[#e2dacf]';
-    row.innerHTML = `
-        <input type="text" name="objectives[]" class="form-input flex-1 text-sm" placeholder="Enter objective" required>
-        <button type="button" onclick="this.parentElement.remove()" class="text-[#5b6375] hover:text-red-500 px-2"><i class="fas fa-times"></i></button>
-    `;
-    container.appendChild(row);
-}
-window.openRevisionCheckModal = function(groupId, groupName, capstoneTitle) {
-    document.getElementById('check_group_id').value = groupId;
-    document.getElementById('check_capstone_title').value = capstoneTitle || '';
+    window.addRevisionIotRow = function() {
+        const container = document.getElementById('revision_iot_rows');
+        const row = document.createElement('div');
+        row.className = 'flex flex-col md:flex-row gap-2 p-2 bg-[#faf8f4] rounded-lg border border-[#e2dacf]';
+        row.innerHTML = `
+            <input type="text" name="iot[][finding]" class="form-input flex-1 text-sm" placeholder="Findings / Enhancements / Recommendations" required>
+            <button type="button" onclick="this.parentElement.remove()" class="text-[#5b6375] hover:text-red-500 px-2"><i class="fas fa-times"></i></button>
+        `;
+        container.appendChild(row);
+    };
 
-    // Reset previous data
-    document.getElementById('check_chapters_tbody').innerHTML = '';
-    document.getElementById('check_iot_tbody').innerHTML = '';
-    document.getElementById('check_objectives_list').innerHTML = '';
-    document.getElementById('check_overall_remarks').textContent = '';
+    window.addRevisionObjective = function() {
+        const container = document.getElementById('revision_objectives_list');
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2 p-2 bg-[#faf8f4] rounded-lg border border-[#e2dacf]';
+        row.innerHTML = `
+            <input type="text" name="objectives[]" class="form-input flex-1 text-sm" placeholder="Enter objective" required>
+            <button type="button" onclick="this.parentElement.remove()" class="text-[#5b6375] hover:text-red-500 px-2"><i class="fas fa-times"></i></button>
+        `;
+        container.appendChild(row);
+    };
 
-    const proponentsEl = document.getElementById('check_proponents_list');
+    // ── Revision Check Modal ──
+    window.openRevisionCheckModal = function(groupId, groupName, capstoneTitle) {
+        document.getElementById('check_group_id').value = groupId;
+        document.getElementById('check_capstone_title').value = capstoneTitle || '';
 
-    proponentsEl.innerHTML =
-        '<span class="text-xs text-[#5b6375] italic">Loading...</span>';
+        document.getElementById('check_chapters_tbody').innerHTML = '';
+        document.getElementById('check_iot_tbody').innerHTML = '';
+        document.getElementById('check_objectives_list').innerHTML = '';
+        document.getElementById('check_overall_remarks').textContent = '';
 
-    openModal('revisionCheckModal');
+        const proponentsEl = document.getElementById('check_proponents_list');
+        proponentsEl.innerHTML = '<span class="text-xs text-[#5b6375] italic">Loading...</span>';
 
-    Promise.all([
-        fetch(`/teacher/get-group/${groupId}`)
-            .then(r => r.json()),
+        openModal('revisionCheckModal');
 
-        fetch(`/teacher/get-revision-details/${groupId}`)
-            .then(async r => {
+        Promise.all([
+            fetch(`/teacher/get-group/${groupId}`).then(r => r.json()),
+            fetch(`/teacher/get-revision-details/${groupId}`).then(async r => {
                 const data = await r.json();
-
-                if (!r.ok) {
-                    throw new Error(
-                        data.error || 'Failed to load revision.'
-                    );
-                }
-
+                if (!r.ok) throw new Error(data.error || 'Failed to load revision.');
                 return data;
             })
-    ])
-    .then(([groupData, revData]) => {
+        ])
+        .then(([groupData, revData]) => {
+            // Proponents
+            if (groupData.members && groupData.members.length) {
+                proponentsEl.innerHTML = groupData.members.map(m => `
+                    <span class="badge badge-navy"><i class="fa-regular fa-user mr-1"></i> ${m.name}</span>
+                `).join('');
+            } else {
+                proponentsEl.innerHTML = '<span class="text-xs text-[#5b6375]">No members</span>';
+            }
 
-        // ===========================
-        // PROPONENTS
-        // ===========================
-        if (groupData.members && groupData.members.length) {
+            document.getElementById('check_overall_remarks').textContent = revData.overall_remarks || 'No overall remarks.';
 
-            proponentsEl.innerHTML = groupData.members.map(m => `
-                <span class="badge badge-navy">
-                    <i class="fa-regular fa-user mr-1"></i>
-                    ${m.name}
-                </span>
-            `).join('');
+            // Chapters
+            const chaptersTbody = document.getElementById('check_chapters_tbody');
+            if (revData.chapters && revData.chapters.length) {
+                revData.chapters.forEach((ch, idx) => {
+                    const remarks = ch.remarks || 'Pending';
+                    const isCompleted = remarks.toLowerCase() === 'completed';
+                    const tr = document.createElement('tr');
+                    tr.dataset.chapter = ch.chapter;
+                    tr.dataset.findings = ch.findings;
+                    tr.innerHTML = `
+                        <td class="p-2 pl-3 font-semibold">${ch.chapter}</td>
+                        <td class="p-2">${ch.findings}</td>
+                        <td class="p-2 text-center">
+                            <input type="checkbox" data-role="chapter-completed" class="form-checkbox text-green-600" value="1" ${isCompleted ? 'checked' : ''}>
+                        </td>
+                        <td class="p-2 pr-3">
+                            <input type="text" data-role="chapter-remarks" class="form-input text-xs py-1 ${isCompleted ? 'bg-green-50 text-green-700' : 'bg-[#f0ece4]'} cursor-not-allowed" value="${isCompleted ? 'Completed' : 'Pending'}" readonly>
+                        </td>
+                    `;
+                    chaptersTbody.appendChild(tr);
+                });
+            } else {
+                chaptersTbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-[#5b6375]">No chapter findings.</td></tr>`;
+            }
 
-        } else {
+            // IoT
+            const iotTbody = document.getElementById('check_iot_tbody');
+            if (revData.iot_findings && revData.iot_findings.length) {
+                revData.iot_findings.forEach((iot, idx) => {
+                    const remarks = iot.remarks || 'Pending';
+                    const isCompleted = remarks.toLowerCase() === 'completed';
+                    const tr = document.createElement('tr');
+                    tr.dataset.finding = iot.finding;
+                    tr.innerHTML = `
+                        <td class="p-2 pl-3">${iot.finding}</td>
+                        <td class="p-2 text-center">
+                            <input type="checkbox" data-role="iot-completed" class="form-checkbox text-green-600" value="1" ${isCompleted ? 'checked' : ''}>
+                        </td>
+                        <td class="p-2 pr-3">
+                            <input type="text" data-role="iot-remarks" class="form-input text-xs py-1 ${isCompleted ? 'bg-green-50 text-green-700' : 'bg-[#f0ece4]'} cursor-not-allowed" value="${isCompleted ? 'Completed' : 'Pending'}" readonly>
+                        </td>
+                    `;
+                    iotTbody.appendChild(tr);
+                });
+            } else {
+                iotTbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-[#5b6375]">No IoT findings.</td></tr>`;
+            }
 
-            proponentsEl.innerHTML =
-                '<span class="text-xs text-[#5b6375]">No members</span>';
-        }
-
-
-        // ===========================
-        // OVERALL REMARKS
-        // ===========================
-        document.getElementById('check_overall_remarks').textContent =
-            revData.overall_remarks || 'No overall remarks.';
-
-
-        // ===========================
-        // CHAPTER FINDINGS
-        // ===========================
-        const chaptersTbody =
-            document.getElementById('check_chapters_tbody');
-
-        if (revData.chapters && revData.chapters.length) {
-
-            revData.chapters.forEach((ch, idx) => {
-
-                const remarks = ch.remarks || 'Pending';
-
-                const isCompleted =
-                    remarks.toLowerCase() === 'completed';
-
-                const tr = document.createElement('tr');
-
-                tr.dataset.chapter = ch.chapter;
-                tr.dataset.findings = ch.findings;
-
-                tr.innerHTML = `
-                    <td class="p-2 pl-3 font-semibold">
-                        ${ch.chapter}
-                    </td>
-
-                    <td class="p-2">
-                        ${ch.findings}
-                    </td>
-
-                    <td class="p-2 text-center">
-
-                        <input
-                            type="checkbox"
-                            data-role="chapter-completed"
-                            class="form-checkbox text-green-600"
-                            value="1"
-                            ${isCompleted ? 'checked' : ''}
-                        >
-
-                    </td>
-
-                    <td class="p-2 pr-3">
-
-                        <input
-                            type="text"
-                            data-role="chapter-remarks"
-                            class="form-input text-xs py-1
-                            ${isCompleted
-                                ? 'bg-green-50 text-green-700'
-                                : 'bg-[#f0ece4]'} cursor-not-allowed"
-                            value="${isCompleted ? 'Completed' : 'Pending'}"
-                            readonly
-                        >
-
-                    </td>
-                `;
-
-                chaptersTbody.appendChild(tr);
-            });
-
-        } else {
-
-            chaptersTbody.innerHTML = `
-                <tr>
-                    <td colspan="4"
-                        class="p-4 text-center text-[#5b6375]">
-                        No chapter findings.
-                    </td>
+            // Objectives
+            const objectivesList = document.getElementById('check_objectives_list');
+            objectivesList.innerHTML = '';
+            const table = document.createElement('table');
+            table.className = 'w-full text-left border-collapse';
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
+                    <th class="p-2 pl-3" style="width:65%">Objective</th>
+                    <th class="p-2 text-center" style="width:15%">Completed?</th>
+                    <th class="p-2 pr-3 text-center" style="width:20%">Remarks</th>
                 </tr>
             `;
-        }
-
-
-        // ===========================
-        // IoT / SYSTEM FINDINGS
-        // ===========================
-        const iotTbody =
-            document.getElementById('check_iot_tbody');
-
-        if (revData.iot_findings &&
-            revData.iot_findings.length) {
-
-            revData.iot_findings.forEach((iot, idx) => {
-
-                const remarks = iot.remarks || 'Pending';
-
-                const isCompleted =
-                    remarks.toLowerCase() === 'completed';
-
+            table.appendChild(thead);
+            const tbodyObj = document.createElement('tbody');
+            tbodyObj.className = 'divide-y divide-[#faf1e0] text-xs';
+            if (revData.additional_objectives && revData.additional_objectives.length > 0) {
+                revData.additional_objectives.forEach((obj) => {
+                    const objectiveText = typeof obj === 'object' ? obj.objective : obj;
+                    const remarks = typeof obj === 'object' ? (obj.remarks || 'Pending') : 'Pending';
+                    const isCompleted = String(remarks).toLowerCase() === 'completed';
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-[#faf8f4]/50';
+                    tr.dataset.objective = objectiveText;
+                    tr.innerHTML = `
+                        <td class="p-2 pl-3 font-medium text-[#171e2c]">${objectiveText}</td>
+                        <td class="p-2 text-center">
+                            <input type="checkbox" data-role="objective-completed" class="form-checkbox text-green-600" value="1" ${isCompleted ? 'checked' : ''}>
+                        </td>
+                        <td class="p-2 pr-3">
+                            <input type="text" data-role="objective-remarks" class="form-input text-xs py-1 text-center ${isCompleted ? 'bg-green-50 text-green-700' : 'bg-[#f0ece4]'} cursor-not-allowed w-full" value="${isCompleted ? 'Completed' : 'Pending'}" readonly>
+                        </td>
+                    `;
+                    tbodyObj.appendChild(tr);
+                });
+            } else {
                 const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="3" class="p-4 text-center text-[#5b6375]">No objectives.</td>`;
+                tbodyObj.appendChild(tr);
+            }
+            table.appendChild(tbodyObj);
+            objectivesList.appendChild(table);
 
-                tr.dataset.finding = iot.finding;
-
-                tr.innerHTML = `
-                    <td class="p-2 pl-3">
-                        ${iot.finding}
-                    </td>
-
-                    <td class="p-2 text-center">
-
-                        <input
-                            type="checkbox"
-                            data-role="iot-completed"
-                            class="form-checkbox text-green-600"
-                            value="1"
-                            ${isCompleted ? 'checked' : ''}
-                        >
-
-                    </td>
-
-                    <td class="p-2 pr-3">
-
-                        <input
-                            type="text"
-                            data-role="iot-remarks"
-                            class="form-input text-xs py-1
-                            ${isCompleted
-                                ? 'bg-green-50 text-green-700'
-                                : 'bg-[#f0ece4]'} cursor-not-allowed"
-                            value="${isCompleted ? 'Completed' : 'Pending'}"
-                            readonly
-                        >
-
-                    </td>
-                `;
-
-                iotTbody.appendChild(tr);
+            // Toggle completed checkboxes
+            document.querySelectorAll(
+                '#check_chapters_tbody [data-role="chapter-completed"], ' +
+                '#check_iot_tbody [data-role="iot-completed"], ' +
+                '#check_objectives_list [data-role="objective-completed"]'
+            )
+            .forEach(cb => {
+                cb.addEventListener('change', function () {
+                    const row = this.closest('tr, div');
+                    const remarksField = row?.querySelector('[data-role$="-remarks"]');
+                    if (!remarksField) return;
+                    if (this.checked) {
+                        remarksField.value = 'Completed';
+                        remarksField.classList.remove('bg-[#f0ece4]');
+                        remarksField.classList.add('bg-green-50', 'text-green-700');
+                    } else {
+                        remarksField.value = 'Pending';
+                        remarksField.classList.remove('bg-green-50', 'text-green-700');
+                        remarksField.classList.add('bg-[#f0ece4]');
+                    }
+                });
             });
+        })
+        .catch(error => {
+            console.error(error);
+            proponentsEl.innerHTML = `<span class="text-red-500">${error.message || 'Failed to load revision data.'}</span>`;
+        });
+    };
 
-        } else {
+    // ── My Evaluation Modal ──
+    window.openMyEvaluationModal = function (groupId) {
+        openModal('myEvaluationModal');
+        const content = document.getElementById('myEvaluationContent');
+        content.innerHTML = '<p class="text-sm text-[#5b6375]">Loading…</p>';
 
-            iotTbody.innerHTML = `
-                <tr>
-                    <td colspan="3"
-                        class="p-4 text-center text-[#5b6375]">
-                        No IoT findings.
-                    </td>
-                </tr>
-            `;
-        }
-
-
-         // ===========================
-// ADDITIONAL OBJECTIVES
-// ===========================
-const objectivesList = document.getElementById('check_objectives_list');
-objectivesList.innerHTML = '';
-
-// Build a table identical to the others
-const table = document.createElement('table');
-table.className = 'w-full text-left border-collapse';
-
-const thead = document.createElement('thead');
-thead.innerHTML = `
-    <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
-        <th class="p-2 pl-3" style="width:65%">Objective</th>
-        <th class="p-2 text-center" style="width:15%">Completed?</th>
-        <th class="p-2 pr-3 text-center" style="width:20%">Remarks</th>
-    </tr>
-`;
-table.appendChild(thead);
-
-const tbody = document.createElement('tbody');
-tbody.className = 'divide-y divide-[#faf1e0] text-xs';
-
-if (revData.additional_objectives && revData.additional_objectives.length > 0) {
-    revData.additional_objectives.forEach((obj) => {
-        const objectiveText = typeof obj === 'object' ? obj.objective : obj;
-        const remarks = typeof obj === 'object' ? (obj.remarks || 'Pending') : 'Pending';
-        const isCompleted = String(remarks).toLowerCase() === 'completed';
-
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-[#faf8f4]/50';
-        tr.dataset.objective = objectiveText;
-
-        tr.innerHTML = `
-            <td class="p-2 pl-3 font-medium text-[#171e2c]">${objectiveText}</td>
-            <td class="p-2 text-center">
-                <input type="checkbox" data-role="objective-completed" class="form-checkbox text-green-600" value="1" ${isCompleted ? 'checked' : ''}>
-            </td>
-            <td class="p-2 pr-3">
-                <input type="text" data-role="objective-remarks" class="form-input text-xs py-1 text-center ${isCompleted ? 'bg-green-50 text-green-700' : 'bg-[#f0ece4]'} cursor-not-allowed w-full" value="${isCompleted ? 'Completed' : 'Pending'}" readonly>
-            </td>
-        `;
-
-        tbody.appendChild(tr);
-    });
-} else {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="3" class="p-4 text-center text-[#5b6375]">No objectives.</td>`;
-    tbody.appendChild(tr);
-}
-
-table.appendChild(tbody);
-objectivesList.appendChild(table);
-
-
-        // ===========================
-        // COMPLETED / PENDING TOGGLE
-        // ===========================
-        document.querySelectorAll(
-            '#check_chapters_tbody [data-role="chapter-completed"], ' +
-            '#check_iot_tbody [data-role="iot-completed"], ' +
-            '#check_objectives_list [data-role="objective-completed"]'
-        )
-        .forEach(cb => {
-
-            cb.addEventListener('change', function () {
-
-                const row = this.closest('tr, div');
-
-                const remarksField =
-                    row?.querySelector(
-                        '[data-role$="-remarks"]'
-                    );
-
-                if (!remarksField) return;
-
-                if (this.checked) {
-
-                    remarksField.value = 'Completed';
-
-                    remarksField.classList.remove(
-                        'bg-[#f0ece4]'
-                    );
-
-                    remarksField.classList.add(
-                        'bg-green-50',
-                        'text-green-700'
-                    );
-
-                } else {
-
-                    remarksField.value = 'Pending';
-
-                    remarksField.classList.remove(
-                        'bg-green-50',
-                        'text-green-700'
-                    );
-
-                    remarksField.classList.add(
-                        'bg-[#f0ece4]'
-                    );
+        fetch(`/teacher/get-my-evaluation/${groupId}`)
+            .then(async response => {
+                const contentType = response.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) {
+                    const text = await response.text();
+                    throw new Error(`Server returned ${response.status} (not JSON). First 100 chars: ${text.slice(0,100)}`);
                 }
-            });
-        });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Failed to load evaluation.');
+                return data;
+            })
+            .then(data => {
+                const criteriaRows = (data.criteria || []).map(c => `
+                    <tr class="border-b border-[#e2dacf]">
+                        <td class="py-2">${c.criteria_name}</td>
+                        <td class="text-center">${c.weight}%</td>
+                        <td class="text-center">${c.max_score}</td>
+                        <td class="text-center font-bold text-[#1e6b3a]">${c.given_score}</td>
+                    </tr>`).join('');
 
-    })
-    .catch(error => {
-
-        console.error(error);
-
-        proponentsEl.innerHTML = `
-            <span class="text-red-500">
-                ${error.message || 'Failed to load revision data.'}
-            </span>
-        `;
-    });
-};
-
-window.openMyEvaluationModal = function (groupId) {
-    openModal('myEvaluationModal');
-    const content = document.getElementById('myEvaluationContent');
-    content.innerHTML = '<p class="text-sm text-[#5b6375]">Loading…</p>';
-
-    fetch(`/teacher/get-my-evaluation/${groupId}`)
-        .then(async response => {
-            const contentType = response.headers.get('content-type') || '';
-            if (!contentType.includes('application/json')) {
-                const text = await response.text();
-                throw new Error(`Server returned ${response.status} (not JSON). First 100 chars: ${text.slice(0,100)}`);
-            }
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to load evaluation.');
-            }
-            return data;
-        })
-        .then(data => {
-            const criteriaRows = (data.criteria || []).map(c => `
-                <tr class="border-b border-[#e2dacf]">
-                    <td class="py-2">${c.criteria_name}</td>
-                    <td class="text-center">${c.weight}%</td>
-                    <td class="text-center">${c.max_score}</td>
-                    <td class="text-center font-bold text-[#1e6b3a]">${c.given_score}</td>
-                </tr>`).join('');
-
-            content.innerHTML = `
-                <div class="space-y-3">
-                    <div class="flex justify-between items-center p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg">
-                        <div>
-                            <p class="font-semibold text-sm text-[#0a1428]">${data.group_name}</p>
-                            <p class="text-xs text-[#5b6375]">${data.milestone_title}</p>
+                content.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg">
+                            <div>
+                                <p class="font-semibold text-sm text-[#0a1428]">${data.group_name}</p>
+                                <p class="text-xs text-[#5b6375]">${data.milestone_title}</p>
+                            </div>
+                            <span class="text-lg font-bold text-[#1e6b3a]">${data.score} / ${data.max_score}</span>
                         </div>
-                        <span class="text-lg font-bold text-[#1e6b3a]">${data.score} / ${data.max_score}</span>
+                        ${criteriaRows ? `
+                            <table class="w-full text-sm">
+                                <thead><tr class="text-[#5b6375] border-b border-[#e2dacf]"><th class="text-left py-2">Criteria</th><th class="text-center py-2">Weight</th><th class="text-center py-2">Max</th><th class="text-center py-2">Score</th></tr></thead>
+                                <tbody>${criteriaRows}</tbody>
+                            </table>` : ''}
+                        ${data.feedback ? `<div class="p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg text-sm italic text-[#5b6375]">"${data.feedback}"</div>` : ''}
                     </div>
-                    ${criteriaRows ? `
-                        <table class="w-full text-sm">
-                            <thead><tr class="text-[#5b6375] border-b border-[#e2dacf]"><th class="text-left py-2">Criteria</th><th class="text-center py-2">Weight</th><th class="text-center py-2">Max</th><th class="text-center py-2">Score</th></tr></thead>
-                            <tbody>${criteriaRows}</tbody>
-                        </table>` : ''}
-                    ${data.feedback ? `<div class="p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg text-sm italic text-[#5b6375]">"${data.feedback}"</div>` : ''}
+                `;
+            })
+            .catch(err => {
+                content.innerHTML = `<p class="text-sm text-red-500">❌ ${err.message}</p>`;
+                console.error('MyEvaluation error:', err);
+            });
+    };
+
+    // ── Revision Sheet HTML / editor ──
+    let revisionSheetDirty = false;
+    let revisionEditorReadOnly = false;
+
+    function escHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function revisionHasContent(data) {
+        return Boolean(
+            String(data?.overall_remarks || '').trim() ||
+            (Array.isArray(data?.chapters) && data.chapters.length) ||
+            (Array.isArray(data?.iot_findings) && data.iot_findings.length) ||
+            (Array.isArray(data?.additional_objectives) && data.additional_objectives.length)
+        );
+    }
+
+    function editableTextInput(value, className, placeholder) {
+        return `<input type="text" class="form-input text-sm ${className}" value="${escHtml(value)}" placeholder="${escHtml(placeholder)}" oninput="markRevisionSheetDirty()">`;
+    }
+
+    function buildRevisionSheetHtml(data = {}, readOnly = false) {
+        const chapters = Array.isArray(data?.chapters) ? data.chapters : [];
+        const iotFindings = Array.isArray(data?.iot_findings) ? data.iot_findings : [];
+        const objectives = Array.isArray(data?.additional_objectives) ? data.additional_objectives : [];
+        const hasExistingRevision = revisionHasContent(data);
+        const editable = !readOnly && !hasExistingRevision;
+
+        const chapterRows = chapters.length
+            ? chapters.map(ch => editable
+                ? `<tr class="border-b border-[#e2dacf] eval-sheet-row">
+                        <td class="p-2 pl-3">${editableTextInput(ch.chapter, 'eval-sheet-chapter', 'Chapter')}</td>
+                        <td class="p-2">${editableTextInput(ch.findings, 'eval-sheet-findings', 'Document findings / required revision')}</td>
+                        <td class="p-2 pr-3 text-center"><button type="button" onclick="this.closest('tr').remove(); markRevisionSheetDirty()" class="text-[#5b6375] hover:text-red-500 px-2" aria-label="Remove chapter finding"><i class="fas fa-times"></i></button></td>
+                   </tr>`
+                : `<tr class="border-b border-[#e2dacf]">
+                        <td class="p-2 pl-3 font-semibold">${escHtml(ch.chapter)}</td>
+                        <td class="p-2">${escHtml(ch.findings)}</td>
+                        <td class="p-2 pr-3 text-center"><span class="badge ${String(ch.remarks || '').toLowerCase() === 'completed' ? 'badge-green' : 'badge-muted'}">${escHtml(ch.remarks || 'Pending')}</span></td>
+                   </tr>`
+            ).join('')
+            : editable
+                ? `<tr class="border-b border-[#e2dacf] eval-sheet-row">
+                        <td class="p-2 pl-3">${editableTextInput('', 'eval-sheet-chapter', 'Chapter')}</td>
+                        <td class="p-2">${editableTextInput('', 'eval-sheet-findings', 'Document findings / required revision')}</td>
+                        <td class="p-2 pr-3 text-center"><button type="button" onclick="this.closest('tr').remove(); markRevisionSheetDirty()" class="text-[#5b6375] hover:text-red-500 px-2" aria-label="Remove chapter finding"><i class="fas fa-times"></i></button></td>
+                   </tr>`
+                : `<tr><td colspan="3" class="p-4 text-center text-[#5b6375]">No chapter findings.</td></tr>`;
+
+        const iotRows = iotFindings.length
+            ? iotFindings.map(iot => editable
+                ? `<tr class="border-b border-[#e2dacf] eval-sheet-row">
+                        <td class="p-2 pl-3">${editableTextInput(iot.finding, 'eval-sheet-iot', 'Finding / enhancement / recommendation')}</td>
+                        <td class="p-2 pr-3 text-center"><button type="button" onclick="this.closest('tr').remove(); markRevisionSheetDirty()" class="text-[#5b6375] hover:text-red-500 px-2" aria-label="Remove IoT finding"><i class="fas fa-times"></i></button></td>
+                   </tr>`
+                : `<tr class="border-b border-[#e2dacf]">
+                        <td class="p-2 pl-3">${escHtml(iot.finding)}</td>
+                        <td class="p-2 pr-3 text-center"><span class="badge ${String(iot.remarks || '').toLowerCase() === 'completed' ? 'badge-green' : 'badge-muted'}">${escHtml(iot.remarks || 'Pending')}</span></td>
+                   </tr>`
+            ).join('')
+            : editable
+                ? `<tr class="border-b border-[#e2dacf] eval-sheet-row">
+                        <td class="p-2 pl-3">${editableTextInput('', 'eval-sheet-iot', 'Finding / enhancement / recommendation')}</td>
+                        <td class="p-2 pr-3 text-center"><button type="button" onclick="this.closest('tr').remove(); markRevisionSheetDirty()" class="text-[#5b6375] hover:text-red-500 px-2" aria-label="Remove IoT finding"><i class="fas fa-times"></i></button></td>
+                   </tr>`
+                : `<tr><td colspan="2" class="p-4 text-center text-[#5b6375]">No IoT findings.</td></tr>`;
+
+        const objectiveRows = objectives.length
+            ? objectives.map(obj => {
+                const objective = typeof obj === 'object' ? obj.objective : obj;
+                const remarks = typeof obj === 'object' ? (obj.remarks || 'Pending') : 'Pending';
+                return editable
+                    ? `<tr class="border-b border-[#e2dacf] eval-sheet-row">
+                            <td class="p-2 pl-3">${editableTextInput(objective, 'eval-sheet-objective', 'Additional objective')}</td>
+                            <td class="p-2 pr-3 text-center"><button type="button" onclick="this.closest('tr').remove(); markRevisionSheetDirty()" class="text-[#5b6375] hover:text-red-500 px-2" aria-label="Remove objective"><i class="fas fa-times"></i></button></td>
+                       </tr>`
+                    : `<tr class="border-b border-[#e2dacf]">
+                            <td class="p-2 pl-3">${escHtml(objective)}</td>
+                            <td class="p-2 pr-3 text-center"><span class="badge ${String(remarks).toLowerCase() === 'completed' ? 'badge-green' : 'badge-muted'}">${escHtml(remarks)}</span></td>
+                       </tr>`;
+            }).join('')
+            : editable
+                ? `<tr class="border-b border-[#e2dacf] eval-sheet-row">
+                        <td class="p-2 pl-3">${editableTextInput('', 'eval-sheet-objective', 'Additional objective')}</td>
+                        <td class="p-2 pr-3 text-center"><button type="button" onclick="this.closest('tr').remove(); markRevisionSheetDirty()" class="text-[#5b6375] hover:text-red-500 px-2" aria-label="Remove objective"><i class="fas fa-times"></i></button></td>
+                   </tr>`
+                : `<tr><td colspan="2" class="p-4 text-center text-[#5b6375]">No additional objectives.</td></tr>`;
+
+        const readOnlyAttr = editable ? '' : 'readonly';
+        return `
+            <div id="eval_revision_editor" class="space-y-4" data-editable="${editable ? 'true' : 'false'}">
+                <div class="mb-4">
+                    <label class="form-label">Overall Remarks / Instructions</label>
+                    <textarea id="eval_sheet_overall_remarks" class="form-input text-sm min-h-24" placeholder="No remarks provided." oninput="markRevisionSheetDirty()" ${readOnlyAttr}>${escHtml(data?.overall_remarks || '')}</textarea>
                 </div>
-            `;
-        })
-        .catch(err => {
-            content.innerHTML = `<p class="text-sm text-red-500">❌ ${err.message}</p>`;
-            console.error('MyEvaluation error:', err);
-        });
-};
-function buildRevisionSheetHtml(data) {
-    let html = '';
 
-    html += `
-        <div class="mb-4">
-            <label class="form-label">Overall Remarks / Instructions</label>
-            <p class="p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg text-sm text-[#5b6375] italic">
-                ${data.overall_remarks || 'No remarks provided.'}
-            </p>
-        </div>
-    `;
+                <div class="border-t border-[#e2dacf] pt-4 mt-4">
+                    <p class="form-fieldset-title"><i class="fa-solid fa-book"></i> Chapter / Document Findings</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead><tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]"><th class="p-2 pl-3" style="width:20%">Chapter</th><th class="p-2" style="width:45%">Findings</th><th class="p-2 pr-3 text-center" style="width:35%">${editable ? 'Actions' : 'Remarks'}</th></tr></thead>
+                            <tbody id="eval_sheet_chapter_rows" class="divide-y divide-[#faf1e0]">${chapterRows}</tbody>
+                        </table>
+                    </div>
+                    ${editable ? '<button type="button" onclick="addRevisionSheetChapterRow()" class="btn-outline text-xs mt-2"><i class="fas fa-plus mr-1"></i> Add Chapter Finding</button>' : ''}
+                </div>
 
-    html += `
-        <div class="border-t border-[#e2dacf] pt-4 mt-4">
-            <p class="form-fieldset-title"><i class="fa-solid fa-book"></i> Chapter / Document Findings</p>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm">
-                    <thead>
-                        <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
-                            <th class="p-2 pl-3" style="width:20%">Chapter</th>
-                            <th class="p-2" style="width:45%">Findings</th>
-                            <th class="p-2 pr-3 text-center" style="width:35%">Remarks</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[#faf1e0]">
-    `;
-    if (data.chapters && data.chapters.length) {
-        data.chapters.forEach(ch => {
-            html += `
-                <tr>
-                    <td class="p-2 pl-3 font-semibold">${ch.chapter}</td>
-                    <td class="p-2">${ch.findings}</td>
-                    <td class="p-2 pr-3 text-center">
-                        <span class="badge ${ch.remarks.toLowerCase() === 'completed' ? 'badge-green' : 'badge-muted'}">
-                            ${ch.remarks || 'Pending'}
-                        </span>
-                    </td>
-                </tr>
-            `;
-        });
-    } else {
-        html += `<tr><td colspan="3" class="p-4 text-center text-[#5b6375]">No chapter findings.</td></tr>`;
-    }
-    html += `</tbody></table></div></div>`;
+                <div class="border-t border-[#e2dacf] pt-4 mt-4">
+                    <p class="form-fieldset-title"><i class="fa-solid fa-microchip"></i> System / IoT Findings / Enhancements</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead><tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]"><th class="p-2 pl-3" style="width:65%">Finding / Enhancement</th><th class="p-2 pr-3 text-center" style="width:35%">${editable ? 'Actions' : 'Remarks'}</th></tr></thead>
+                            <tbody id="eval_sheet_iot_rows" class="divide-y divide-[#faf1e0]">${iotRows}</tbody>
+                        </table>
+                    </div>
+                    ${editable ? '<button type="button" onclick="addRevisionSheetIotRow()" class="btn-outline text-xs mt-2"><i class="fas fa-plus mr-1"></i> Add IoT Finding</button>' : ''}
+                </div>
 
-    html += `
-        <div class="border-t border-[#e2dacf] pt-4 mt-4">
-            <p class="form-fieldset-title"><i class="fa-solid fa-microchip"></i> System / IoT Findings / Enhancements</p>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm">
-                    <thead>
-                        <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
-                            <th class="p-2 pl-3" style="width:65%">Finding / Enhancement</th>
-                            <th class="p-2 pr-3 text-center" style="width:35%">Remarks</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[#faf1e0]">
-    `;
-    if (data.iot_findings && data.iot_findings.length) {
-        data.iot_findings.forEach(iot => {
-            html += `
-                <tr>
-                    <td class="p-2 pl-3">${iot.finding}</td>
-                    <td class="p-2 pr-3 text-center">
-                        <span class="badge ${iot.remarks.toLowerCase() === 'completed' ? 'badge-green' : 'badge-muted'}">
-                            ${iot.remarks || 'Pending'}
-                        </span>
-                    </td>
-                </tr>
-            `;
-        });
-    } else {
-        html += `<tr><td colspan="2" class="p-4 text-center text-[#5b6375]">No IoT findings.</td></tr>`;
-    }
-    html += `</tbody></table></div></div>`;
+                <div class="border-t border-[#e2dacf] pt-4 mt-4">
+                    <p class="form-fieldset-title"><i class="fa-solid fa-list-check"></i> Additional Objectives (if any)</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead><tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]"><th class="p-2 pl-3" style="width:65%">Objective</th><th class="p-2 pr-3 text-center" style="width:35%">${editable ? 'Actions' : 'Remarks'}</th></tr></thead>
+                            <tbody id="eval_sheet_objective_rows" class="divide-y divide-[#faf1e0]">${objectiveRows}</tbody>
+                        </table>
+                    </div>
+                    ${editable ? '<button type="button" onclick="addRevisionSheetObjectiveRow()" class="btn-outline text-xs mt-2"><i class="fas fa-plus mr-1"></i> Add Objective</button>' : ''}
+                </div>
 
-    html += `
-        <div class="border-t border-[#e2dacf] pt-4 mt-4">
-            <p class="form-fieldset-title"><i class="fa-solid fa-list-check"></i> Additional Objectives (if any)</p>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm">
-                    <thead>
-                        <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf]">
-                            <th class="p-2 pl-3" style="width:65%">Objective</th>
-                            <th class="p-2 pr-3 text-center" style="width:35%">Remarks</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[#faf1e0]">
-    `;
-    if (data.additional_objectives && data.additional_objectives.length) {
-        data.additional_objectives.forEach(obj => {
-            const objText = typeof obj === 'object' ? obj.objective : obj;
-            const remarks = typeof obj === 'object' ? (obj.remarks || 'Pending') : 'Pending';
-            html += `
-                <tr>
-                    <td class="p-2 pl-3">${objText}</td>
-                    <td class="p-2 pr-3 text-center">
-                        <span class="badge ${remarks.toLowerCase() === 'completed' ? 'badge-green' : 'badge-muted'}">
-                            ${remarks}
-                        </span>
-                    </td>
-                </tr>
-            `;
-        });
-    } else {
-        html += `<tr><td colspan="2" class="p-4 text-center text-[#5b6375]">No additional objectives.</td></tr>`;
-    }
-    html += `</tbody></table></div></div>`;
-
-    if (data.approved_by) {
-        html += `
-            <div class="border-t border-[#e2dacf] pt-4 mt-4">
-                <label class="form-label">Approved by</label>
-                <p class="p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg text-sm font-semibold text-[#0a1428]">
-                    ${data.approved_by}
-                </p>
+                ${editable ? `
+                    <div class="flex items-center justify-between gap-3 pt-3 border-t border-[#e2dacf]">
+                        <span id="eval_revision_save_status" class="text-xs text-[#5b6375]"></span>
+                        <button type="button" id="eval_revision_save_btn" onclick="saveRevisionSheet()" class="btn-primary text-xs"><i class="fa-solid fa-floppy-disk mr-1"></i> Save Revision Notes</button>
+                    </div>
+                ` : ''}
             </div>
         `;
     }
 
-    return html;
-}
+    function markRevisionSheetDirty() {
+        if (revisionEditorReadOnly) return;
+        revisionSheetDirty = true;
+        const status = document.getElementById('eval_revision_save_status');
+        if (status) status.textContent = 'Unsaved changes';
+    }
+    window.markRevisionSheetDirty = markRevisionSheetDirty;
 
-function renderRevisionSheet(container, groupId) {
-    container.innerHTML = '<p class="text-sm text-[#5b6375]">Loading revision data…</p>';
-    fetch(`/teacher/get-revision-details/${groupId}`)
-        .then(async response => {
-            if (!response.ok) {
-                const text = await response.text();
-                throw new Error(`Server returned ${response.status}: ${text.slice(0,100)}`);
-            }
-            return response.json();
+    window.addRevisionSheetChapterRow = function() {
+        const tbody = document.getElementById('eval_sheet_chapter_rows');
+        if (!tbody) return;
+        const row = document.createElement('tr');
+        row.className = 'border-b border-[#e2dacf] eval-sheet-row';
+        row.innerHTML = `<td class="p-2 pl-3">${editableTextInput('', 'eval-sheet-chapter', 'Chapter')}</td><td class="p-2">${editableTextInput('', 'eval-sheet-findings', 'Document findings / required revision')}</td><td class="p-2 pr-3 text-center"><button type="button" onclick="this.closest('tr').remove(); markRevisionSheetDirty()" class="text-[#5b6375] hover:text-red-500 px-2" aria-label="Remove chapter finding"><i class="fas fa-times"></i></button></td>`;
+        tbody.appendChild(row);
+        markRevisionSheetDirty();
+    };
+
+    window.addRevisionSheetIotRow = function() {
+        const tbody = document.getElementById('eval_sheet_iot_rows');
+        if (!tbody) return;
+        const row = document.createElement('tr');
+        row.className = 'border-b border-[#e2dacf] eval-sheet-row';
+        row.innerHTML = `<td class="p-2 pl-3">${editableTextInput('', 'eval-sheet-iot', 'Finding / enhancement / recommendation')}</td><td class="p-2 pr-3 text-center"><button type="button" onclick="this.closest('tr').remove(); markRevisionSheetDirty()" class="text-[#5b6375] hover:text-red-500 px-2" aria-label="Remove IoT finding"><i class="fas fa-times"></i></button></td>`;
+        tbody.appendChild(row);
+        markRevisionSheetDirty();
+    };
+
+    window.addRevisionSheetObjectiveRow = function() {
+        const tbody = document.getElementById('eval_sheet_objective_rows');
+        if (!tbody) return;
+        const row = document.createElement('tr');
+        row.className = 'border-b border-[#e2dacf] eval-sheet-row';
+        row.innerHTML = `<td class="p-2 pl-3">${editableTextInput('', 'eval-sheet-objective', 'Additional objective')}</td><td class="p-2 pr-3 text-center"><button type="button" onclick="this.closest('tr').remove(); markRevisionSheetDirty()" class="text-[#5b6375] hover:text-red-500 px-2" aria-label="Remove objective"><i class="fas fa-times"></i></button></td>`;
+        tbody.appendChild(row);
+        markRevisionSheetDirty();
+    };
+
+    window.saveRevisionSheet = function(options = {}) {
+        const groupId = document.getElementById('eval_group_id')?.value;
+        const saveBtn = document.getElementById('eval_revision_save_btn');
+        const status = document.getElementById('eval_revision_save_status');
+        if (!groupId) return Promise.reject(new Error('Group not selected.'));
+
+        const description = document.getElementById('eval_sheet_overall_remarks')?.value.trim() || '';
+        const chapters = Array.from(document.querySelectorAll('#eval_sheet_chapter_rows .eval-sheet-row')).map(row => ({
+            chapter: row.querySelector('.eval-sheet-chapter')?.value.trim() || '',
+            findings: row.querySelector('.eval-sheet-findings')?.value.trim() || ''
+        })).filter(item => item.chapter || item.findings);
+        const iotFindings = Array.from(document.querySelectorAll('#eval_sheet_iot_rows .eval-sheet-row')).map(row => ({
+            finding: row.querySelector('.eval-sheet-iot')?.value.trim() || ''
+        })).filter(item => item.finding);
+        const additionalObjectives = Array.from(document.querySelectorAll('#eval_sheet_objective_rows .eval-sheet-row'))
+            .map(row => row.querySelector('.eval-sheet-objective')?.value.trim() || '')
+            .filter(Boolean);
+
+        if (!description && !chapters.length && !iotFindings.length && !additionalObjectives.length) {
+            if (!options.silent) showToast('Add at least one revision note before saving.', true);
+            return Promise.resolve({ skipped: true });
+        }
+
+        const originalHtml = saveBtn?.innerHTML;
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saving...';
+        }
+        if (status) status.textContent = 'Saving…';
+
+        return fetch(`/teacher/group/${groupId}/request-revision`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                revision_description: description,
+                chapters,
+                iot_findings: iotFindings,
+                additional_objectives: additionalObjectives
+            })
         })
-        .then(data => {
-            if (data.error) {
-                container.innerHTML = `<p class="text-sm text-red-500">${data.error}</p>`;
-                return;
-            }
-            container.innerHTML = buildRevisionSheetHtml(data);
-        })
-        .catch(err => {
-            container.innerHTML = `<p class="text-sm text-red-500">❌ ${err.message}</p>`;
-            console.error('RevisionSheet error:', err);
-        });
-}
-window.openViewRevisionModal = function (groupId) {
-    const modal = document.getElementById('viewRevisionModal');
-    const content = document.getElementById('viewRevisionContent');
-    modal.classList.add('active');
-    renderRevisionSheet(content, groupId);
-};
+            .then(async response => {
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok || !result.success) throw new Error(result.error || 'Failed to save revision notes.');
+                return result;
+            })
+            .then(result => {
+                revisionSheetDirty = false;
+                if (status) status.textContent = 'Saved';
+                if (!options.silent) showToast(result.message || 'Revision notes saved successfully.');
+                return result;
+            })
+            .catch(error => {
+                if (status) status.textContent = 'Save failed';
+                if (!options.silent) showToast(error.message || 'Failed to save revision notes.', true);
+                throw error;
+            })
+            .finally(() => {
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalHtml || '<i class="fa-solid fa-floppy-disk mr-1"></i> Save Revision Notes';
+                }
+            });
+    };
+
+    function setRevisionAccessLabel(editable) {
+        const label = document.getElementById('eval_revision_access_label');
+        if (!label) return;
+        label.innerHTML = editable
+            ? '<i class="fa-solid fa-pen"></i> Editable'
+            : '<i class="fa-solid fa-lock"></i> View Only';
+    }
+
+    function renderRevisionSheet(container, groupId, forceReadOnly = false) {
+        container.innerHTML = '<p class="text-sm text-[#5b6375]">Loading revision data…</p>';
+        fetch(`/teacher/get-revision-details/${groupId}`)
+            .then(async response => {
+                const data = await response.json().catch(() => ({}));
+                if (response.status === 404) return {};
+                if (!response.ok) throw new Error(data.error || `Server returned ${response.status}`);
+                return data;
+            })
+            .then(data => {
+                if (data.error) {
+                    container.innerHTML = `<p class="text-sm text-red-500">${escHtml(data.error)}</p>`;
+                    setRevisionAccessLabel(false);
+                    return;
+                }
+                const editable = !forceReadOnly && !revisionHasContent(data);
+                revisionEditorReadOnly = !editable;
+                revisionSheetDirty = false;
+                setRevisionAccessLabel(editable);
+                container.innerHTML = buildRevisionSheetHtml(data, !editable);
+                container.querySelectorAll('input, textarea').forEach(field => {
+                    field.addEventListener('input', markRevisionSheetDirty);
+                    field.addEventListener('change', markRevisionSheetDirty);
+                });
+            })
+            .catch(err => {
+                container.innerHTML = `<p class="text-sm text-red-500">❌ ${escHtml(err.message)}</p>`;
+                setRevisionAccessLabel(false);
+                console.error('RevisionSheet error:', err);
+            });
+    }
+
+    window.openViewRevisionModal = function (groupId) {
+        const modal = document.getElementById('viewRevisionModal');
+        const content = document.getElementById('viewRevisionContent');
+        if (!modal || !content) return;
+        modal.classList.add('active');
+        renderRevisionSheet(content, groupId, true);
+    };
+
+    window.openViewEvaluationModal = function (groupId) {
+        window.openEvaluationModal(groupId);
+    };
+
+    window.openReadOnlyEvaluationModal = function (groupId) {
+        window.openEvaluationModal(groupId);
+    };
+
+    
+});
 </script>
-</body>
-</html>
+ </body>
+    </html>

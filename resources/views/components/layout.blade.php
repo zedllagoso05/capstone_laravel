@@ -11,51 +11,151 @@
 
     {{-- Toast notification styles --}}
     <style>
+        /* ─── TOAST NOTIFICATIONS ─────────────────────────── */
         .toast-notification {
             position: fixed;
-            top: 20px;
+            top: 24px;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translateX(-50%) translateY(-20px);
             z-index: 99999;
-            background: #1e6b3a; /* success green */
-            color: #fff;
-            padding: 14px 28px;
-            border-radius: 8px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 320px;
+            max-width: 420px;
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 16px 20px;
+            box-shadow:
+                0 4px 6px rgba(10, 20, 40, 0.05),
+                0 12px 32px rgba(10, 20, 40, 0.16);
+            border-left: 4px solid #1e6b3a;
             font-family: 'DM Sans', sans-serif;
-            font-size: 1rem;
-            font-weight: 500;
-            min-width: 280px;
-            text-align: center;
             opacity: 0;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            pointer-events: none; /* so clicks pass through */
+            pointer-events: none;
+            transition: opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                        transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            overflow: hidden;
         }
+
         .toast-notification.show {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
+            pointer-events: all;
         }
-        .toast-content {
+
+        .toast-notification.toast-error {
+            border-left-color: #a12b2b;
+        }
+
+        .toast-icon-wrap {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            background: rgba(30, 107, 58, 0.1);
         }
-        .toast-icon {
-            font-size: 1.4rem;
+
+        .toast-notification.toast-error .toast-icon-wrap {
+            background: rgba(161, 43, 43, 0.1);
         }
-        @keyframes slideDown {
-            from {
-                transform: translateX(-50%) translateY(-30px);
-                opacity: 0;
+
+        .toast-icon-wrap svg {
+            width: 18px;
+            height: 18px;
+            stroke: #1e6b3a;
+            stroke-width: 2.2;
+            fill: none;
+        }
+
+        .toast-notification.toast-error .toast-icon-wrap svg {
+            stroke: #a12b2b;
+        }
+
+        .toast-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .toast-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #0a1428;
+            letter-spacing: 0.01em;
+        }
+
+        .toast-message {
+            font-size: 0.78rem;
+            font-weight: 400;
+            color: #5b6375;
+            line-height: 1.35;
+        }
+
+        .toast-close {
+            flex-shrink: 0;
+            background: none;
+            border: none;
+            color: #b8b0a0;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: background 0.15s, color 0.15s;
+            pointer-events: all;
+        }
+
+        .toast-close:hover {
+            background: #f0ece4;
+            color: #0a1428;
+        }
+
+        .toast-close svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: #1e6b3a;
+            width: 100%;
+            transform-origin: left;
+            animation: toastProgress 3.5s linear forwards;
+        }
+
+        .toast-notification.toast-error .toast-progress {
+            background: #a12b2b;
+        }
+
+        @keyframes toastProgress {
+            from { transform: scaleX(1); }
+            to   { transform: scaleX(0); }
+        }
+
+        @media (max-width: 480px) {
+            .toast-notification {
+                min-width: unset;
+                width: calc(100% - 32px);
+                left: 16px;
+                right: 16px;
+                transform: translateY(-20px);
             }
-            to {
-                transform: translateX(-50%) translateY(0);
-                opacity: 1;
+            .toast-notification.show {
+                transform: translateY(0);
             }
-        }
-        .toast-notification {
-            animation: slideDown 0.4s ease-out;
         }
     </style>
 </head>
@@ -154,11 +254,35 @@
 
     {{-- ========== LOGIN SUCCESS TOAST ========== --}}
     @if(session('login_success'))
-        <div id="loginSuccessToast" class="toast-notification">
+        <div id="loginSuccessToast" class="toast-notification" role="status">
+            <div class="toast-icon-wrap">
+                <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
             <div class="toast-content">
-                <span class="toast-icon">✅</span>
+                <span class="toast-title">Success</span>
                 <span class="toast-message">{{ session('login_message') ?? 'Login successful!' }}</span>
             </div>
+            <button type="button" class="toast-close" onclick="dismissToast('loginSuccessToast')">
+                <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="toast-progress"></div>
+        </div>
+    @endif
+
+    {{-- ========== LOGIN ERROR TOAST ========== --}}
+    @if($errors->any())
+        <div id="loginErrorToast" class="toast-notification toast-error" role="alert">
+            <div class="toast-icon-wrap">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12.5" stroke-linecap="round"/><circle cx="12" cy="16" r="0.5" fill="currentColor" stroke="currentColor"/></svg>
+            </div>
+            <div class="toast-content">
+                <span class="toast-title">Login Failed</span>
+                <span class="toast-message">{{ $errors->first() }}</span>
+            </div>
+            <button type="button" class="toast-close" onclick="dismissToast('loginErrorToast')">
+                <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="toast-progress"></div>
         </div>
     @endif
 
@@ -208,23 +332,23 @@
             window.addEventListener('hashchange', setActiveBasedOnHash);
             setActiveBasedOnHash();
 
-            // ========== LOGIN SUCCESS TOAST AUTO-HIDE ==========
-            const toast = document.getElementById('loginSuccessToast');
-            if (toast) {
-                // Show with a tiny delay so the entrance animation plays
-                setTimeout(() => {
-                    toast.classList.add('show');
-                }, 100);
+            // ========== TOAST NOTIFICATIONS ==========
+            window.dismissToast = function(id) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.classList.remove('show');
+                setTimeout(() => { if (el.parentNode) el.remove(); }, 350);
+            };
 
-                // Hide after 3 seconds
-                setTimeout(() => {
-                    toast.classList.remove('show');
-                    // Remove from DOM after fade-out (optional)
-                    setTimeout(() => {
-                        if (toast.parentNode) toast.remove();
-                    }, 300);
-                }, 3000);
+            function initToast(id, duration) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                setTimeout(() => el.classList.add('show'), 80);
+                setTimeout(() => dismissToast(id), duration);
             }
+
+            initToast('loginSuccessToast', 3500);
+            initToast('loginErrorToast', 4000);
         })();
     </script>
 

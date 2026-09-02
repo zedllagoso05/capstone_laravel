@@ -157,9 +157,9 @@ class user_controller extends Controller
      
 
         $incomingdata = $request->validate([
-            'logname'     => 'required',
-            'logpassword' => 'required|min:6'
-        ]);
+                'logname'     => 'required',
+                'logpassword' => 'required'
+            ]);
 
         if (Auth::attempt([
             'user_id'     => session('user_id'),
@@ -167,11 +167,11 @@ class user_controller extends Controller
             'password'    => $incomingdata['logpassword']
         ])) {
             $request->session()->regenerate();
-            return $this->redirectByRole()->with('success', 'Welcome back, ' . Auth::user()->name . '!');
+            return $this->redirectByRole()->with('success', 'Log in successful. Welcome back, ' . Auth::user()->role . '!');
         }
 
         return back()->withErrors([
-            'logname' => 'invalid username',
+            'logname' => 'invalid username /password',
         ]);
     }
 
@@ -214,18 +214,37 @@ class user_controller extends Controller
      * If a certificate is configured for this milestone, issue it to the group
      * (idempotent — won't create a duplicate if it's already been issued).
      */
-    private function autoIssueCertificateIfEligible($groupId, $milestoneId)
-    {
-        $certificate = Certificate::where('milestone_id', $milestoneId)->first();
-        if (!$certificate) {
-            return;
-        }
-
-        GroupCertificate::firstOrCreate(
-            ['group_id' => $groupId, 'certificate_id' => $certificate->id],
-            ['issued_date' => now()->toDateString()]
-        );
+private function autoIssueCertificateIfEligible($groupId, $milestoneId)
+{
+    $certificate = Certificate::where('milestone_id', $milestoneId)->first();
+    if (!$certificate) {
+        return;
     }
+
+    $alreadyIssued = GroupCertificate::where('group_id', $groupId)
+        ->where('certificate_id', $certificate->id)
+        ->exists();
+
+    if ($alreadyIssued) {
+        return; // idempotent — don't touch its existing serial
+    }
+
+    GroupCertificate::create([
+        'group_id'       => $groupId,
+        'certificate_id' => $certificate->id,
+        'issued_date'    => now()->toDateString(),
+        'serial_number'  => $this->generateDocumentSerial(),
+    ]);
+}
+
+private function generateDocumentSerial()
+{
+    do {
+        $serial = 'DOC-' . now()->format('Y') . '-' . strtoupper(Str::random(6));
+    } while (GroupCertificate::where('serial_number', $serial)->exists());
+
+    return $serial;
+}
     // ── STUDENT DASHBOARD ─────────────────────────────────────────
     public function dashboard()
     {
@@ -792,6 +811,22 @@ if ($groups) {
         ];
     }
 
+
+
+    $issuedDocuments = GroupCertificate::with(['certificate', 'group.students.user'])
+    ->orderByDesc('issued_date')
+    ->get()
+    ->map(function ($gc) {
+        $group = $gc->group;
+        return [
+            'id'                 => $gc->id,
+            'serial_number'      => $gc->serial_number ?? '—',
+            'certificate_title'  => $gc->certificate->certificate_title ?? 'Document',
+            'group_name'         => $group->group_name ?? 'Unknown Group',
+            'section_name'       => optional($group?->students->first())->section ?? 'N/A',
+            'issued_date'        => $gc->issued_date,
+        ];
+    });
     // ── Return view with all compact variables ──
     return view('sections.admin', compact(
         'user',
@@ -823,7 +858,8 @@ if ($groups) {
         'allCapstoneYears',
         'activeYear',
         'capstoneYears',
-        'groupProgressList'
+        'groupProgressList',
+        'issuedDocuments'
     ));
 }
 
@@ -1934,7 +1970,7 @@ if ($revision) {
             'teacher_middle_name'  => 'nullable|string|max:255',
             'teacher_last_name'    => 'required|string|max:255',
             'teacher_email'        => 'required|email',
-            'contact_number'       => 'nullable|string|size:11',
+            'contact_number'       => 'nullable',
         ]);
 
         $teacher = Teacher::where('user_id', $validated['original_teacher_id'])->firstOrFail();
@@ -2041,6 +2077,12 @@ if ($revision) {
                 'max_score' => $validated['score'][$i],
             ]);
         }
+    if ($request->wantsJson()) {
+        return response()->json([
+            'success' => true,
+            'message' => 'Rubric updated successfully.'
+        ]);
+    }
 
         return redirect()->route('admin.page')->with('success', 'Rubric updated successfully.');
     }
@@ -2302,15 +2344,22 @@ public function deleteMilestone(Request $request)
     }
 
     public function downloadStudentTemplate()
-    {
-        $headers = ['student_id', 'student_first_name', 'student_middle_name', 'student_last_name', 'course', 'section'];
+{
+    $headers = ['student_id', 'student_first_name', 'student_middle_name', 'student_last_name', 'course', 'section'];
 
-        return response()->streamDownload(function () use ($headers) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, $headers);
-            fclose($handle);
-        }, 'student_import_template.csv');
-    }
+    $exampleStudents = [
+        ['2021-0001', 'Example', 'The', 'Student', 'BSIT', 'East'],
+    ];
+
+    return response()->streamDownload(function () use ($headers, $exampleStudents) {
+        $handle = fopen('php://output', 'w');
+        fputcsv($handle, $headers);
+        foreach ($exampleStudents as $row) {
+            fputcsv($handle, $row);
+        }
+        fclose($handle);
+    }, 'student_import_template.csv');
+}
 
     // ── TEACHER IMPORT ───────────────────────────────────────────
     public function importTeachers(Request $request)
@@ -2347,12 +2396,19 @@ public function deleteMilestone(Request $request)
     public function downloadTeacherTemplate()
     {
         $headers = ['teacher_id', 'teacher_first_name', 'teacher_middle_name', 'teacher_last_name'];
+        
+        $exampleRows = [
+        ['TCH-001', 'Example', 'Kani', 'Siya'],
+    ];
 
-        return response()->streamDownload(function () use ($headers) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, $headers);
-            fclose($handle);
-        }, 'teacher_import_template.csv');
+    return response()->streamDownload(function () use ($headers, $exampleRows) {
+        $handle = fopen('php://output', 'w');
+        fputcsv($handle, $headers);
+        foreach ($exampleRows as $row) {
+            fputcsv($handle, $row);
+        }
+        fclose($handle);
+    }, 'teacher_import_template.csv');
     }
 
     // ── GROUP GET/UPDATE (admin) ─────────────────────────────────
@@ -2418,7 +2474,10 @@ public function deleteMilestone(Request $request)
             ]);
         }
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Group updated successfully.'
+        ]);
     }
 
     /**
@@ -2682,6 +2741,12 @@ public function updateMilestone(Request $request, $id)
         }
     }
 
+    if ($request->wantsJson()) {
+        return response()->json([
+            'success' => true,
+            'message' => 'Milestone updated successfully.'
+        ]);
+    }
     return redirect()->route('admin.page')->with('success', 'Milestone updated successfully.');
 }
 
@@ -4603,6 +4668,82 @@ public function getApprovalSheet($groupId)
         'oral_exam_result'   => $oralExamResult,
         'oral_exam_date'     => $oralExamDate,
         'school_president'   => $president,
+    ]);
+}
+
+
+/**
+ * All revision sheets (from every panelist) for a group — teacher-facing.
+ */
+public function getAllRevisionsForGroup($groupId)
+{
+    $group = Group::findOrFail($groupId);
+
+    $revisions = \App\Models\Revision::with(['documentation', 'enhancements', 'objectives', 'panelist'])
+        ->where('group_id', $groupId)
+        ->orderByDesc('created_at')
+        ->get()
+        ->map(function ($rev) {
+            return [
+                'id'           => $rev->id,
+                'panelist_name' => $rev->panelist
+                    ? $rev->panelist->teacher_first_name . ' ' . $rev->panelist->teacher_last_name
+                    : 'Panelist',
+                'created_at'   => $rev->created_at,
+                'overall_remarks' => $rev->overall_remarks,
+                'chapters' => $rev->documentation->map(fn($d) => [
+                    'chapter'  => $d->chapter,
+                    'findings' => $d->findings,
+                    'remarks'  => $d->remarks ?: 'Pending',
+                ]),
+                'iot_findings' => $rev->enhancements->map(fn($e) => [
+                    'finding' => $e->enhancement,
+                    'remarks' => $e->remarks ?: 'Pending',
+                ]),
+                'additional_objectives' => $rev->objectives->map(fn($o) => [
+                    'objective' => $o->objective,
+                    'remarks'   => $o->remarks ?: 'Pending',
+                ]),
+            ];
+        });
+
+    return response()->json([
+        'group_name' => $group->group_name,
+        'revisions'  => $revisions,
+    ]);
+}
+public function getRecommendationSheet($groupId)
+{
+    $user = Auth::user();
+    $student = Student::where('user_id', $user->user_id)->firstOrFail();
+
+    $group = Group::with(['team_members.student', 'adviser'])
+        ->findOrFail($groupId);
+
+    if (!$group->team_members->contains('user_id', $user->user_id)) {
+        return response()->json(['error' => 'You are not a member of this group.'], 403);
+    }
+
+    // Members
+    $members = $group->team_members->map(function ($tm) {
+        $s = $tm->student;
+        return trim(($s->student_first_name ?? '') . ' ' . ($s->student_last_name ?? ''));
+    })->filter()->values()->all();
+
+    // Adviser (full name)
+    $adviser = $group->adviser
+        ? trim(($group->adviser->teacher_first_name ?? '') . ' ' . ($group->adviser->teacher_last_name ?? ''))
+        : null;
+
+    // Date issued – we can use the current date or a stored date (adjust as needed)
+    $dateIssued = now()->format('Y-m-d');
+
+    return response()->json([
+        'capstone_title' => $group->capstone_title,
+        'members'        => $members,
+        'adviser'        => $adviser,
+        'date_issued'    => $dateIssued,
+        'group_name'     => $group->group_name,
     ]);
 }
 
