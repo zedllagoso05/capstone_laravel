@@ -1806,10 +1806,7 @@
             }
             $allRevisionSheetsComplete = $revisionItems->isEmpty()
                 || $revisionItems->every(fn ($item) => strtolower(trim((string) data_get($item, 'remarks', ''))) === 'completed');
-            $hasCompletedEvaluation = $groups
-                ? \App\Models\Evaluation::where('group_id', $groups->id)->exists()
-                : false;
-            $approvalLetterUnlocked = $hasCompletedEvaluation && $allRevisionSheetsComplete;
+            $approvalLetterUnlocked = $isApprovalSheetUnlocked ?? false;
             $capstone1Certificate = collect($certificatesCap1 ?? [])->first();
             $capstone1CertificateUnlocked = $capstone1Certificate && (bool) $capstone1Certificate->unlocked;
         @endphp
@@ -2292,58 +2289,52 @@
         </h2>
 
         <!-- Main Content -->
-        <div id="approvalSheetContent" class="text-[#0a1428] text-sm border border-[#b88d3a] rounded-lg overflow-hidden p-4">
-
-            <p class="text-center text-xs uppercase tracking-wider text-[#5b6375]">Capstone Project 2</p>
-            <p class="text-center text-lg font-bold" id="approvalTitle">—</p>
-            <p class="text-center text-xs text-[#5b6375] mt-1">prepared and submitted by</p>
-            <ol id="approvalProponents" class="list-decimal list-inside text-sm font-medium text-center">
-                <li class="text-[#5b6375] italic">Loading...</li>
-            </ol>
-            <p id="approvalSheetStatement" class="text-center text-sm mt-2">
-                in partial fulfillment of the requirements for the degree of
-                <strong>Bachelor of Science in Information Technology</strong>
-                has been examined, accepted and recommended for Oral Presentation.
-            </p>
-
-            <!-- Adviser -->
-            <div class="flex justify-between items-center border-t border-[#e2dacf] pt-3 mt-3">
-                <span class="font-bold text-xs uppercase tracking-wider text-[#5b6375]">Adviser</span>
-                <span id="approvalAdviser" class="font-semibold">—</span>
-            </div>
-
-            <!-- Panel of Examiners -->
-            <div class="border-t border-[#e2dacf] pt-3 mt-3">
-                <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-2">Panel of Examiners</p>
-                <ul id="approvalPanelists" class="space-y-1 text-sm list-disc list-inside">
+        <div id="approvalSheetContent" class="text-[#0a1428] text-sm border border-[#b88d3a] rounded-lg overflow-hidden">
+    <table class="w-full border-collapse text-sm">
+        <tr>
+            <td class="border border-[#b88d3a] p-2 align-top" style="width:50%;">
+                <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Name of Proponents</p>
+                <ol id="approvalProponents" class="list-decimal list-inside space-y-0.5">
+                    <li class="text-[#5b6375] italic">Loading...</li>
+                </ol>
+            </td>
+            <td class="border border-[#b88d3a] p-2 align-top" style="width:50%;">
+                <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Name of Capstone Project</p>
+                <p id="approvalTitle" class="font-medium">—</p>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" class="border border-[#b88d3a] p-2">
+                <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Adviser</p>
+                <p id="approvalAdviser" class="font-medium">—</p>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" class="border border-[#b88d3a] p-2">
+                <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Panel of Examiners</p>
+                <ul id="approvalPanelists" class="list-disc list-inside space-y-0.5">
                     <li class="text-[#5b6375] italic">Loading...</li>
                 </ul>
-            </div>
-
-            <!-- Accepted and Approved + Oral Exam -->
-            <div class="border-t border-[#e2dacf] pt-3 mt-3">
-                <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375]">ACCEPTED AND APPROVED</p>
-                <p class="text-sm mt-1">in partial fulfilment of the requirements for the degree of <strong>Bachelor of Science in Information Technology</strong>.</p>
-
-                <div class="grid grid-cols-2 gap-4 mt-3">
-                    <div>
-                        <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375]">Oral Examination</p>
-                        <p id="approvalOralResult" class="font-semibold text-green-700">—</p>
-                    </div>
-                    <div>
-                        <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375]">Date of Oral Examination</p>
-                        <p id="approvalOralDate" class="font-semibold">—</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- School President -->
-            <div class="border-t border-[#e2dacf] pt-3 mt-3">
-                <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375]">Approved by</p>
-                <p id="approvalPresident" class="font-semibold text-sm mt-1 border-b-2 border-[#b88d3a] inline-block min-w-[200px]">_________________________</p>
-            </div>
-
-        </div> <!-- end content -->
+            </td>
+        </tr>
+        <tr>
+            <td class="border border-[#b88d3a] p-2 align-top" style="width:50%;">
+                <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Oral Examination Result</p>
+                <p id="approvalOralResult" class="font-semibold text-green-700">—</p>
+            </td>
+            <td class="border border-[#b88d3a] p-2 align-top" style="width:50%;">
+                <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Date of Oral Examination</p>
+                <p id="approvalOralDate" class="font-semibold">—</p>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" class="border border-[#b88d3a] p-2">
+                <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Approved by</p>
+                <p id="approvalPresident" class="text-sm font-semibold mt-1 border-b-2 border-[#b88d3a] inline-block min-w-[200px]">_________________________</p>
+            </td>
+        </tr>
+    </table>
+</div>
 
         <!-- Buttons -->
         <div class="flex justify-end gap-2 pt-4 border-t border-[#e2dacf] mt-4">

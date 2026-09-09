@@ -1403,8 +1403,10 @@
                                     <span class="text-[#171e2c] font-medium">{{ $group->name }}</span>
                                     <div class="flex items-center gap-3">
                                         <div class="progress-bar-bg h-1.5 w-20">
-                                            <div class="progress-fill live-progress-bar h-full" data-base-color="{{ $group->color }}" style="width:{{ $group->progress }}%; background:{{ $group->color }};"></div>
+                                           
+                                            <div class="progress-fill live-progress-bar h-full text-indent: 2em;" data-base-color="{{ $group->color }}" style="width:{{ $group->progress }}%; background:{{ $group->color }};"></div>
                                         </div>
+                                        
                                         <span class="text-xs font-bold live-progress-pct" style="color:{{ $group->color }};">{{ $group->progress }}%</span>
                                         <span class="badge text-[10px] live-progress-badge" style="background:{{ $group->color }}20; color:{{ $group->color }}; border:1px solid {{ $group->color }}40;">
                                             {{ $group->status }}
@@ -1756,16 +1758,16 @@
                                                 <i class="fas fa-pen"></i> Edit
                                             </button>
                                             @if($yr->is_active)
-                                                <button type="button" onclick="confirmArchiveYear({{ $yr->id }}, '{{ $yr->year }}')" class="px-2.5 py-1 text-xs font-semibold rounded bg-amber-500 text-white hover:bg-amber-600 transition" title="Archive Year">
+                                                <button type="button" onclick="confirmArchiveYear({{ $yr->id }}, '{{ $yr->year }}')" class="px-2.5 py-1 text-xs font-semibold rounded bg-amber-500 text-black hover:bg-amber-600 transition" title="Archive Year">
                                                     <i class="fas fa-box-archive"></i> Archive
                                                 </button>
                                             @else
-                                                <button type="button" onclick="confirmActivateYear({{ $yr->id }}, '{{ $yr->year }}')" class="px-2.5 py-1 text-xs font-semibold rounded bg-green-600 text-white hover:bg-green-700 transition" title="Activate Year">
+                                                <button type="button" onclick="confirmActivateYear({{ $yr->id }}, '{{ $yr->year }}')" class="px-2.5 py-1 text-xs font-semibold rounded bg-green-600 text-black hover:bg-green-700 transition" title="Activate Year">
                                                     <i class="fas fa-check-circle"></i> Activate
                                                 </button>
                                             @endif
                                             <!-- Delete Button -->
-                                            <button type="button" onclick="openDeleteYearModal({{ $yr->id }}, '{{ addslashes($yr->year) }}')" class="px-2.5 py-1 text-xs font-semibold rounded bg-red-600 text-white hover:bg-red-700 transition" title="Delete Year">
+                                            <button type="button" onclick="openDeleteYearModal({{ $yr->id }}, '{{ addslashes($yr->year) }}')" class="px-2.5 py-1 text-xs font-semibold rounded bg-red-600 text-black hover:bg-red-700 transition" title="Delete Year">
                                                 <i class="fas fa-trash"></i> Delete
                                             </button>
                                         </div>
@@ -2259,8 +2261,13 @@
 
                     <div id="edit_milestone_cert_fields" class="space-y-3 hidden">
                         <div>
-                            <label class="form-label">Document Title</label>
-                            <input type="text" name="certificate_title" id="edit_certificate_title" class="form-input" placeholder="e.g. Certificate of Completion">
+                            <label class="form-label">Document Type</label>
+                            <select name="document_type" id="edit_document_type" class="form-select" onchange="syncDocTitle(this)">
+                                <option value="">Select document type</option>
+                                <option value="recommendation">Recommendation Sheet</option>
+                                <option value="approval">Approval Sheet</option>
+                            </select>
+                            <input type="hidden" name="certificate_title" id="edit_certificate_title">
                         </div>
                         <div>
                             <label class="form-label">Document Description</label>
@@ -3732,6 +3739,10 @@ document.getElementById('edit_capstone_id').addEventListener('change', function 
     });
     ms.value = '';
 });
+function syncDocTitle(sel) {
+    const map = { recommendation: 'Recommendation Sheet', approval: 'Approval Sheet' };
+    document.getElementById('edit_certificate_title').value = map[sel.value] || '';
+}
 
 document.getElementById('edit_rubric_form').addEventListener('submit', function(e) {
     e.preventDefault();

@@ -1859,7 +1859,7 @@
             >
                 <i class="fas fa-check-double"></i>
 
-                Re-evaluate Group
+                show evaluation Group
             </button>
 
 
@@ -1885,11 +1885,7 @@
 
                 Evaluate Group
             </button>
-
-        @endif
-
-
-        <button
+                    <button
             type="button"
             onclick="window.openRevisionModal(
                 {{ $g->id }},
@@ -1915,6 +1911,10 @@
 
             Revision
         </button>
+        @endif
+
+
+
 
     @endif
 
@@ -1962,7 +1962,7 @@
                             </div>
                             @php
                                 $isTeacherAlreadyAssigned = $assignedRooms->isNotEmpty();
-                                $roomIsFull = $room->panelists->isNotEmpty();
+                                $roomIsFull = $room->panelists->count() >= 5;
                                 $isDisabled = $isTeacherAlreadyAssigned || $roomIsFull;
                             @endphp
                             @if($isDisabled)

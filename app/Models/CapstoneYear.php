@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Models;
-
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 
 class CapstoneYear extends Model
@@ -41,17 +41,25 @@ class CapstoneYear extends Model
      * Fallback and auto-create if none exists.
      */
     public static function getActiveYear()
-    {
-        $active = self::where('is_active', true)->first();
-        if (!$active) {
-            $yearStr = date('Y') . '-' . (date('Y') + 1);
-            $active = self::create([
-                'year' => $yearStr,
-                'is_active' => true,
-                'capstone_1_enabled' => true,
-                'capstone_2_enabled' => true,
-            ]);
+        {
+            return DB::transaction(function () {
+                $active = self::where('is_active', true)->first();
+
+                if ($active) {
+                    return $active;
+                }
+
+                // No active year at all — bootstrap one using the current calendar year
+                $yearLabel = now()->year . '-' . (now()->year + 1);
+
+                return self::firstOrCreate(
+                    ['year' => $yearLabel],
+                    [
+                        'is_active' => true,
+                        'capstone_1_enabled' => true,
+                        'capstone_2_enabled' => true,
+                    ]
+                );
+            });
         }
-        return $active;
-    }
 }
