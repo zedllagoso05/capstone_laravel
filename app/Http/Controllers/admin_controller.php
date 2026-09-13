@@ -1324,7 +1324,7 @@ use Illuminate\Support\Facades\Log;
             $previouslyActive = CapstoneYear::where('is_active', true)->get();
  
             foreach ($previouslyActive as $prevYear) {
-                $prevYear->update(['is_active' => false, 'archived_at' => now()]);
+                $prevYear->update(['is_active' => false, 'archived_at' => now()]);      
  
                 Group::where('capstone_year_id', $prevYear->id)->update(['is_archived' => true]);
                 Student::where('capstone_year_id', $prevYear->id)->update(['is_archived' => true]);

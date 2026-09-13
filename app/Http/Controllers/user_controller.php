@@ -233,18 +233,11 @@ private function autoIssueCertificateIfEligible($groupId, $milestoneId)
         'group_id'       => $groupId,
         'certificate_id' => $certificate->id,
         'issued_date'    => now()->toDateString(),
-        'serial_number'  => $this->generateDocumentSerial(),
+        'serial_number'  => $this->generateSerialNumber($certificate->document_type ?? 'approval'), // ← changed
     ]);
 }
 
-private function generateDocumentSerial()
-{
-    do {
-        $serial = 'DOC-' . now()->format('Y') . '-' . strtoupper(Str::random(6));
-    } while (GroupCertificate::where('serial_number', $serial)->exists());
 
-    return $serial;
-}
     // ── STUDENT DASHBOARD ─────────────────────────────────────────
     public function dashboard()
     {
@@ -1927,15 +1920,23 @@ public function joinRoomWithCode(Request $request)
 
 
 
-function generateSerialNumber(string $documentType): string
+/**
+ * Generate a unique serial number, prefixed by document type:
+ * REC- for recommendation sheets, APR- for approval sheets, DOC- as a fallback.
+ */
+private function generateSerialNumber(?string $documentType): string
 {
-    $prefix = $documentType === 'recommendation' ? 'REC' : 'APR';
+    $prefix = match ($documentType) {
+        'recommendation' => 'REC',
+        'approval'       => 'APR',
+        default          => 'DOC',
+    };
+
     $year = now()->format('Y');
 
     do {
-        $random = strtoupper(Str::random(6));
-        $serial = "{$prefix}-{$year}-{$random}";
-    } while (\App\Models\GroupCertificate::where('serial_number', $serial)->exists());
+        $serial = "{$prefix}-{$year}-" . strtoupper(Str::random(6));
+    } while (GroupCertificate::where('serial_number', $serial)->exists());
 
     return $serial;
 }

@@ -667,6 +667,43 @@
     color: #0a1428;
     font-weight: 600;
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   NEW: Page-size selector + clickable progress cards
+   ══════════════════════════════════════════════════════════════════════ */
+.page-size-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: #faf8f4;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235b6375' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
+    background-size: 9px 9px;
+    padding: 0.32rem 1.8rem 0.32rem 0.7rem;
+    border: 1.5px solid #e2dacf;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #0a1428;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.page-size-select:hover { border-color: #d6b15c; }
+.page-size-select:focus {
+    border-color: #d6b15c;
+    box-shadow: 0 0 0 3px rgba(214, 177, 92, 0.15);
+    outline: none;
+}
+
+.progress-stat-card {
+    cursor: pointer;
+    border-radius: 0.75rem;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+.progress-stat-card:hover {
+    background: rgba(214, 177, 92, 0.06);
+    transform: translateY(-1px);
+}
     </style>
 </head>
 <body class="bg-[#f8f6f0] text-[#171e2c]">
@@ -699,7 +736,7 @@
                     <i class="fas fa-chevron-right text-xs opacity-70"></i>
                 </a>
                 <a href="#" data-section="teachers" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
-                    <i class="fas fa-users w-4"></i><span>Teachers</span>
+                    <i class="fas fa-users w-4"></i><span>Instructors</span>
                 </a>
                 <a href="#" data-section="students" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
                     <i class="fas fa-user-graduate w-4"></i><span>Students & Groups</span>
@@ -751,7 +788,7 @@
             <i class="fas fa-th-large text-lg"></i><span class="text-[10px] mt-1">Home</span>
         </a>
         <a href="#" data-section="teachers" class="mobile-nav-link flex flex-col items-center text-[rgba(255,255,255,0.55)] text-xs py-1">
-            <i class="fas fa-users text-lg"></i><span class="text-[10px] mt-1">Teachers</span>
+            <i class="fas fa-users text-lg"></i><span class="text-[10px] mt-1">Instructors</span>
         </a>
         <a href="#" data-section="students" class="mobile-nav-link flex flex-col items-center text-[rgba(255,255,255,0.55)] text-xs py-1">
             <i class="fas fa-user-graduate text-lg"></i><span class="text-[10px] mt-1">Students</span>
@@ -1001,6 +1038,17 @@
                 <div class="flex justify-between items-center mb-5 flex-wrap gap-3">
                     <h3>All Students</h3>
                     <div class="flex gap-2 flex-wrap">
+                                            <div class="flex items-center gap-2 text-xs text-[#5b6375]">
+                        <span>Show</span>
+                        <select id="students-page-size" class="page-size-select">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="30">30</option>
+                            <option value="40">40</option>
+                            <option value="50">50</option>
+                        </select>
+                        <span>per page</span>
+                    </div>
                         <button onclick="openModal('createGroupModal')" class="btn-outline text-sm"><i class="fas fa-users mr-1"></i> Create Group</button>
                         <button onclick="openModal('import_student_modal')" class="btn-outline text-sm"><i class="fas fa-file-import mr-1"></i> Import Excel</button>
                         <button onclick="openModal('student_modal')" class="btn-primary text-sm"><i class="fas fa-plus mr-1"></i> Register Student</button>
@@ -1067,7 +1115,8 @@
                 </div>
 
                 <!-- Pagination Controls (for Students only) -->
-                <div class="flex items-center justify-between mt-5 pt-4 border-t border-[#e2dacf]">
+                <div class="flex items-center justify-between mt-5 pt-4 border-t border-[#e2dacf] gap-3 flex-wrap">
+
                     <span class="text-xs text-[#5b6375]">
                         Showing <span id="students-start">0</span> – <span id="students-end">0</span> of <span id="students-total">0</span>
                     </span>
@@ -1083,7 +1132,7 @@
                 </div>
             </div>
         </div>
-    <!-- ========== GROUPS VIEW (now with section filter + pagination) ========== -->
+    <!-- ========== GROUPS VIEW (now with section filter + pagination + export) ========== -->
 <div id="sg-groups-view" class="content-card hidden">
     <div class="card-accent"></div>
     <div class="p-6">
@@ -1096,7 +1145,18 @@
         <div class="flex justify-between items-center mb-5 flex-wrap gap-3">
             <h3>All Groups</h3>
             <div class="flex gap-2 flex-wrap items-center">
-
+                                <div class="flex items-center gap-2 text-xs text-[#5b6375]">
+                    <span>Show</span>
+                    <select id="groups-page-size" class="page-size-select">
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="30">30</option>
+                        <option value="40">40</option>
+                        <option value="50">50</option>
+                    </select>
+                    <span>per page</span>
+                </div>
+                <button onclick="exportGroupsToExcel()" class="btn-outline text-sm"><i class="fas fa-file-excel mr-1"></i> Export to Excel</button>
                 <button onclick="openModal('createGroupModal')" class="btn-primary text-sm"><i class="fas fa-plus mr-1"></i> Create Group</button>
             </div>
         </div>
@@ -1178,7 +1238,8 @@
             </table>
 
             <!-- Pagination Controls -->
-            <div class="flex items-center justify-between mt-5 pt-4 border-t border-[#e2dacf]">
+            <div class="flex items-center justify-between mt-5 pt-4 border-t border-[#e2dacf] gap-3 flex-wrap">
+
                 <span class="text-xs text-[#5b6375]">
                     Showing <span id="groups-start">0</span> – <span id="groups-end">0</span> of <span id="groups-total">0</span>
                 </span>
@@ -1326,7 +1387,9 @@
             $ringDeg = round(($avgP/100)*360);
             @endphp
             @foreach($progressStats as $i => $ps)
-            <div class="flex items-center gap-3 {{ $i === 0 ? 'pl-0' : 'pl-6' }} pr-6">
+            <div class="progress-stat-card flex items-center gap-3 {{ $i === 0 ? 'pl-0' : 'pl-6' }} pr-6"
+                 onclick="openProgressDetailModal('{{ $ps['label'] }}')"
+                 title="Click to view {{ $ps['label'] }} groups">
                 <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:{{ $ps['color'] }}14; color:{{ $ps['color'] }};">
                     <i class="fas {{ $ps['icon'] }} text-sm"></i>
                 </div>
@@ -1399,7 +1462,11 @@
                             @if(!empty($section->groups))
                                 <p class="text-[10px] uppercase tracking-wider font-semibold text-[#5b6375] mb-2">Groups in this section</p>
                                 @foreach($section->groups as $group)
-                                <div class="flex items-center justify-between py-1.5 text-sm live-group-row" data-group-id="{{ $group->id }}">
+                                <div class="flex items-center justify-between py-1.5 text-sm live-group-row"
+                                     data-group-id="{{ $group->id }}"
+                                     data-group-name="{{ $group->name }}"
+                                     data-section="{{ $section->name }}"
+                                     data-progress="{{ $group->progress }}">
                                     <span class="text-[#171e2c] font-medium">{{ $group->name }}</span>
                                     <div class="flex items-center gap-3">
                                         <div class="progress-bar-bg h-1.5 w-20">
@@ -2249,7 +2316,7 @@
                     </div>
                 </div>
 
-                <                <div class="border-t border-dashed border-[#e2dacf] pt-4">
+                <div class="border-t border-dashed border-[#e2dacf] pt-4">
                     <label class="flex items-center gap-2 cursor-pointer mb-3">
                         <input type="checkbox" name="has_certificate" id="edit_milestone_has_cert" value="1"
                             class="form-checkbox text-[#d6b15c] focus:ring-[#d6b15c]">
@@ -2886,6 +2953,39 @@
         </form>
     </div>
 </div>
+
+    <!-- ═══════════════ NEW: PROGRESS DETAIL MODAL ═══════════════ -->
+    <div id="progress_detail_modal" class="modal-overlay">
+        <div class="modal-box wide">
+            <div class="modal-accent"></div>
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h2 id="progress_modal_title" style="font-family:'Cormorant Garamond',serif; font-size:1.5rem; font-weight:600; color:var(--navy);">Progress Details</h2>
+                    <p id="progress_modal_summary" class="text-xs text-[#5b6375] mt-1"></p>
+                </div>
+                <button type="button" onclick="closeModal('progress_detail_modal')" class="text-[#5b6375] hover:text-[#0a1428] transition text-2xl">&times;</button>
+            </div>
+
+            <div class="overflow-x-auto border border-[#e2dacf] rounded-xl" style="max-height: 60vh;">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-[#faf8f4] text-[#0a1428] font-semibold text-xs border-b border-[#e2dacf] sticky top-0">
+                            <th class="p-3 pl-4">Group</th>
+                            <th class="p-3">Section</th>
+                            <th class="p-3">Progress</th>
+                            <th class="p-3 pr-4">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="progress_modal_tbody" class="divide-y divide-[#f0ece4]"></tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-4 mt-3 border-t border-[#e2dacf]">
+                <button type="button" onclick="closeModal('progress_detail_modal')" class="btn-primary text-xs px-5 py-2">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- SYSTEM DIRECTORY DETAIL MODAL (TABBED OVERVIEW) -->
     <div id="dashboard_detail_modal" class="modal-overlay">
         <div class="modal-box wide" style="max-width: 68rem;">
@@ -3137,10 +3237,13 @@ const navLinks = document.querySelectorAll('.nav-link');
 const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
 
 function activateSection(sectionId) {
-    Object.values(sections).forEach(s => s.classList.add('hidden'));
-    if (sections[sectionId]) sections[sectionId].classList.remove('hidden');
+    const target = sections[sectionId] || sections.dashboard;
+    if (!target) return;
+    Object.values(sections).forEach(section => {
+        if (section) section.classList.toggle('hidden', section !== target);
+    });
     navLinks.forEach(link => {
-        const isActive = link.dataset.section === sectionId;
+        const isActive = link.dataset.section === sectionId || (!sections[sectionId] && link.dataset.section === 'dashboard');
         link.classList.toggle('active-link', isActive);
         if (isActive) {
             link.style.color = 'var(--gold)';
@@ -3151,10 +3254,26 @@ function activateSection(sectionId) {
         if (chevron) chevron.style.display = isActive ? 'inline-block' : 'none';
     });
     mobileNavLinks.forEach(link => {
-        link.style.color = link.dataset.section === sectionId ? 'var(--gold)' : 'rgba(255,255,255,0.55)';
+        const isActive = link.dataset.section === sectionId || (!sections[sectionId] && link.dataset.section === 'dashboard');
+        link.style.color = isActive ? 'var(--gold)' : 'rgba(255,255,255,0.55)';
     });
-    localStorage.setItem('activeSection', sectionId);
+    try { localStorage.setItem('activeSection', target.id.replace(/-section$/, '')); } catch (_) {}
 }
+
+// Bind navigation independently so a later widget error cannot make the nav inert.
+function setupSectionNavigation() {
+    [...navLinks, ...mobileNavLinks].forEach(link => {
+        if (!link.dataset.section) return;
+        link.addEventListener('click', event => {
+            event.preventDefault();
+            activateSection(link.dataset.section);
+        });
+    });
+    let stored = null;
+    try { stored = localStorage.getItem('activeSection'); } catch (_) {}
+    activateSection(stored && sections[stored] ? stored : 'dashboard');
+}
+setupSectionNavigation();
 
 document.querySelectorAll('.sg-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -3178,10 +3297,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const chevron = link.querySelector('.fa-chevron-right');
         if (chevron) chevron.style.display = link.classList.contains('active-link') ? 'inline-block' : 'none';
     });
-    const stored = localStorage.getItem('activeSection');
-    if (stored && sections[stored]) activateSection(stored);
-    else activateSection('dashboard');
-
     @if(session('success'))
         showToast('{{ session('success') }}', false);
     @endif
@@ -3313,14 +3428,6 @@ if (groupSearch) {
     });
 }
 
-});
-
-[...navLinks, ...mobileNavLinks].forEach(el => {
-    el.addEventListener('click', e => {
-        e.preventDefault();
-        const s = el.dataset.section;
-        if (s && sections[s]) activateSection(s);
-    });
 });
 
 // ---- MODALS ----
@@ -4521,7 +4628,7 @@ function filterGroups() {
 }
 
 // ---- STUDENTS: PAGINATION + FILTER (corrected) ----  
-const STUDENT_PAGE_SIZE = 20;
+let studentPageSize = 20;
 let studentsPaginate = null;
 
 function getVisibleStudentRows() {
@@ -4539,29 +4646,21 @@ function initStudentsPagination() {
     if (!tbody) return;
 
     let currentPage = 1;
-    // We'll compute rows dynamically each time we update
-    let rows = getVisibleStudentRows();
-    const total = rows.length;
-    const totalPages = Math.ceil(total / STUDENT_PAGE_SIZE) || 1;
 
     function update() {
-        // Re-fetch visible rows every time (in case filter changed)
         const visibleRows = getVisibleStudentRows();
         const totalVisible = visibleRows.length;
-        const totalPages = Math.ceil(totalVisible / STUDENT_PAGE_SIZE) || 1;
+        const totalPages = Math.ceil(totalVisible / studentPageSize) || 1;
         if (currentPage > totalPages) currentPage = totalPages;
 
-        const start = (currentPage - 1) * STUDENT_PAGE_SIZE;
-        const end = Math.min(start + STUDENT_PAGE_SIZE, totalVisible);
+        const start = (currentPage - 1) * studentPageSize;
+        const end = Math.min(start + studentPageSize, totalVisible);
 
-        // First, hide all rows
         visibleRows.forEach(row => row.style.display = 'none');
-        // Then show only the ones for this page
         for (let i = start; i < end; i++) {
             visibleRows[i].style.display = '';
         }
 
-        // Update UI
         document.getElementById('students-start').textContent = totalVisible === 0 ? 0 : start + 1;
         document.getElementById('students-end').textContent = end;
         document.getElementById('students-total').textContent = totalVisible;
@@ -4572,7 +4671,7 @@ function initStudentsPagination() {
 
     function goTo(page) {
         const totalVisible = getVisibleStudentRows().length;
-        const totalPages = Math.ceil(totalVisible / STUDENT_PAGE_SIZE) || 1;
+        const totalPages = Math.ceil(totalVisible / studentPageSize) || 1;
         if (page < 1 || page > totalPages) return;
         currentPage = page;
         update();
@@ -4581,20 +4680,18 @@ function initStudentsPagination() {
     document.getElementById('students-prev').addEventListener('click', () => goTo(currentPage - 1));
     document.getElementById('students-next').addEventListener('click', () => goTo(currentPage + 1));
 
-    // Initial render
     update();
 
-    // Return re‑pagination function (called after filters change)
     return function rePaginate() {
         const visibleRows = getVisibleStudentRows();
         const totalVisible = visibleRows.length;
-        const totalPages = Math.ceil(totalVisible / STUDENT_PAGE_SIZE) || 1;
+        const totalPages = Math.ceil(totalVisible / studentPageSize) || 1;
         if (currentPage > totalPages) currentPage = totalPages;
         update();
     };
 }
 // ---- GROUPS: PAGINATION + SECTION FILTER (mirrors students pattern) ----
-const GROUP_PAGE_SIZE = 10;
+let groupPageSize = 10;
 let groupsPaginate = null;
 
 function getVisibleGroupRows() {
@@ -4613,11 +4710,11 @@ function initGroupsPagination() {
     function update() {
         const visibleRows = getVisibleGroupRows();
         const totalVisible = visibleRows.length;
-        const totalPages = Math.ceil(totalVisible / GROUP_PAGE_SIZE) || 1;
+        const totalPages = Math.ceil(totalVisible / groupPageSize) || 1;
         if (currentPage > totalPages) currentPage = totalPages;
 
-        const start = (currentPage - 1) * GROUP_PAGE_SIZE;
-        const end = Math.min(start + GROUP_PAGE_SIZE, totalVisible);
+        const start = (currentPage - 1) * groupPageSize;
+        const end = Math.min(start + groupPageSize, totalVisible);
 
         visibleRows.forEach(row => row.style.display = 'none');
         for (let i = start; i < end; i++) {
@@ -4634,7 +4731,7 @@ function initGroupsPagination() {
 
     function goTo(page) {
         const totalVisible = getVisibleGroupRows().length;
-        const totalPages = Math.ceil(totalVisible / GROUP_PAGE_SIZE) || 1;
+        const totalPages = Math.ceil(totalVisible / groupPageSize) || 1;
         if (page < 1 || page > totalPages) return;
         currentPage = page;
         update();
@@ -4648,7 +4745,7 @@ function initGroupsPagination() {
     return function rePaginate() {
         const visibleRows = getVisibleGroupRows();
         const totalVisible = visibleRows.length;
-        const totalPages = Math.ceil(totalVisible / GROUP_PAGE_SIZE) || 1;
+        const totalPages = Math.ceil(totalVisible / groupPageSize) || 1;
         if (currentPage > totalPages) currentPage = totalPages;
         update();
     };
@@ -4790,6 +4887,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Students pagination
     studentsPaginate = initStudentsPagination();
 
+    // Students: page size selector
+    const studentsPageSizeSel = document.getElementById('students-page-size');
+    if (studentsPageSizeSel) {
+        studentsPageSizeSel.addEventListener('change', function () {
+            studentPageSize = parseInt(this.value, 10) || 20;
+            if (studentsPaginate) studentsPaginate();
+        });
+    }
+
     // Section filter change → update group dropdown + re-filter
     const sectionFilter = document.getElementById('admin-student-section-filter');
     if (sectionFilter) {
@@ -4824,6 +4930,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Groups pagination + filter
 groupsPaginate = initGroupsPagination();
+
+// Groups: page size selector
+const groupsPageSizeSel = document.getElementById('groups-page-size');
+if (groupsPageSizeSel) {
+    groupsPageSizeSel.addEventListener('change', function () {
+        groupPageSize = parseInt(this.value, 10) || 10;
+        if (groupsPaginate) groupsPaginate();
+    });
+}
 
 const groupSectionFilter = document.getElementById('admin-group-section-filter');
 if (groupSectionFilter) {
@@ -4884,6 +4999,9 @@ function refreshLiveGroupProgress() {
                 const color = pct >= 70 ? '#1e6b3a' : (pct >= 40 ? '#b88d3a' : '#a12b2b');
                 const status = pct >= 70 ? 'On Track' : (pct >= 40 ? 'At Risk' : 'Delayed');
 
+                // Keep data-progress in sync so the progress detail modal reads fresh values
+                row.dataset.progress = pct;
+
                 const bar = row.querySelector('.live-progress-bar');
                 const pctEl = row.querySelector('.live-progress-pct');
                 const badge = row.querySelector('.live-progress-badge');
@@ -4927,6 +5045,163 @@ function dedupeSectionFilterOptions() {
         }
     });
 }
+
+// ═══════════════════════════════════════════════════════════════════
+//  EXPORT GROUPS TO EXCEL
+// ═══════════════════════════════════════════════════════════════════
+function escapeXml(s) {
+    return String(s ?? '').replace(/[<>&"']/g, c => ({
+        '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;'
+    })[c]);
+}
+
+function exportGroupsToExcel() {
+    const rows = document.querySelectorAll('#groups-tbody tr.groups-row');
+    if (!rows.length) {
+        showToast('No groups to export.', true);
+        return;
+    }
+
+    let html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body>';
+    html += '<table border="1" cellspacing="0" cellpadding="6">';
+    html += '<thead><tr>';
+    html += '<th style="background:#0a1428;color:#f0e0b0;font-weight:bold;">Capstone Title</th>';
+    html += '<th style="background:#0a1428;color:#f0e0b0;font-weight:bold;">Section</th>';
+    html += '<th style="background:#0a1428;color:#f0e0b0;font-weight:bold;">Adviser</th>';
+    html += '<th style="background:#0a1428;color:#f0e0b0;font-weight:bold;">Team Members</th>';
+    html += '</tr></thead><tbody>';
+
+    let exported = 0;
+    rows.forEach(row => {
+        // Respect the current section filter, but export across all pages
+        if (row.classList.contains('filter-hidden')) return;
+
+        const cells = row.querySelectorAll('td');
+        const capstoneTitle = (cells[1]?.textContent || '').trim();
+        const section = (cells[2]?.textContent || '').trim();
+        const adviser = (cells[3]?.textContent || '').trim();
+
+        // Team members live inside the 5th cell as .text-xs.font-medium spans
+        const memberSpans = cells[4]?.querySelectorAll('.text-xs.font-medium') || [];
+        const members = Array.from(memberSpans)
+            .map(el => el.textContent.trim())
+            .filter(Boolean)
+            .join(', ');
+
+        html += '<tr>';
+        html += `<td>${escapeXml(capstoneTitle)}</td>`;
+        html += `<td>${escapeXml(section)}</td>`;
+        html += `<td>${escapeXml(adviser)}</td>`;
+        html += `<td>${escapeXml(members)}</td>`;
+        html += '</tr>';
+        exported++;
+    });
+
+    html += '</tbody></table></body></html>';
+
+    if (exported === 0) {
+        showToast('No groups match the current filter.', true);
+        return;
+    }
+
+    const blob = new Blob(['\ufeff' + html], {
+        type: 'application/vnd.ms-excel;charset=utf-8'
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `capstone_groups_${stamp}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 500);
+
+    showToast(`${exported} group(s) exported successfully.`);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  PROGRESS DETAIL MODAL (On Track / At Risk / Needs Attention)
+// ═══════════════════════════════════════════════════════════════════
+function openProgressDetailModal(statusLabel) {
+    const thresholds = {
+        'On Track':        (p) => p >= 70,
+        'At Risk':         (p) => p >= 40 && p < 70,
+        'Needs Attention': (p) => p < 40
+    };
+    const colors = {
+        'On Track':        '#1e6b3a',
+        'At Risk':         '#b88d3a',
+        'Needs Attention': '#a12b2b'
+    };
+
+    const check = thresholds[statusLabel];
+    if (!check) return;
+    const color = colors[statusLabel];
+
+    // Pull live values from the DOM (kept fresh by refreshLiveGroupProgress)
+    const rows = document.querySelectorAll('#progress-section .live-group-row');
+    const groups = [];
+    rows.forEach(row => {
+        const pct = parseInt(row.dataset.progress, 10) || 0;
+        if (check(pct)) {
+            groups.push({
+                name: row.dataset.groupName || row.querySelector('span')?.textContent.trim() || '—',
+                section: row.dataset.section || '—',
+                progress: pct
+            });
+        }
+    });
+
+    // Lowest progress first — most urgent at the top for "Needs Attention"
+    groups.sort((a, b) => statusLabel === 'On Track'
+        ? b.progress - a.progress
+        : a.progress - b.progress);
+
+    document.getElementById('progress_modal_title').textContent = `${statusLabel} Groups`;
+    document.getElementById('progress_modal_summary').innerHTML =
+        `<strong class="text-[#0a1428]">${groups.length}</strong> group(s) currently in this category.` +
+        (statusLabel === 'On Track' ? ' Keep up the good work!' :
+         statusLabel === 'At Risk'  ? ' These groups may need a nudge.' :
+                                      ' These groups require immediate attention.');
+
+    const tbody = document.getElementById('progress_modal_tbody');
+    tbody.innerHTML = '';
+
+    if (groups.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-[#5b6375]">
+            <i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>
+            No groups in this category.</td></tr>`;
+    } else {
+        groups.forEach(g => {
+            const tr = document.createElement('tr');
+            tr.className = 'text-sm hover:bg-[#faf8f4]/60 transition';
+            tr.innerHTML = `
+                <td class="p-3 pl-4 font-semibold text-[#0a1428]">${g.name}</td>
+                <td class="p-3 text-[#3d4450]">${g.section}</td>
+                <td class="p-3">
+                    <div class="flex items-center gap-2">
+                        <div class="progress-bar-bg h-1.5 w-20">
+                            <div class="progress-fill h-full" style="width:${g.progress}%; background:${color};"></div>
+                        </div>
+                        <span class="text-xs font-bold" style="color:${color};">${g.progress}%</span>
+                    </div>
+                </td>
+                <td class="p-3 pr-4">
+                    <span class="badge" style="background:${color}20; color:${color}; border:1px solid ${color}40;">
+                        ${statusLabel}
+                    </span>
+                </td>`;
+            tbody.appendChild(tr);
+        });
+    }
+
+    openModal('progress_detail_modal');
+}
+
+// Expose globally (used by inline onclick handlers)
+window.exportGroupsToExcel = exportGroupsToExcel;
+window.openProgressDetailModal = openProgressDetailModal;
 </script>
  
 </body>

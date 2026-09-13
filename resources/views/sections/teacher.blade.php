@@ -905,14 +905,14 @@
                 <i class="fas fa-th-large w-4"></i> <span>Dashboard</span>
             </a>
             <a href="#" data-section="assignedsections" class="nav-link active-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[#d6b15c]">
-                <i class="fas fa-th-large w-4"></i> <span>Assigned Sections</span>
+                <i class="fas fa-th-large w-4"></i> <span>View as Instructor</span>
             </a>
             <a href="#" data-section="sections" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
-                <i class="fas fa-layer-group w-4"></i> <span>Assigned Groups</span>
+                <i class="fas fa-layer-group w-4"></i> <span>View as Adviser</span>
             </a>
            
             <a href="#" data-section="evaluate" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
-                <i class="fas fa-door-open w-4"></i> <span>Assigned Rooms</span>
+                <i class="fas fa-door-open w-4"></i> <span>View as Panelist</span>
             </a>
             <a href="#" data-section="profile" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
                 <i class="fa-regular fa-user w-4"></i> <span>Profile</span>
@@ -945,13 +945,13 @@
         <i class="fas fa-th-large text-lg"></i><span class="text-[10px] mt-1">Home</span>
     </a>
     <a href="#" data-section="assignedsections" class="mobile-nav-link flex flex-col items-center text-[#d6b15c] text-xs py-1">
-        <i class="fas fa-th-large text-lg"></i><span class="text-[10px] mt-1">Sections</span>
+        <i class="fas fa-th-large text-lg"></i><span class="text-[10px] mt-1">View as Instructor</span>
     </a>
     <a href="#" data-section="sections" class="mobile-nav-link flex flex-col items-center text-[rgba(255,255,255,0.55)] text-xs py-1">
-        <i class="fas fa-layer-group text-lg"></i><span class="text-[10px] mt-1">Groups</span>
+        <i class="fas fa-layer-group text-lg"></i><span class="text-[10px] mt-1">View as Adviser</span>
     </a>
     <a href="#" data-section="evaluate" class="mobile-nav-link flex flex-col items-center text-[rgba(255,255,255,0.55)] text-xs py-1">
-        <i class="fa-regular fa-pen-to-square text-lg"></i><span class="text-[10px] mt-1">Evaluate</span>
+        <i class="fa-regular fa-pen-to-square text-lg"></i><span class="text-[10px] mt-1">View as Panelist</span>
     </a>
     <a href="#" data-section="profile" class="mobile-nav-link flex flex-col items-center text-[rgba(255,255,255,0.55)] text-xs py-1">
         <i class="fa-regular fa-user text-lg"></i><span class="text-[10px] mt-1">Profile</span>
