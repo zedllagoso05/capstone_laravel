@@ -1482,7 +1482,77 @@ if ($revision) {
             'absent_students'  => $absentNames,
         ]);
     }
+/**
+ * Allow the GROUP'S ADVISER to manually override an already-saved remark:
+ * change remarks_status (e.g. Late → On Time / Considered), edit deduction points,
+ * toggle compiled, and update feedback.
+ *
+ * AUTHORIZATION: ONLY the group's adviser.
+ */
+public function updateMilestoneRemark(Request $request)
+{
+    $validated = $request->validate([
+        'group_id'          => 'required|exists:groups,id',
+        'milestone_id'      => 'required|exists:milestones,id',
+        'remarks_status'    => 'required|string|max:255',
+        'deduction_points'  => 'nullable|integer|min:0',
+        'compiled'          => 'nullable|boolean',
+        'feedback'          => 'nullable|string',
+    ]);
 
+    $teacher = Teacher::where('user_id', Auth::user()->user_id)->firstOrFail();
+    $group   = Group::findOrFail($validated['group_id']);
+
+    // ONLY the group's adviser may edit remarks.
+    if ((int) $group->adviser_id !== (int) $teacher->id) {
+        return response()->json([
+            'error' => 'Only the group adviser can edit this remark.'
+        ], 403);
+    }
+
+    $remark = \App\Models\Remarks::where('group_id', $validated['group_id'])
+        ->where('milestone_id', $validated['milestone_id'])
+        ->first();
+
+    if (!$remark) {
+        return response()->json([
+            'error' => 'No remark found for this milestone.'
+        ], 404);
+    }
+
+    // Manual override — status text is now adviser-controlled.
+    $remark->remarks          = $validated['remarks_status'];
+    $remark->deduction_points = $validated['deduction_points'] ?? 0;
+    $remark->compiled         = array_key_exists('compiled', $validated)
+        ? (bool) $validated['compiled']
+        : $remark->compiled;
+
+    if (array_key_exists('feedback', $validated)) {
+        $remark->feedback = $validated['feedback'];
+    }
+
+    // If the adviser marks it as "Considered" (or On Time / Early) and clears
+    // deductions, treat it as a completed/compiled submission.
+    if ($remark->deduction_points === 0
+        && in_array(strtolower($remark->remarks), ['on time compliance', 'early submission', 'considered'], true)) {
+        $remark->compiled = true;
+    }
+
+    $remark->date_evaluated = now();
+    $remark->save();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Remark updated successfully.',
+        'remarks' => [
+            'all_present'      => (bool) $remark->all_present,
+            'compiled'         => (bool) $remark->compiled,
+            'deduction_points' => (int) $remark->deduction_points,
+            'feedback'         => $remark->feedback,
+            'remarks_status'   => $remark->remarks,
+        ],
+    ]);
+}
     /**
      * Milestone IDs already evaluated for a group (feeds the disabled dropdown options).
      * AUTHORIZATION: Adviser OR panelist.
@@ -1693,163 +1763,189 @@ if ($revision) {
      * response reflects TRUE adviser status and controls whether the front-end
      * renders the interactive attendance/remark-evaluation controls.
      */
-    public function getGroupProgress($groupId)
-    {
-        $user = Auth::user();
-        $group = Group::with(['students', 'groupMilestones.milestone', 'team_members.student.user'])
-            ->findOrFail($groupId);
+    /**
+ * Full progress payload for the "View Progress" modal (student or teacher side).
+ * AUTHORIZATION (teacher role): Adviser OR panelist OR section-teacher.
+ * Admin can view any group.
+ */
+public function getGroupProgress($groupId)
+{
+    $user  = Auth::user();
+    $group = Group::with(['students', 'groupMilestones.milestone', 'team_members.student.user'])
+        ->findOrFail($groupId);
 
-        $isAdviser = false;
-        $isPanelist = false;
-        if ($user->role === 'teacher') {
-            $teacher = Teacher::where('user_id', $user->user_id)->first();
-            if (!$teacher) {
-                abort(403, 'Teacher profile not found.');
-            }
+    $isAdviser  = false;
+    $isPanelist = false;
 
-            $isAdviserOfGroup = $group->adviser_id === $teacher->id;
-            $assignedRoomIds = $teacher->evaluationRooms()->pluck('evaluation_rooms.id')->toArray();
-            $isPanelistOfGroup = in_array($group->room_id, $assignedRoomIds);
-
-            $isSectionTeacher = false;
-            if ($group->section_id) {
-                $isSectionTeacher = \App\Models\Section::where('id', $group->section_id)
-                    ->where('user_id', $teacher->user_id)
-                    ->exists();
-            }
-
-            if (!$isAdviserOfGroup && !$isPanelistOfGroup && !$isSectionTeacher) {
-                abort(403, 'You are not authorized to view the progress of this group.');
-            }
-
-            // Only TRUE advisers get the interactive attendance/remark controls in the modal.
-            $isAdviser = $isAdviserOfGroup;
-            $isPanelist = $isPanelistOfGroup;
+    if ($user->role === 'teacher') {
+        $teacher = Teacher::where('user_id', $user->user_id)->first();
+        if (!$teacher) {
+            abort(403, 'Teacher profile not found.');
         }
 
-        $enabledStageIds = CapstoneStages::where('is_enabled', true)
-            ->where('capstone_year_id', $group->capstone_year_id)
-            ->pluck('id');
-        $milestones = Milestone::whereIn('capstone_stage_id', $enabledStageIds)->with(['capstoneStage', 'rubrics'])->orderBy('step_order')->get();
-        $enabledMilestoneIds = $milestones->pluck('id')->toArray();
-        $completedMilestoneIds = $group->groupMilestones
-            ->where('status', 'completed')
-            ->whereIn('milestone_id', $enabledMilestoneIds)
-            ->pluck('milestone_id')
+        $isAdviserOfGroup  = (int) $group->adviser_id === (int) $teacher->id;
+
+        $assignedRoomIds   = $teacher->evaluationRooms()
+            ->pluck('evaluation_rooms.id')
+            ->map(fn ($id) => (int) $id)
             ->toArray();
+        $isPanelistOfGroup = $group->room_id && in_array((int) $group->room_id, $assignedRoomIds, true);
 
-        $overallProgress = $milestones->count() ? round((count($completedMilestoneIds) / $milestones->count()) * 100) : 0;
-        $nextMilestone = $milestones->first(fn($m) => !in_array($m->id, $completedMilestoneIds));
+        $isSectionTeacher = false;
+        if ($group->section_id) {
+            $isSectionTeacher = \App\Models\Section::where('id', $group->section_id)
+                ->where('user_id', $teacher->user_id)
+                ->exists();
+        }
 
-        $evaluations = Evaluation::where('group_id', $groupId)
-            ->with(['milestone', 'teacher.user'])
-            ->latest('evaluation_date')
-            ->limit(5)
-            ->get()
-            ->map(function ($e) {
-                $decoded = json_decode($e->feedback, true);
-                if (is_array($decoded) && isset($decoded['feedback_text'])) {
-                    $feedbackText = $decoded['feedback_text'];
-                    $rubricScores = $decoded['rubric_scores'] ?? [];
-                } else {
-                    $feedbackText = $e->feedback;
-                    $rubricScores = [];
+        if (!$isAdviserOfGroup && !$isPanelistOfGroup && !$isSectionTeacher) {
+            abort(403, 'You are not authorized to view the progress of this group.');
+        }
+
+        $isAdviser  = $isAdviserOfGroup;
+        $isPanelist = $isPanelistOfGroup;
+    }
+
+    // ── Milestones for this group's capstone year ──
+    $enabledStageIds = CapstoneStages::where('is_enabled', true)
+        ->where('capstone_year_id', $group->capstone_year_id)
+        ->pluck('id');
+
+    $milestones = Milestone::whereIn('capstone_stage_id', $enabledStageIds)
+        ->with(['capstoneStage', 'rubrics'])
+        ->orderBy('step_order')
+        ->get();
+
+    $enabledMilestoneIds   = $milestones->pluck('id')->toArray();
+    $completedMilestoneIds = $group->groupMilestones
+        ->where('status', 'completed')
+        ->whereIn('milestone_id', $enabledMilestoneIds)
+        ->pluck('milestone_id')
+        ->toArray();
+
+    $overallProgress = $milestones->count()
+        ? round((count($completedMilestoneIds) / $milestones->count()) * 100)
+        : 0;
+
+    $nextMilestone = $milestones->first(fn ($m) => !in_array($m->id, $completedMilestoneIds));
+
+    // ──────────────────────────────────────────────────────────────
+    // ✅ FIX: load EVERY evaluation for this group (no limit).
+    // The view-progress modal groups evaluations by milestone, so
+    // limiting to the 5 most recent hides evaluations on the other
+    // milestones and makes them look "un-evaluated".
+    // ──────────────────────────────────────────────────────────────
+    $evaluations = Evaluation::where('group_id', $groupId)
+        ->with(['milestone', 'teacher.user'])
+        ->latest('evaluation_date')
+        ->get()                       // ← no limit here
+        ->map(function ($e) {
+            $decoded = json_decode($e->feedback, true);
+            if (is_array($decoded) && isset($decoded['feedback_text'])) {
+                $feedbackText = $decoded['feedback_text'];
+                $rubricScores = $decoded['rubric_scores'] ?? [];
+            } else {
+                $feedbackText = $e->feedback;
+                $rubricScores = [];
+            }
+
+            $rubric = Rubric::where('milestone_id', $e->milestone_id)
+                ->with('criteria')
+                ->first();
+
+            $criteriaData = [];
+            if ($rubric) {
+                foreach ($rubric->criteria as $criterion) {
+                    $criteriaData[] = [
+                        'criteria_name' => $criterion->criteria_name,
+                        'weight'        => $criterion->weight,
+                        'max_score'     => $criterion->max_score,
+                        'given_score'   => $rubricScores[$criterion->id] ?? 0,
+                    ];
                 }
-
-                $rubric = Rubric::where('milestone_id', $e->milestone_id)->with('criteria')->first();
-                $criteriaData = [];
-                if ($rubric) {
-                    foreach ($rubric->criteria as $criterion) {
-                        $criteriaData[] = [
-                            'criteria_name' => $criterion->criteria_name,
-                            'weight'        => $criterion->weight,
-                            'max_score'     => $criterion->max_score,
-                            'given_score'   => $rubricScores[$criterion->id] ?? 0,
-                        ];
-                    }
-                }
-
-                return [
-                    'milestone_id'    => $e->milestone_id,
-                    'milestone_title' => $e->milestone->milestone_title ?? 'Evaluation',
-                    'teacher_name'    => $e->teacher ? ($e->teacher->teacher_first_name . ' ' . $e->teacher->teacher_last_name) : 'Teacher',
-                    'evaluation_date' => $e->evaluation_date,
-                    'score'           => $e->score,
-                    'max_score'       => $e->max_score,
-                    'feedback'        => $feedbackText,
-                    'criteria'        => $criteriaData,
-                ];
-            });
-
-        // ── Remarks & Absences for this group (feeds the Remarks block per milestone) ──
-        $remarksByMilestone = \App\Models\Remarks::where('group_id', $groupId)
-            ->get()
-            ->keyBy('milestone_id');
-
-        $allAbsences = \App\Models\Absence::where('group_id', $groupId)->get();
-        $absentStudentIds = $allAbsences->pluck('user_id')->unique();
-        $absentStudentsById = Student::whereIn('user_id', $absentStudentIds)->get()->keyBy('user_id');
-
-        $groupMilestonesMap = $group->groupMilestones->keyBy('milestone_id');
-
-        $milestoneData = $milestones->map(function ($m) use (
-            $completedMilestoneIds, $nextMilestone, $remarksByMilestone,
-            $allAbsences, $absentStudentsById, $groupMilestonesMap
-        ) {
-            $isCompleted = in_array($m->id, $completedMilestoneIds);
-            $isNext = $m->id === $nextMilestone?->id && !$isCompleted;
-
-            // Get the real completion date from the pivot table
-            $gm = $groupMilestonesMap->get($m->id);
-            $completionDate = $gm ? $gm->completion_date : null;
-
-            $r = $remarksByMilestone->get($m->id);
-            $absentNames = $allAbsences->where('milestone_id', $m->id)->map(function ($a) use ($absentStudentsById) {
-                $s = $absentStudentsById->get($a->user_id);
-                return $s ? trim($s->student_first_name . ' ' . $s->student_last_name) : $a->user_id;
-            })->values();
+            }
 
             return [
-                'id'                => $m->id,
-                'title'             => $m->milestone_title,
-                'description'       => $m->milestone_description,
-                'start_date'        => $m->start_date,
-                'due_date'          => $m->due_date,
-                'step_order'        => $m->step_order,
-                'is_completed'         => $isCompleted,
-                'is_next'              => $isNext,
-                'completion_date'      => $completionDate,
-                'capstone_stage_id'    => $m->capstone_stage_id,
-                'capstone_stage_title' => $m->capstoneStage->stage_title ?? 'Capstone',
-                'has_rubric'           => $m->rubrics->isNotEmpty(),
-                'remarks'              => $r ? [
-                    'all_present'      => (bool) $r->all_present,
-                    'compiled'         => (bool) $r->compiled,
-                    'deduction_points' => (int) $r->deduction_points,
-                    'feedback'         => $r->feedback,
-                    'remarks_status'   => $r->remarks,
-                    'date_evaluated'   => $r->date_evaluated,
-                ] : null,
-                'absent_students'   => $absentNames,
+                'milestone_id'    => $e->milestone_id,
+                'milestone_title' => $e->milestone->milestone_title ?? 'Evaluation',
+                'teacher_name'    => $e->teacher
+                    ? ($e->teacher->teacher_first_name . ' ' . $e->teacher->teacher_last_name)
+                    : 'Teacher',
+                'evaluation_date' => $e->evaluation_date,
+                'score'           => $e->score,
+                'max_score'       => $e->max_score,
+                'feedback'        => $feedbackText,
+                'criteria'        => $criteriaData,
             ];
         });
 
-        return response()->json([
-            'group_name'        => $group->group_name,
-            'overall_progress'  => $overallProgress,
-            'milestones'        => $milestoneData,
-            'next_milestone'    => $nextMilestone ? [
-                'title'       => $nextMilestone->milestone_title,
-                'description' => $nextMilestone->milestone_description,
-                'start_date'  => $nextMilestone->start_date,
-                'due_date'    => $nextMilestone->due_date,
-            ] : null,
-            'evaluations'       => $evaluations,
-            'is_adviser'        => $isAdviser,
-            'is_panelist'       => $isPanelist,
-        ]);
-    }
+    // ── Remarks & Absences (per milestone) ──
+    $remarksByMilestone = \App\Models\Remarks::where('group_id', $groupId)
+        ->get()
+        ->keyBy('milestone_id');
 
+    $allAbsences        = \App\Models\Absence::where('group_id', $groupId)->get();
+    $absentStudentIds   = $allAbsences->pluck('user_id')->unique();
+    $absentStudentsById = Student::whereIn('user_id', $absentStudentIds)->get()->keyBy('user_id');
+
+    $groupMilestonesMap = $group->groupMilestones->keyBy('milestone_id');
+
+    $milestoneData = $milestones->map(function ($m) use (
+        $completedMilestoneIds, $nextMilestone, $remarksByMilestone,
+        $allAbsences, $absentStudentsById, $groupMilestonesMap
+    ) {
+        $isCompleted = in_array($m->id, $completedMilestoneIds);
+        $isNext      = $m->id === $nextMilestone?->id && !$isCompleted;
+
+        $gm             = $groupMilestonesMap->get($m->id);
+        $completionDate = $gm ? $gm->completion_date : null;
+
+        $r           = $remarksByMilestone->get($m->id);
+        $absentNames = $allAbsences->where('milestone_id', $m->id)->map(function ($a) use ($absentStudentsById) {
+            $s = $absentStudentsById->get($a->user_id);
+            return $s ? trim($s->student_first_name . ' ' . $s->student_last_name) : $a->user_id;
+        })->values();
+
+        return [
+            'id'                   => $m->id,
+            'title'                => $m->milestone_title,
+            'description'          => $m->milestone_description,
+            'start_date'           => $m->start_date,
+            'due_date'             => $m->due_date,
+            'step_order'           => $m->step_order,
+            'is_completed'         => $isCompleted,
+            'is_next'              => $isNext,
+            'completion_date'      => $completionDate,
+            'capstone_stage_id'    => $m->capstone_stage_id,
+            'capstone_stage_title' => $m->capstoneStage->stage_title ?? 'Capstone',
+            'has_rubric'           => $m->rubrics->isNotEmpty(),
+            'remarks'              => $r ? [
+                'all_present'      => (bool) $r->all_present,
+                'compiled'         => (bool) $r->compiled,
+                'deduction_points' => (int)  $r->deduction_points,
+                'feedback'         => $r->feedback,
+                'remarks_status'   => $r->remarks,
+                'date_evaluated'   => $r->date_evaluated,
+            ] : null,
+            'absent_students'      => $absentNames,
+        ];
+    });
+
+    return response()->json([
+        'group_name'       => $group->group_name,
+        'overall_progress' => $overallProgress,
+        'milestones'       => $milestoneData,
+        'next_milestone'   => $nextMilestone ? [
+            'title'       => $nextMilestone->milestone_title,
+            'description' => $nextMilestone->milestone_description,
+            'start_date'  => $nextMilestone->start_date,
+            'due_date'    => $nextMilestone->due_date,
+        ] : null,
+        'evaluations'      => $evaluations,
+        'is_adviser'       => $isAdviser,
+        'is_panelist'      => $isPanelist,
+    ]);
+}
 
 
 
@@ -3133,4 +3229,184 @@ public function getRecommendationSheet($groupId)
     ]);
 }
 
+
+/**
+ * Issue the recommendation sheet for a group at a given milestone.
+ */
+public function issueRecommendationSheet(Request $request)
+{
+    $validated = $request->validate([
+        'group_id'     => 'required|exists:groups,id',
+        'milestone_id' => 'required|exists:milestones,id',
+    ]);
+
+    // Locate the recommendation certificate for this milestone …
+    $certificate = Certificate::where('milestone_id', $validated['milestone_id'])
+        ->where(function ($q) {
+            $q->where('document_type', 'recommendation')
+              ->orWhere('certificate_title', 'like', '%Recommendation%');
+        })
+        ->first();
+
+    // … else any certificate on the milestone …
+    if (! $certificate) {
+        $certificate = Certificate::where('milestone_id', $validated['milestone_id'])->first();
+    }
+
+    // … else auto-create one (e.g. Capstone 2 has no seeded certificate yet).
+    if (! $certificate) {
+        $certificate = Certificate::create([
+            'certificate_title'       => 'Recommendation Sheet',
+            'document_type'           => 'recommendation',
+            'certificate_description' => 'partial fulfillment of the requirements for the degree of '
+                . 'Bachelor of Science in Information Technology has been examined, '
+                . 'accepted, and recommended for Oral Presentation.',
+            'milestone_id'            => $validated['milestone_id'],
+            'is_locked'               => 1,
+        ]);
+    }
+
+    $already = GroupCertificate::where('group_id', $validated['group_id'])
+        ->where('certificate_id', $certificate->id)
+        ->first();
+
+    if ($already) {
+        return response()->json([
+            'success'     => true,
+            'already'     => true,
+            'message'     => 'Recommendation sheet was already issued on '
+                             . \Carbon\Carbon::parse($already->issued_date)->format('M d, Y') . '.',
+            'issued_date' => $already->issued_date,
+        ]);
+    }
+
+    $issued = GroupCertificate::create([
+        'group_id'       => $validated['group_id'],
+        'certificate_id' => $certificate->id,
+        'issued_date'    => now()->toDateString(),
+    ]);
+
+    return response()->json([
+        'success'     => true,
+        'message'     => 'Recommendation sheet issued to the group.',
+        'issued_date' => $issued->issued_date,
+    ]);
+}
+
+/**
+ * Lightweight status check used by the view modal.
+ */
+public function getRecommendationStatus($groupId)
+{
+    $record = GroupCertificate::with('certificate')
+        ->where('group_id', $groupId)
+        ->whereHas('certificate', function ($q) {
+            $q->where('document_type', 'recommendation')
+              ->orWhere('certificate_title', 'like', '%Recommendation%');
+        })
+        ->first();
+
+    return response()->json([
+        'issued'         => (bool) $record,
+        'issued_date'    => $record?->issued_date,
+        'certificate_id' => $record?->certificate_id,
+    ]);
+}
+
+/**
+ * Issue a document (recommendation / approval / revision) to a group.
+ */
+public function issueSheet(Request $request)
+{
+    $validated = $request->validate([
+        'group_id'      => 'required|exists:groups,id',
+        'milestone_id'  => 'nullable|exists:milestones,id',
+        'document_type' => 'required|in:recommendation,approval,revision',
+    ]);
+
+    $titleMap = [
+        'recommendation' => 'Recommendation Sheet',
+        'approval'       => 'Approval Sheet',
+        'revision'       => 'Revision Sheet',
+    ];
+
+    $type  = $validated['document_type'];
+    $title = $titleMap[$type];
+
+    // Find or create the matching certificate
+    $certificate = Certificate::query()
+        ->where('document_type', $type)
+        ->when(
+            ! empty($validated['milestone_id']),
+            fn ($q) => $q->where('milestone_id', $validated['milestone_id']),
+            fn ($q) => $q->whereNull('milestone_id')
+        )
+        ->first();
+
+    if (! $certificate) {
+        $certificate = Certificate::create([
+            'certificate_title'       => $title,
+            'document_type'           => $type,
+            'certificate_description' => $type === 'revision'
+                ? 'Official revision sheet issued by the panel.'
+                : 'partial fulfillment of the requirements for the degree of '
+                  . 'Bachelor of Science in Information Technology has been examined, '
+                  . 'accepted, and recommended for Oral Presentation.',
+            'milestone_id'            => $validated['milestone_id'] ?? null,
+            'is_locked'               => 1,
+        ]);
+    }
+
+    // Idempotent — don't double-issue
+    $already = GroupCertificate::where('group_id', $validated['group_id'])
+        ->where('certificate_id', $certificate->id)
+        ->first();
+
+    if ($already) {
+        return response()->json([
+            'success'       => true,
+            'already'       => true,
+            'message'       => "{$title} was already issued on "
+                               . Carbon::parse($already->issued_date)->format('M d, Y') . '.',
+            'issued_date'   => $already->issued_date,
+            'serial_number' => $already->serial_number,
+        ]);
+    }
+
+    $issued = GroupCertificate::create([
+        'group_id'       => $validated['group_id'],
+        'certificate_id' => $certificate->id,
+        'issued_date'    => now()->toDateString(),
+    ]);
+
+    return response()->json([
+        'success'       => true,
+        'message'       => "{$title} issued successfully.",
+        'issued_date'   => $issued->issued_date,
+        'serial_number' => $issued->serial_number,
+    ]);
+}
+/**
+ * Status check used by the view modal.
+ */
+public function getSheetStatus(Request $request, $groupId)
+{
+    $type = $request->query('type', 'recommendation');
+
+    if (! in_array($type, ['recommendation', 'approval', 'revision'], true)) {
+        $type = 'recommendation';
+    }
+
+    $record = GroupCertificate::with('certificate')
+        ->where('group_id', $groupId)
+        ->whereHas('certificate', fn ($q) => $q->where('document_type', $type))
+        ->first();
+
+    return response()->json([
+        'issued'         => (bool) $record,
+        'issued_date'    => $record?->issued_date,
+        'serial_number'  => $record?->serial_number,
+        'certificate_id' => $record?->certificate_id,
+    ]);
+}
 }

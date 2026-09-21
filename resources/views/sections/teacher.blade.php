@@ -268,11 +268,11 @@
         overflow-x: auto;
         white-space: nowrap;
         -webkit-overflow-scrolling: touch;
-        -ms-overflow-style: none;  /* IE and Edge */
-        scrollbar-width: none;  /* Firefox */
+        -ms-overflow-style: none;
+        scrollbar-width: none;
     }
     .mobile-bottom-nav::-webkit-scrollbar {
-        display: none; /* Safari and Chrome */
+        display: none;
     }
     .mobile-nav-link {
         transition: color 0.2s;
@@ -286,7 +286,6 @@
     }
 }
     @media (min-width: 769px) {
-        /* Desktop: no mobile nav; already hidden by the base rule */
         .mobile-bottom-nav { display: none; }
     }
 
@@ -299,7 +298,7 @@
     h2 { font-size: 1.5rem; color: var(--navy); }
     h3 { font-size: 1.2rem; color: var(--navy); }
     .gold-accent-line {
-        width: 50px;
+        width: 100%;
         height: 3px;
         background: linear-gradient(90deg, var(--gold), var(--gold-dark));
         border-radius: 3px;
@@ -336,15 +335,6 @@
     height: 80px;
     background: linear-gradient(135deg, var(--navy) 0%, #1e3a5f 100%);
     border-radius: 1.25rem 1.25rem 0 0;
-}
-.profile-avatar-ring {
-    width: 90px;
-    height: 90px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-    padding: 3px;
-    margin: -45px auto 0;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
 }
 .profile-avatar-ring {
     width: 90px;
@@ -556,7 +546,7 @@
     font-size:0.78rem; color:var(--text);
     display:flex; align-items:center; gap:0.4rem;
 }
-#viewModal .remark-attendance i { color:var(--gold-dark); }
+#viewModal .remark-attendance i { color: var(--gold-dark); }
 
 #viewModal .absence-table {
     width:100%; border-collapse:collapse; margin-top:0.35rem; font-size:0.72rem;
@@ -665,7 +655,6 @@
 }
 
 /* ── Evaluation modal (split view) ── */
-/* ── Evaluation modal (split view) ── */
 #evaluationModal .modal-box {
     padding: 0;
     overflow: hidden;
@@ -712,7 +701,6 @@
     flex-shrink: 0;
 }
 
-/* Revision sheet content, refined */
 #eval_revision_sheet_content .form-fieldset-title {
     font-size: 0.66rem;
     margin-bottom: 0.65rem;
@@ -876,10 +864,195 @@
 }
 .btn-check-primary:active { transform: scale(0.97); }
 .btn-check-primary i { font-size: 0.9rem; }
+#viewModal .remark-edit-mode textarea { resize: vertical; }
+#viewModal .remark-edit-mode .form-label { margin-bottom: 2px; }
+
+/* ══════════════════════════════════════════════════════════════ */
+/*  PROFESSIONAL LOADING SYSTEM                                    */
+/* ══════════════════════════════════════════════════════════════ */
+
+/* ── Shared spinner ── */
+.spinner {
+    width: 38px; height: 38px; border-radius: 50%;
+    border: 3px solid rgba(214, 177, 92, 0.18);
+    border-top-color: var(--gold);
+    animation: loader-spin .7s linear infinite;
+}
+@keyframes loader-spin { to { transform: rotate(360deg); } }
+
+/* ── In-modal spinner (smaller, for modal bodies) ── */
+.spinner-sm {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 2.5px solid rgba(214, 177, 92, 0.18);
+    border-top-color: var(--gold);
+    animation: loader-spin .7s linear infinite;
+}
+
+/* ── 1. First-paint splash screen ── */
+#app-splash {
+    position: fixed; inset: 0; z-index: 10000;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(120% 120% at 50% 0%, #162c47 0%, #0a1428 45%, #051021 100%);
+    transition: opacity .5s cubic-bezier(.4, 0, .2, 1), visibility .5s;
+}
+#app-splash.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+#app-splash::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(60% 50% at 50% 45%, rgba(214, 177, 92, .12), transparent 70%);
+}
+.splash-inner {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    padding: 2rem;
+}
+.splash-logo { position: relative; width: 92px; height: 92px; display: grid; place-items: center; margin-bottom: 1.5rem; }
+.splash-ring {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 2px solid rgba(214, 177, 92, .15);
+    border-top-color: var(--gold);
+    animation: splash-spin 1s linear infinite;
+}
+.splash-ring::after {
+    content: ''; position: absolute; inset: 9px; border-radius: 50%;
+    border: 2px solid transparent;
+    border-bottom-color: rgba(214, 177, 92, .5);
+    animation: splash-spin 1.5s linear infinite reverse;
+}
+.splash-mark {
+    width: 56px; height: 56px; border-radius: 18px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+    color: var(--navy); font-size: 1.4rem;
+    box-shadow: 0 12px 30px -8px rgba(214, 177, 92, .55);
+    animation: splash-pulse 2.2s ease-in-out infinite;
+}
+@keyframes splash-spin { to { transform: rotate(360deg); } }
+@keyframes splash-pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.05); }
+}
+.splash-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.85rem; font-weight: 600; letter-spacing: .02em; color: #fff;
+}
+.splash-sub {
+    font-size: .68rem; letter-spacing: .24em; text-transform: uppercase;
+    color: var(--gold-light); opacity: .7; margin-top: .4rem;
+}
+.splash-bar {
+    width: 230px; height: 3px; border-radius: 999px;
+    background: rgba(255, 255, 255, .08);
+    overflow: hidden; margin-top: 1.75rem;
+}
+#splash_bar_fill {
+    display: block; height: 100%; width: 0%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
+    transition: width .35s ease;
+}
+.splash-status {
+    font-size: .7rem; color: rgba(255, 255, 255, .42);
+    margin-top: .9rem; letter-spacing: .05em;
+    min-height: 1em;
+}
+
+/* ── 2. Top route progress bar ── */
+#route-progress {
+    position: fixed; top: 0; left: 0; right: 0; height: 3px;
+    z-index: 9997; pointer-events: none;
+    opacity: 0; transition: opacity .25s ease;
+}
+#route-progress.active { opacity: 1; }
+#route-progress-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
+    box-shadow: 0 0 10px rgba(214, 177, 92, .7), 0 0 4px rgba(214, 177, 92, .5);
+    transition: width .25s ease;
+}
+
+/* ── 3. Overlay loader ── */
+#page-loader {
+    position: fixed; inset: 0; z-index: 9998;
+    background: rgba(248, 246, 240, .68);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity .22s ease, visibility .22s ease;
+}
+#page-loader.active { opacity: 1; visibility: visible; pointer-events: all; }
+#page-loader .loader-box {
+    display: flex; flex-direction: column; align-items: center; gap: .9rem;
+    padding: 1.75rem 2.5rem;
+    border-radius: 1.25rem;
+    background: rgba(255, 255, 255, .94);
+    border: 1px solid rgba(214, 177, 92, .25);
+    box-shadow: 0 30px 60px -20px rgba(5, 16, 33, .35);
+    animation: fadeInUp .25s cubic-bezier(.22, 1, .36, 1) both;
+}
+#page-loader .loader-label {
+    font-size: .7rem; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--text-muted); font-weight: 700;
+}
+
+/* ── 4. Skeleton shimmer ── */
+.skeleton {
+    position: relative; overflow: hidden;
+    background: #ece5d8; border-radius: 8px;
+}
+.skeleton::after {
+    content: ''; position: absolute; inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .75), transparent);
+    animation: skeleton-shimmer 1.25s infinite;
+}
+@keyframes skeleton-shimmer { 100% { transform: translateX(100%); } }
+
+/* ── 5. Button loading state ── */
+.btn-primary.is-loading,
+.btn-outline.is-loading,
+.btn-check-primary.is-loading,
+.btn-ghost.is-loading {
+    pointer-events: none; opacity: .78; cursor: progress;
+}
+.btn-primary.is-loading i,
+.btn-outline.is-loading i,
+.btn-check-primary.is-loading i { animation: loader-spin .7s linear infinite; }
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+    .splash-ring, .splash-ring::after, .splash-mark, .spinner, .spinner-sm,
+    .skeleton::after, .btn-primary.is-loading i { animation: none !important; }
+}
 </style>
 </head>
 <body class="bg-[#f8f6f0] text-[#171e2c]">
-    <div id="toast" class="toast-container">
+
+<!-- ══════════════ FIRST-PAINT SPLASH ══════════════ -->
+<div id="app-splash" role="status" aria-live="polite" aria-label="Loading Capstone Tracker">
+    <div class="splash-inner">
+        <div class="splash-logo">
+            <div class="splash-ring"></div>
+            <div class="splash-mark"><i class="fas fa-graduation-cap"></i></div>
+        </div>
+        <h1 class="splash-title">Capstone Tracker</h1>
+        <p class="splash-sub">Teacher Portal</p>
+        <div class="splash-bar"><span id="splash_bar_fill"></span></div>
+        <p class="splash-status" id="splash_status">Initializing workspace…</p>
+    </div>
+</div>
+
+<!-- ══════════════ TOP ROUTE PROGRESS BAR ══════════════ -->
+<div id="route-progress" aria-hidden="true"><div id="route-progress-fill"></div></div>
+
+<!-- ══════════════ OVERLAY LOADER ══════════════ -->
+<div id="page-loader" role="status" aria-live="polite">
+    <div class="loader-box">
+        <div class="spinner"></div>
+        <span class="loader-label">Loading…</span>
+    </div>
+</div>
+
+<div id="toast" class="toast-container">
     <div class="toast-content">
         <i class="fas fa-check-circle"></i>
         <span id="toastMessage" class="toast-message">Operation successful!</span>
@@ -888,7 +1061,7 @@
 </div>
 
 <!-- ======================= SIDEBAR (DESKTOP) ======================= -->
-<aside class="desktop-sidebar fixed left-0 top-0 h-full w-64 flex flex-col justify-between z-20">
+<aside class="desktop-sidebar hidden md:flex fixed left-0 top-0 h-full w-64 flex-col justify-between z-20">
     <div>
         <div class="p-6 flex items-center space-x-3 border-b border-[rgba(214,177,92,0.12)]">
             <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-md flex-shrink-0"
@@ -910,7 +1083,6 @@
             <a href="#" data-section="sections" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
                 <i class="fas fa-layer-group w-4"></i> <span>View as Adviser</span>
             </a>
-           
             <a href="#" data-section="evaluate" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
                 <i class="fas fa-door-open w-4"></i> <span>View as Panelist</span>
             </a>
@@ -1065,18 +1237,30 @@
                 <div class="p-6">
                     <div class="flex justify-between items-center mb-6"><h3>Group Progress</h3><i class="fas fa-chart-simple text-[#b8b0a0]"></i></div>
                     <div class="space-y-4">
-                        @forelse($groupProgress ?? [] as $gp)
-                            <div class="p-3 bg-[#faf8f4] rounded-lg border border-[#e2dacf]">
-                                <div class="flex justify-between items-start mb-2">
-                                    <div><p class="font-semibold text-sm text-[#0a1428]">{{ $gp->group_name }}</p><p class="text-xs text-[#5b6375]">{{ $gp->capstone_title }}</p></div>
-                                    <span class="text-sm font-bold text-[#b88d3a]">{{ $gp->progress }}%</span>
-                                </div>
-                                <div class="progress-bar-bg h-2.5 w-full"><div class="progress-fill h-full" style="width:{{ $gp->progress }}%; background: var(--gold);"></div></div>
-                                <p class="text-xs text-[#5b6375] mt-1">{{ $gp->completed }} / {{ $gp->total }} milestones</p>
+                        @php
+    $incompleteGroupProgress = collect($groupProgress ?? [])->filter(fn($gp) => ($gp->progress ?? 0) < 100);
+                @endphp
+
+                @forelse($incompleteGroupProgress as $gp)
+                    <div class="p-3 bg-[#faf8f4] rounded-lg border border-[#e2dacf]">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <p class="font-semibold text-sm text-[#0a1428]">{{ $gp->group_name }}</p>
+                                <p class="text-xs text-[#5b6375]">{{ $gp->capstone_title }}</p>
                             </div>
-                        @empty
-                            <div class="text-center py-8 text-[#5b6375]"><i class="fa-regular fa-folder-open text-3xl mb-2"></i><p>No groups assigned yet</p></div>
-                        @endforelse
+                            <span class="text-sm font-bold text-[#b88d3a]">{{ $gp->progress }}%</span>
+                        </div>
+                        <div class="progress-bar-bg h-2.5 w-full">
+                            <div class="progress-fill h-full" style="width:{{ $gp->progress }}%; background: var(--gold);"></div>
+                        </div>
+                        <p class="text-xs text-[#5b6375] mt-1">{{ $gp->completed }} / {{ $gp->total }} milestones</p>
+                    </div>
+                @empty
+                    <div class="text-center py-8 text-[#5b6375]">
+                        <i class="fa-regular fa-folder-open text-3xl mb-2"></i>
+                        <p>No groups in progress</p>
+                    </div>
+                @endforelse
                     </div>
                 </div>
             </div>
@@ -1084,7 +1268,7 @@
             <div class="content-card">
                 <div class="card-accent"></div>
                 <div class="p-6">
-                    <div class="flex justify-between items-center mb-6"><h3>Recent Evaluations</h3><i class="fa-regular fa-file-lines text-[#b8b0a0]"></i></div>
+                    <div class="flex justify-between items-center mb-6"><h3>Completed Groups</h3><i class="fa-regular fa-file-lines text-[#b8b0a0]"></i></div>
                     <div class="space-y-3 max-h-96 overflow-y-auto">
                         @php
                            $enabledMilestoneIdsForCompleted = $milestones->pluck('id')->toArray();
@@ -1185,7 +1369,6 @@
                 </div>
 
                 <div id="ag_group_list" class="space-y-3">
-                    
                     @forelse($adviserGroups ?? [] as $group)
                     @php
                         $teacherRevision = \App\Models\Revision::with([
@@ -1224,7 +1407,7 @@
                                 ->exists();
                         }
                     @endphp
-                        @php 
+                        @php
                             $completed = $group->groupMilestones
                                 ->where('status','completed')
                                 ->whereIn('milestone_id', $milestones->pluck('id'))
@@ -1242,21 +1425,13 @@
                                     <span class="text-xs text-[#5b6375]">• {{ $group->students->count()??0 }} members</span>
                                 </div>
                                 <span class="text-xs text-[#3d4450]">{{ $group->capstone_title }}</span>
-                                @forelse($groupProgress ??[] as $z)
-                                        <div class="flex items-center gap-2 mt-1">
-                                            <span class="text-xs text-[#5b6375]">Progress:</span>
-                                            <div class="w-24 progress-bar-bg h-1.5"><div class="progress-fill h-1.5" style="width:{{ $z->progress }}%; background:var(--gold);"></div></div>
-                                            <span class="text-xs font-semibold">{{ $z->progress }}%</span>
-                                        </div>
-                                @empty
-                                
-                                        <div class="flex items-center gap-2 mt-1">
-                                            <span class="text-xs text-[#5b6375]">Progress:</span>
-                                            <div class="w-24 progress-bar-bg h-1.5"><div class="progress-fill h-1.5" style="width:0%; background:var(--gold);"></div></div>
-                                            <span class="text-xs font-semibold">0%</span>
-                                        </div>
-                                @endforelse
- 
+                                <div class="flex items-center gap-2 mt-1">
+                                <span class="text-xs text-[#5b6375]">Progress:</span>
+                                    <div class="w-24 progress-bar-bg h-1.5">
+                                        <div class="progress-fill h-1.5" style="width:{{ $progress }}%; background:var(--gold);"></div>
+                                    </div>
+                                    <span class="text-xs font-semibold">{{ $progress }}%</span>
+                                </div>
 
                             </div>
                            @php
@@ -1301,21 +1476,24 @@
                     @endforelse
                 </div>
 
-                <p id="ag_no_results" class="hidden text-center py-8 text-[#5b6375]"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>No groups found </p>
+                <p id="ag_no_results" class="hidden text-center py-8 text-[#5b6375]"><i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>No groups in progress found  </p>
 
                 <div id="ag_pagination" class="flex justify-center items-center gap-2 mt-5 pt-4 border-t border-[#e2dacf]"></div>
             </div>
         </div>
-                
+
     </div>
  <!-- ==================== ASSIGNED SECTIONS ==================== -->
     <div id="assignedsections-section" class="section-container hidden section-card max-w-7xl mx-auto">
-        <div class="mb-8 flex flex-wrap justify-between items-center gap-4">
-            <div><h1>Assigned Section</h1><div class="gold-accent-line"></div><p class="text-[#5b6375] mt-2 text-sm">Manage handled sections</p></div>
+        <div class="mb-8 ">
+            <h1>Assigned Section</h1>
+            <div class="gold-accent-line">
+                </div>
+                <p class="text-[#5b6375] mt-2 text-sm">Manage handled sections</p>
         </div>
         <div class="grid grid-cols-1 gap-6">
             @forelse($teacherSections ?? [] as $section)
-                @php 
+                @php
                     $groupsInSection = \App\Models\Group::where('section_id', $section->id)->where('is_archived', false)->with(['students', 'groupMilestones', 'room'])->get();
                     $sectionStudents = \App\Models\Student::where('section', $section->section_name)->with(['user', 'groups'])->get();
                 @endphp
@@ -1355,7 +1533,7 @@
 
                             <!-- Groups View -->
                             <div id="as_section_groups_view_{{ $section->id }}" class="space-y-3">
-                                                               @forelse($groupsInSection as $g)
+                               @forelse($groupsInSection as $g)
                                     <div class="p-3 bg-[#faf8f4] rounded-lg border border-[#e2dacf]">
                                         <div class="flex justify-between items-center">
                                             <div><p class="font-semibold text-sm text-[#0a1428]">{{ $g->group_name }}</p><p class="text-xs text-[#5b6375]">{{ Str::limit($g->capstone_title,25) }}</p></div>
@@ -1424,7 +1602,7 @@
                                                     @if($stGroup)
                                                         <button onclick="openRubricScoresModal({{ $stGroup->id }}, '{{ addslashes($stGroup->group_name) }}')" class="text-[#b88d3a] hover:text-[#8b6914] text-[11px] font-semibold transition">
                                                             <i class="fas fa-star mr-1"></i>Rubric Scores
-                                                        </button>  
+                                                        </button>
                                                     @else
                                                         <span class="text-gray-400 italic text-[10px]">No Group</span>
                                                     @endif
@@ -1445,12 +1623,15 @@
             @endforelse
         </div>
     </div>
-    
+
 <!-- ==================== ASSIGNED GROUPS ==================== -->
     <div id="sections-section" class="section-container hidden section-card max-w-7xl mx-auto">
-        <div class="mb-8 flex flex-wrap justify-between items-center gap-4">
-            <div><h1>Assigned Groups</h1><div class="gold-accent-line"></div><p class="text-[#5b6375] mt-2 text-sm">Manage handled sections</p></div>
-            {{--    <button onclick="openCreateGroupModal()" class="btn-primary"><i class="fas fa-plus mr-1"></i> Create Group</button> --}}
+        <div class="mb-8">
+            
+            <h1>Assigned Groups</h1>
+            <div class="gold-accent-line"></div>
+            <p class="text-[#5b6375] mt-2 text-sm">Manage handled sections</p>
+            
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             @forelse($sectionsWithGroups ?? [] as $section)
@@ -1511,7 +1692,7 @@
         <div class="gold-accent-line"></div>
         <p class="text-[#5b6375] mt-2 text-sm">Your assigned evaluation classroom, and other classrooms you can join with a code from the admin.</p>
     </div>
-    
+
     @php
         $assignedRoomIds = $assignedRooms->pluck('id')->toArray();
         $unassignedRooms = $allRooms->reject(fn($r) => in_array($r->id, $assignedRoomIds));
@@ -1611,7 +1792,7 @@
 
                             <div class="flex justify-between items-center mb-2">
                                 <p class="text-xs font-semibold text-[#5b6375] uppercase tracking-wide">Groups in this room</p>
-                                <input type="text" class="room-group-filter form-input text-xs py-1 px-2 w-48" 
+                                <input type="text" class="room-group-filter form-input text-xs py-1 px-2 w-48"
                                        placeholder="Search by group, title, or section…" data-room-id="{{ $room->id }}">
                             </div>
                             <div class="flex flex-col gap-3 w-full room-group-list" data-room-id="{{ $room->id }}">
@@ -1630,11 +1811,6 @@
                                         Auth::user()->user_id
                                     )->first();
 
-
-                                    // ==========================================
-                                    // HAS THIS PANELIST ALREADY EVALUATED?
-                                    // ==========================================
-
                                     $hasEvaluated = $teacher
                                         ? \App\Models\Evaluation::where(
                                             'group_id',
@@ -1651,11 +1827,6 @@
                                         ->exists()
                                         : false;
 
-
-                                    // ==========================================
-                                    // GET THIS PANELIST'S OWN REVISION
-                                    // ==========================================
-
                                     $teacherRevision = $teacher
                                         ? \App\Models\Revision::with([
                                             'documentation',
@@ -1667,13 +1838,7 @@
                                         ->first()
                                         : null;
 
-
-                                    // ==========================================
-                                    // CHECK IF ALL REVISION ITEMS ARE COMPLETED
-                                    // ==========================================
-
                                     $revisionComplete = false;
-
 
                                     if ($teacherRevision) {
 
@@ -1687,7 +1852,6 @@
 
                                                 });
 
-
                                         $allEnhancementsComplete =
                                             $teacherRevision->enhancements
                                                 ->every(function ($item) {
@@ -1697,7 +1861,6 @@
                                                     ) === 'completed';
 
                                                 });
-
 
                                         $allObjectivesComplete =
                                             $teacherRevision->objectives
@@ -1709,17 +1872,10 @@
 
                                                 });
 
-
-                                        /*
-                                        * At least one revision item must exist.
-                                        * This prevents an empty revision from becoming
-                                        * automatically completed.
-                                        */
                                         $hasRevisionItems =
                                             $teacherRevision->documentation->isNotEmpty() ||
                                             $teacherRevision->enhancements->isNotEmpty() ||
                                             $teacherRevision->objectives->isNotEmpty();
-
 
                                         $revisionComplete =
                                             $hasRevisionItems &&
@@ -1729,7 +1885,7 @@
                                     }
                                 @endphp
                                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-[#faf8f4] border border-[#e2dacf] rounded-xl text-sm group-item transition hover:shadow-sm w-full" data-search="{{ $searchData }}"
-                                             data-group-id="{{ $g->id }}" 
+                                             data-group-id="{{ $g->id }}"
                                               data-group-name="{{ addslashes($g->group_name) }}">
                                         <div class="flex flex-col gap-1">
                                             <div class="flex items-center gap-2 flex-wrap">
@@ -1758,16 +1914,9 @@
                                         <div class="mt-3 sm:mt-0 flex gap-2">
                                             <div class="mt-3 sm:mt-0 flex gap-2">
 
-    {{-- ========================================= --}}
-    {{-- THIS PANELIST HAS A REVISION --}}
-    {{-- ========================================= --}}
-
     @if($teacherRevision)
 
-
-        {{-- ALL REVISION ITEMS COMPLETED --}}
         @if($revisionComplete)
-
 
            @if($hasEvaluated)
                 <button type="button" onclick="window.openMyEvaluationModal({{ $g->id }})"
@@ -1776,11 +1925,11 @@
                     <i class="fas fa-eye"></i> View Evaluation
                 </button>
 
-                <button onclick="window.openViewRevisionModal({{ $g->id }})" 
+                <button onclick="window.openViewRevisionModal({{ $g->id }})"
                         class="btn-outline text-xs px-3 py-1.5 rounded-lg border-[#d6b15c] text-[#8b6914]">
                     <i class="fas fa-file-alt mr-1"></i> View Revision
                 </button>
-                
+
             @else
                 <button type="button" onclick="window.openEvaluationModal({{ $g->id }})"
                     class="btn-primary text-xs px-4 py-2 rounded-lg flex items-center gap-1.5"
@@ -1789,10 +1938,6 @@
                 </button>
             @endif
 
-           
-
-
-        {{-- STILL HAS PENDING REVISION ITEMS --}}
         @else
 
             <button
@@ -1827,13 +1972,7 @@
 
         @endif
 
-
-    {{-- ========================================= --}}
-    {{-- THIS PANELIST DID NOT REQUEST A REVISION --}}
-    {{-- ========================================= --}}
-
     @else
-
 
         @if($hasEvaluated)
 
@@ -1861,7 +2000,6 @@
 
                 show evaluation Group
             </button>
-
 
         @else
 
@@ -1913,9 +2051,6 @@
         </button>
         @endif
 
-
-
-
     @endif
 
     </div>
@@ -1954,7 +2089,7 @@
                                     </p>
                                     @if($room->panelists->isNotEmpty())
                                         <p class="text-[11px] text-[#5b6375] mt-1">
-                                            <strong>Panelists:</strong> 
+                                            <strong>Panelists:</strong>
                                             {{ $room->panelists->map(fn($p) => $p->teacher_first_name . ' ' . $p->teacher_last_name)->join(', ') }}
                                         </p>
                                     @endif
@@ -2002,7 +2137,6 @@
     <div  class="section-container hidden section-card max-w-7xl mx-auto">
         <div class="mb-8 flex flex-wrap justify-between items-center gap-4">
             <div><h1>Assigned Groups</h1><div class="gold-accent-line"></div><p class="text-[#5b6375] mt-2 text-sm">Manage handled sections</p></div>
-            {{--    <button onclick="openCreateGroupModal()" class="btn-primary"><i class="fas fa-plus mr-1"></i> Create Group</button> --}}
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             @forelse($sectionsWithGroups ?? [] as $section)
@@ -2032,7 +2166,6 @@
                                         </div>
                                     </div>
 
-                                    
                                 </div>
                                         @empty
                                             <div class="text-center py-4 text-[#5b6375] text-sm"><i class="fa-regular fa-folder-open mr-1"></i> No groups in this section</div>
@@ -2050,7 +2183,7 @@
     <!-- ==================== PROFILE ==================== -->
 <div id="profile-section" class="section-container hidden section-card max-w-7xl mx-auto">
     <div class="mb-8"><h1>Profile</h1><div class="gold-accent-line"></div><p class="text-[#5b6375] mt-2 text-sm">Manage your personal information and contact details</p></div>
-    
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <!-- Profile summary / identity card -->
         <div class="content-card lg:col-span-1 overflow-hidden">
@@ -2064,7 +2197,7 @@
                 <h2 class="mt-4">{{ $teacher->teacher_first_name ?? '' }} {{ $teacher->teacher_last_name ?? '' }}</h2>
                 <p class="text-[#5b6375] text-xs font-medium tracking-wide uppercase mt-0.5">Capstone Adviser</p>
                 <p class="text-[#5b6375] text-sm mt-1">ID: {{ $teacher->user_id ?? $user->user_id ?? '—' }}</p>
-                
+
                 <div class="mt-4 flex flex-wrap gap-2 justify-center">
                     <span class="badge badge-gold"><i class="fas fa-layer-group mr-1"></i>{{ $totalGroups ?? 0 }} Groups</span>
                     <span class="badge badge-navy"><i class="fa-regular fa-user mr-1"></i>{{ $totalStudents ?? 0 }} Students</span>
@@ -2316,10 +2449,11 @@
         </div>
 
         <div id="view_modal_content">
-            <!-- Loading -->
-            <div id="view_loading" class="flex flex-col items-center justify-center py-12">
-                <div class="spinner"></div>
+            <!-- In-modal loading state (only inside the modal) -->
+            <div id="view_loading" class="flex flex-col items-center justify-center py-16" role="status" aria-live="polite">
+                <div class="spinner-sm"></div>
                 <p class="mt-4 text-sm text-[#5b6375] font-medium">Loading group progress…</p>
+                <p class="mt-1 text-[11px] text-[#b8b0a0]">Fetching milestones and evaluation records</p>
             </div>
 
             <!-- Dynamic content -->
@@ -2396,8 +2530,6 @@
     <input type="hidden" name="milestone_id" id="eval_milestone_id">
     <input type="hidden" name="score" id="eval_total_score">
     <input type="hidden" name="max_score" id="eval_max_score">
-
-
 
     <!-- ═══ EVALUATE MODE FIELDS ═══ -->
     <div id="eval_mode_evaluate_fields" class="space-y-5">
@@ -2613,7 +2745,7 @@
 
         <!-- Tabs Content Container -->
         <div class="overflow-y-auto max-h-[50vh] border border-[#e2dacf] bg-white rounded-xl">
-            
+
             <!-- Handled Groups Tab Content -->
             <div id="ddm_content_groups" class="ddm-tab-content hidden">
                 <table class="w-full text-left border-collapse">
@@ -2805,7 +2937,7 @@
                 <div>
                     <label class="form-label">Name of Capstone Project</label>
                     <input type="text" id="revision_capstone_title" class="form-input" readonly>
-                </div>  
+                </div>
             </div>
 
             <!-- Proponents (loaded from group members) -->
@@ -2925,6 +3057,237 @@
 </div>
 
 <script>
+// ══════════════════════════════════════════════════════════════
+// PROFESSIONAL LOADING SYSTEM  — splash · top bar · overlay · skeleton
+// ══════════════════════════════════════════════════════════════
+(function () {
+    'use strict';
+
+    /* ---------------- Configuration ---------------- */
+    const SPLASH_MIN_MS  = 750;    // keep splash visible at least this long
+    const SPLASH_MAX_MS  = 4000;   // hard safety net
+    const OVERLAY_MIN_MS = 350;    // prevents flicker on fast requests
+    const WATCHDOG_MS    = 25000;  // force-close overlay if a request hangs
+
+    /* ---------------- 1. Splash ---------------- */
+    const splashEl     = document.getElementById('app-splash');
+    const splashFill   = document.getElementById('splash_bar_fill');
+    const splashStatus = document.getElementById('splash_status');
+    const splashStart  = performance.now();
+    const SPLASH_MSGS  = [
+        'Initializing workspace…',
+        'Loading your sections…',
+        'Syncing capstone records…',
+        'Preparing your dashboard…'
+    ];
+    let splashMsgIdx = 0, splashPct = 6, splashTimer = null, splashDone = false;
+
+    if (splashEl) {
+        if (splashFill) splashFill.style.width = splashPct + '%';
+        splashTimer = setInterval(function () {
+            splashPct = Math.min(splashPct + Math.random() * 14 + 5, 88);
+            if (splashFill) splashFill.style.width = splashPct + '%';
+            splashMsgIdx = (splashMsgIdx + 1) % SPLASH_MSGS.length;
+            if (splashStatus) splashStatus.textContent = SPLASH_MSGS[splashMsgIdx];
+        }, 450);
+    }
+
+    function hideSplash() {
+        if (!splashEl || splashDone) return;
+        splashDone = true;
+        clearInterval(splashTimer);
+        if (splashFill)   splashFill.style.width = '100%';
+        if (splashStatus) splashStatus.textContent = 'Ready';
+
+        const wait = Math.max(0, SPLASH_MIN_MS - (performance.now() - splashStart));
+        setTimeout(function () {
+            splashEl.classList.add('is-hidden');
+            setTimeout(function () { if (splashEl.parentNode) splashEl.remove(); }, 620);
+        }, wait + 100);
+    }
+    window.hideSplash = hideSplash;
+
+    if (document.readyState === 'complete') hideSplash();
+    else window.addEventListener('load', hideSplash);
+    setTimeout(hideSplash, SPLASH_MAX_MS);
+
+    /* ---------------- 2. Top route progress bar ---------------- */
+    const barEl   = document.getElementById('route-progress');
+    const barFill = document.getElementById('route-progress-fill');
+    let barValue = 0, barTimer = null, barActive = false, barRefs = 0;
+
+    function barStart() {
+        if (!barEl || !barFill) return;
+        barRefs++;
+        if (barActive) return;
+        barActive = true;
+        barValue = 10;
+        barEl.classList.add('active');
+        barFill.style.width = '10%';
+        clearInterval(barTimer);
+        barTimer = setInterval(function () {
+            if (barValue < 92) {
+                barValue += (92 - barValue) * 0.09;
+                barFill.style.width = barValue + '%';
+            }
+        }, 180);
+    }
+
+    function barFinish() {
+        if (!barEl || !barFill) return;
+        barRefs = Math.max(0, barRefs - 1);
+        if (barRefs > 0 || !barActive) return;
+        clearInterval(barTimer);
+        barFill.style.width = '100%';
+        setTimeout(function () {
+            barEl.classList.remove('active');
+            barActive = false;
+            setTimeout(function () { barFill.style.width = '0%'; }, 320);
+        }, 230);
+    }
+
+    /* ---------------- 3. Overlay loader ---------------- */
+    const overlayEl = document.getElementById('page-loader');
+    const overlayLabel = overlayEl ? overlayEl.querySelector('.loader-label') : null;
+    let overlayRefs = 0, overlayTimer = null, overlayShownAt = 0, watchdogTimer = null;
+
+    window.showPageLoader = function (label) {
+        if (!overlayEl) return;
+        overlayRefs++;
+
+        if (label && overlayLabel) overlayLabel.textContent = label;
+        else if (overlayLabel && overlayRefs === 1) overlayLabel.textContent = 'Loading…';
+
+        clearTimeout(overlayTimer);
+        clearTimeout(watchdogTimer);
+
+        if (overlayRefs === 1) {
+            overlayShownAt = performance.now();
+            overlayEl.classList.add('active');
+        }
+
+        // Watchdog: never let the overlay get stuck forever
+        watchdogTimer = setTimeout(function () {
+            overlayRefs = 0;
+            overlayEl.classList.remove('active');
+        }, WATCHDOG_MS);
+
+        barStart();
+    };
+
+    window.hidePageLoader = function (force) {
+        if (!overlayEl) return;
+        overlayRefs = force ? 0 : Math.max(0, overlayRefs - 1);
+        if (overlayRefs > 0) return;
+
+        clearTimeout(watchdogTimer);
+
+        const elapsed = performance.now() - overlayShownAt;
+        const wait = Math.max(0, OVERLAY_MIN_MS - elapsed);
+
+        clearTimeout(overlayTimer);
+        overlayTimer = setTimeout(function () {
+            if (overlayRefs === 0) overlayEl.classList.remove('active');
+        }, wait);
+
+        barFinish();
+    };
+
+    window.softReload = function (delay) {
+        window.showPageLoader('Refreshing…');
+        setTimeout(function () { window.location.reload(); }, delay || 200);
+    };
+
+    /* ---------------- 4. Fetch instrumentation ---------------- */
+    const nativeFetch = window.fetch ? window.fetch.bind(window) : null;
+    if (nativeFetch) {
+        window.fetch = function (input, init) {
+            const opts = init || {};
+            const silent = opts.__silent === true;
+
+            if (silent) return nativeFetch(input, init);
+
+            barStart();
+            return nativeFetch(input, init).then(
+                function (res) { barFinish(); return res; },
+                function (err) { barFinish(); throw err; }
+            );
+        };
+    }
+
+    /* ---------------- 5. Helpers ---------------- */
+    // Wrap a promise so the overlay shows while it runs.
+    window.trackPromise = function (promise, label) {
+        window.showPageLoader(label);
+        return promise.then(
+            function (value) { window.hidePageLoader(); return value; },
+            function (error) { window.hidePageLoader(); throw error; }
+        );
+    };
+
+    // Professional button loading state.
+    window.setButtonLoading = function (btn, label) {
+        if (!btn) return function () {};
+        if (!btn.dataset.originalHtml) btn.dataset.originalHtml = btn.innerHTML;
+
+        btn.disabled = true;
+        btn.classList.add('is-loading');
+        btn.innerHTML = '<i class="fas fa-circle-notch"></i> ' + (label || 'Processing…');
+
+        return function restore() {
+            btn.disabled = false;
+            btn.classList.remove('is-loading');
+            btn.innerHTML = btn.dataset.originalHtml;
+        };
+    };
+
+    // Skeleton building blocks.
+    window.skeletonLines = function (count, widths) {
+        widths = widths || [90, 70, 55, 80];
+        let html = '<div class="space-y-2.5">';
+        for (let i = 0; i < (count || 3); i++) {
+            html += '<div class="skeleton" style="height:12px;width:' + widths[i % widths.length] + '%;"></div>';
+        }
+        return html + '</div>';
+    };
+
+    window.skeletonCards = function (count) {
+        let html = '<div class="space-y-4">';
+        for (let i = 0; i < (count || 3); i++) {
+            html += ''
+              + '<div class="rs-card">'
+              +   '<div class="rs-card-head">'
+              +     '<div style="flex:1;">'
+              +       '<div class="skeleton" style="height:10px;width:90px;margin-bottom:10px;"></div>'
+              +       '<div class="skeleton" style="height:14px;width:150px;"></div>'
+              +     '</div>'
+              +     '<div class="skeleton" style="height:26px;width:76px;"></div>'
+              +   '</div>'
+              +   '<div class="skeleton" style="height:38px;width:100%;margin-top:14px;"></div>'
+              + '</div>';
+        }
+        return html + '</div>';
+    };
+
+    window.skeletonBlock = function (rows) {
+        let html = '<div class="space-y-3">';
+        for (let i = 0; i < (rows || 3); i++) {
+            html += ''
+              + '<div class="skeleton" style="height:14px;width:100%;"></div>'
+              + '<div class="skeleton" style="height:14px;width:' + (60 + (i % 3) * 12) + '%;"></div>';
+        }
+        return html + '</div>';
+    };
+
+    /* ---------------- 6. bfcache restore ---------------- */
+    window.addEventListener('pageshow', function (e) {
+        if (e.persisted) {
+            hideSplash();
+            window.hidePageLoader(true);
+        }
+    });
+})();
+
 // ══════════════════════════════════════════════
 // MODAL HELPERS
 // ══════════════════════════════════════════════
@@ -3086,6 +3449,8 @@ function fmtDate(d) {
 }
 
 // ── VIEW PROGRESS MODAL ────────────────────────
+// NOTE: Loading indicator for this modal is scoped INSIDE the modal only.
+//       The global overlay loader and top progress bar are NOT triggered here.
 function openViewModal(groupId) {
     const modal = document.getElementById('viewModal');
     const loading = document.getElementById('view_loading');
@@ -3095,9 +3460,10 @@ function openViewModal(groupId) {
     loading.classList.remove('hidden');
     dataDiv.classList.add('hidden');
 
+    // __silent: true → suppress global top progress bar for in-modal requests
     Promise.all([
-        fetch(`/teacher/get-group-progress/${groupId}`).then(r => r.json()),
-        fetch(`/teacher/get-group/${groupId}`).then(r => r.json())
+        fetch(`/teacher/get-group-progress/${groupId}`, { __silent: true }).then(r => r.json()),
+        fetch(`/teacher/get-group/${groupId}`, { __silent: true }).then(r => r.json())
     ])
     .then(([data, groupData]) => {
         loading.classList.add('hidden');
@@ -3159,6 +3525,7 @@ function openViewModal(groupId) {
                     let statusClass = 'on-time', statusIcon = 'fa-circle-check';
                     if (/late/i.test(statusText)) { statusClass = 'late'; statusIcon = 'fa-triangle-exclamation'; }
                     else if (/early/i.test(statusText)) { statusClass = 'early'; statusIcon = 'fa-clock'; }
+                    else if (/considered/i.test(statusText)) { statusClass = 'on-time'; statusIcon = 'fa-circle-check'; }
 
                     const absentNames = (m.absent_students && m.absent_students.length) ? m.absent_students : [];
 
@@ -3173,16 +3540,110 @@ function openViewModal(groupId) {
 
                     const feedbackHtml = r.feedback ? `<div class="remark-feedback">"${r.feedback}"</div>` : '';
 
+                    // ── Detect issuance milestones ──
+                    const isRecommendationMilestone =
+                        /issuance of recommendation/i.test(m.title || '')
+                        || m.id === 5   // Capstone 1 Recommendation
+                        || m.id === 17; // Capstone 2 Recommendation
+
+                    const isApprovalMilestone =
+                        /issuance of approval/i.test(m.title || '')
+                        || m.id === 19; // Capstone 2 Approval
+
+                    // Adviser-only: Issue Recommendation Sheet button
+                    const issueButtonHtml = (isRecommendationMilestone && data.is_adviser)
+                        ? `<button type="button"
+                                class="issue-rec-btn text-[#b88d3a] hover:text-[#8b6914] text-[10px]
+                                        font-semibold mt-2 ml-3 focus:outline-none inline-flex items-center"
+                                data-milestone-id="${m.id}"
+                                data-doc-type="recommendation">
+                                <i class="fas fa-award mr-1"></i> Issue Recommendation Sheet
+                        </button>`
+                        : '';
+
+                    // Adviser-only: Issue Approval Sheet button
+                    const issueApprovalButtonHtml = (isApprovalMilestone && data.is_adviser)
+                        ? `<button type="button"
+                                class="issue-rec-btn text-[#b88d3a] hover:text-[#8b6914] text-[10px]
+                                        font-semibold mt-2 ml-3 focus:outline-none inline-flex items-center"
+                                data-milestone-id="${m.id}"
+                                data-doc-type="approval">
+                                <i class="fas fa-award mr-1"></i> Issue Approval Sheet
+                        </button>`
+                        : '';
+
+                    // Existing edit-remark button
+                    const editButtonHtml = data.is_adviser
+                        ? `<button type="button"
+                                class="edit-remark-btn text-[#b88d3a] hover:text-[#8b6914] text-[10px]
+                                        font-semibold mt-2 focus:outline-none block"
+                                data-milestone-id="${m.id}">
+                                <i class="fas fa-edit mr-1"></i>Edit Remark
+                        </button>`
+                        : '';
+
+                    const isLate     = /late/i.test(statusText);
+                    const isEarly    = /early/i.test(statusText);
+                    const isOnTime   = /on time/i.test(statusText);
+                    const isConsidered = /considered/i.test(statusText);
+
                     remarksHtml = `
-                        <div class="remark-summary">
-                            <span class="remark-status-badge ${statusClass}"><i class="fa-solid ${statusIcon}"></i> ${statusText}</span>
-                            ${r.deduction_points ? `<span class="remark-deduction"><i class="fa-solid fa-minus"></i> ${r.deduction_points} pts deduction</span>` : ''}
-                            <span class="remark-attendance"><i class="fa-solid fa-user-group"></i> ${r.all_present ? 'All members present' : `${absentNames.length} member(s) absent`}</span>
-                            ${absenceTableHtml}
-                            ${feedbackHtml}
+                        <div class="remark-summary" data-milestone-id="${m.id}">
+                            <div class="remark-view-mode">
+                                <span class="remark-status-badge ${statusClass}">
+                                    <i class="fa-solid ${statusIcon}"></i> ${statusText}
+                                </span>
+                                ${r.deduction_points ? `<span class="remark-deduction"><i class="fa-solid fa-minus"></i> ${r.deduction_points} pts deduction</span>` : ''}
+                                <span class="remark-attendance"><i class="fa-solid fa-user-group"></i> ${r.all_present ? 'All members present' : `${absentNames.length} member(s) absent`}</span>
+                                ${absenceTableHtml}
+                                ${feedbackHtml}
+                                ${editButtonHtml}
+                                 ${issueButtonHtml}
+                                 ${issueApprovalButtonHtml}
+                            </div>
+
+                            <div class="remark-edit-mode hidden mt-2 p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg space-y-2">
+                                <div>
+                                    <label class="form-label text-[10px]">Remarks Status</label>
+                                    <select class="form-select text-xs remark-edit-status">
+                                        <option value="On Time Compliance" ${isOnTime ? 'selected' : ''}>On Time Compliance</option>
+                                        <option value="Early Submission"  ${isEarly ? 'selected' : ''}>Early Submission</option>
+                                        <option value="Late Submission"   ${isLate ? 'selected' : ''}>Late Submission</option>
+                                        <option value="Considered"        ${isConsidered ? 'selected' : ''}>Considered</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="form-label text-[10px]">Deduction Points</label>
+                                    <input type="number" min="0" step="1"
+                                        class="form-input text-xs remark-edit-deduction"
+                                        value="${r.deduction_points || 0}">
+                                </div>
+
+                                <div>
+                                    <label class="form-label text-[10px]">Compiled</label>
+                                    <select class="form-select text-xs remark-edit-compiled">
+                                        <option value="1" ${r.compiled ? 'selected' : ''}>Yes — Compiled</option>
+                                        <option value="0" ${!r.compiled ? 'selected' : ''}>No — Not Compiled</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="form-label text-[10px]">Feedback (optional)</label>
+                                    <textarea rows="2" class="form-input text-xs remark-edit-feedback">${r.feedback || ''}</textarea>
+                                </div>
+
+                                <div class="flex justify-end gap-2 pt-1">
+                                    <button type="button" class="btn-ghost text-xs remark-edit-cancel">Cancel</button>
+                                    <button type="button" class="btn-primary text-xs remark-edit-save">
+                                        <i class="fas fa-save mr-1"></i> Save Override
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     `;
-                } else if (m.is_next && data.is_adviser) {
+                }
+                else if (m.is_next && data.is_adviser) {
                     remarksHtml = `
                         <div class="mb-2">
                             <label class="form-label text-[10px]">Attendance</label>
@@ -3270,6 +3731,71 @@ function openViewModal(groupId) {
             row.innerHTML = `<td>${dateHtml}</td><td>${taskHtml}</td><td>${remarksHtml}${evaluationHtml}</td>`;
             tbody.appendChild(row);
 
+            // ── Adviser-only remark override wiring ──
+            if (m.remarks && data.is_adviser) {
+                const summary   = row.querySelector('.remark-summary');
+                if (summary) {
+                    const viewMode   = summary.querySelector('.remark-view-mode');
+                    const editMode   = summary.querySelector('.remark-edit-mode');
+                    const editBtn    = summary.querySelector('.edit-remark-btn');
+                    const cancelBtn  = summary.querySelector('.remark-edit-cancel');
+                    const saveBtn    = summary.querySelector('.remark-edit-save');
+
+                    editBtn?.addEventListener('click', () => {
+                        viewMode.classList.add('hidden');
+                        editMode.classList.remove('hidden');
+                    });
+
+                    cancelBtn?.addEventListener('click', () => {
+                        editMode.classList.add('hidden');
+                        viewMode.classList.remove('hidden');
+                    });
+
+                    saveBtn?.addEventListener('click', () => {
+                        const status      = summary.querySelector('.remark-edit-status').value;
+                        const deduction   = parseInt(summary.querySelector('.remark-edit-deduction').value, 10) || 0;
+                        const compiled    = summary.querySelector('.remark-edit-compiled').value === '1';
+                        const feedback    = summary.querySelector('.remark-edit-feedback').value || '';
+
+                        const originalHtml = saveBtn.innerHTML;
+                        saveBtn.disabled = true;
+                        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Saving...';
+
+                        fetch('/teacher/update-remark', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                group_id:         groupId,
+                                milestone_id:     m.id,
+                                remarks_status:   status,
+                                deduction_points: deduction,
+                                compiled:         compiled,
+                                feedback:         feedback,
+                            }),
+                        })
+                        .then(async res => {
+                            const data = await res.json().catch(() => ({}));
+                            if (!res.ok) throw data;
+                            return data;
+                        })
+                        .then(() => {
+                            showToast('Remark updated successfully.');
+                            openViewModal(groupId);
+                        })
+                        .catch(err => {
+                            saveBtn.disabled = false;
+                            saveBtn.innerHTML = originalHtml;
+                            showToast((err && err.error) || 'Failed to update remark.', true);
+                        });
+                    });
+                }
+            }
+
+            // ── Adviser-only "Next Step" evaluation wiring ──
             if (!m.remarks && m.is_next && data.is_adviser) {
                 const submitBtn = row.querySelector('.submit-remark-btn');
                 if (submitBtn) {
@@ -3299,10 +3825,42 @@ function openViewModal(groupId) {
                     });
                 }
             }
-        });
+
+
+            // ══════════════════════════════════════════════════════════════
+            // Issuance wiring (recommendation / approval) — stays inside the loop
+            // ══════════════════════════════════════════════════════════════
+            row.querySelectorAll('.issue-rec-btn').forEach(issueBtn => {
+                const docType = issueBtn.dataset.docType || 'recommendation';
+                const labelMap = {
+                    recommendation: 'Recommendation Sheet',
+                    approval:       'Approval Sheet',
+                };
+                const label = labelMap[docType] || 'Document';
+
+                // Reflect any prior issuance
+                fetch(`/teacher/get-sheet-status/${groupId}?type=${docType}`, { __silent: true })
+                    .then(r => r.json())
+                    .then(status => {
+                        if (status.issued) {
+                            issueBtn.outerHTML = `
+                                <span class="inline-flex items-center gap-1 mt-2 ml-3 text-[10px]
+                                             font-semibold text-[#1e6b3a]">
+                                    <i class="fas fa-check-circle"></i>
+                                    ${label} Issued (${fmtDate(status.issued_date)})
+                                </span>`;
+                        }
+                    })
+                    .catch(() => {});
+
+                issueBtn.addEventListener('click', function () {
+                    issueCertificateSheet(groupId, this.dataset.milestoneId, docType, this);
+                });
+            });
+        }); // ← end of forEach(m => { ... })
 
         // ── Load and render earned certificates for this group ──
-        fetch(`/group/${groupId}/certificates`)
+        fetch(`/group/${groupId}/certificates`, { __silent: true })
             .then(r => r.json())
             .then(certs => {
                 const certContainer = document.getElementById('view_certificates_container');
@@ -3346,9 +3904,7 @@ function submitRemarkEvaluation(groupId, milestoneId, btn, row) {
     const absentIds = Array.from(row.querySelectorAll('.absent-checkbox:checked')).map(cb => cb.value);
     const feedback = row.querySelector('.remark-feedback-input')?.value || '';
 
-    btn.disabled = true;
-    const originalHtml = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saving...';
+    const restore = setButtonLoading(btn, 'Saving…');
 
     fetch('/teacher/evaluate-remark', {
         method: 'POST',
@@ -3371,11 +3927,93 @@ function submitRemarkEvaluation(groupId, milestoneId, btn, row) {
         openViewModal(groupId);
     })
     .catch(err => {
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
+        restore();
         showToast((err && err.error) || 'Failed to save evaluation.', true);
     });
 }
+
+/**
+ * Issue the Recommendation Sheet for a group.
+ * Only called from the issuance-milestone row in the view modal.
+ */
+function issueRecommendationSheet(groupId, milestoneId, btn) {
+    if (!confirm('Issue the Recommendation Sheet to this group?\n\nStudents will then be able to view and print it.')) {
+        return;
+    }
+
+    const restore = setButtonLoading(btn, 'Issuing…');
+
+    fetch('/teacher/issue-recommendation-sheet', {
+        method: 'POST',
+        headers: {
+            'Content-Type':  'application/json',
+            'X-CSRF-TOKEN':  document.querySelector('meta[name="csrf-token"]').content,
+            'Accept':        'application/json',
+        },
+        body: JSON.stringify({
+            group_id:     groupId,
+            milestone_id: milestoneId,
+        }),
+    })
+    .then(async r => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw data;
+        return data;
+    })
+    .then(data => {
+        showToast(data.message || 'Recommendation sheet issued successfully.');
+        openViewModal(groupId);   // refresh the modal state
+    })
+    .catch(err => {
+        restore();
+        showToast((err && err.error) || 'Failed to issue recommendation sheet.', true);
+    });
+}
+/**
+ * Unified issuance of recommendation / approval / revision sheet.
+ */
+function issueCertificateSheet(groupId, milestoneId, docType, btn) {
+    const labelMap = {
+        recommendation: 'Recommendation Sheet',
+        approval:       'Approval Sheet',
+        revision:       'Revision Sheet',
+    };
+    const label = labelMap[docType] || 'Document';
+
+    if (!confirm(`Issue the ${label} to this group?\n\nStudents will then be able to view and print it.`)) {
+        return;
+    }
+
+    const restore = setButtonLoading(btn, 'Issuing…');
+
+    fetch('/teacher/issue-sheet', {
+        method: 'POST',
+        headers: {
+            'Content-Type':  'application/json',
+            'X-CSRF-TOKEN':  document.querySelector('meta[name="csrf-token"]').content,
+            'Accept':        'application/json',
+        },
+        body: JSON.stringify({
+            group_id:      groupId,
+            milestone_id:  milestoneId,
+            document_type: docType,
+        }),
+    })
+    .then(async r => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw data;
+        return data;
+    })
+    .then(data => {
+        showToast(data.message || `${label} issued successfully.`);
+        openViewModal(groupId);   // refresh modal state
+    })
+    .catch(err => {
+        restore();
+        showToast((err && err.error) || `Failed to issue ${label}.`, true);
+    });
+}
+window.issueCertificateSheet = issueCertificateSheet;
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -3437,6 +4075,14 @@ document.addEventListener('DOMContentLoaded', function () {
         })
     );
     activateSection('dashboard');
+
+    // ── EVALUATION FORM SUBMIT — show loader ──
+    const evalForm = document.getElementById('evaluation_form');
+    if (evalForm) {
+        evalForm.addEventListener('submit', function () {
+            showPageLoader('Submitting evaluation…');
+        });
+    }
 
     // ── CREATE GROUP MODAL ─────────────────────
     const sectionSelect = document.getElementById('sectionSelect');
@@ -3593,9 +4239,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const submitBtn = event.target.querySelector('button[type="submit"]');
-        const originalHtml = submitBtn.innerHTML;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Submitting...';
+        const restore = setButtonLoading(submitBtn, 'Submitting…');
 
         fetch(`/teacher/group/${groupId}/verify-revision`, {
             method: 'POST',
@@ -3614,11 +4258,10 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             closeModal('revisionCheckModal');
             showToast(data.message || 'Revision verified successfully!');
-            setTimeout(() => window.location.reload(), 1000);
+            softReload(1000);
         })
         .catch(err => {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalHtml;
+            restore();
             showToast(err.message || 'Failed to submit verification.', true);
         });
     };
@@ -3671,7 +4314,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (data.success) {
                 closeModal('revisionModal');
                 showToast(data.message || 'Revision request submitted successfully!');
-                setTimeout(() => window.location.reload(), 1000);
+                softReload(1000);
             } else {
                 showToast(data.error || 'Failed to submit revision request.', true);
             }
@@ -3699,9 +4342,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             if (data.success) {
                 showToast(data.message || 'Group marked as revised!');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
+                softReload(1000);
             } else {
                 showToast(data.error || 'Failed to mark group as revised.', true);
             }
@@ -3860,9 +4501,10 @@ document.addEventListener('DOMContentLoaded', function () {
     window.openGroupRevisionsModal = function (groupId, groupName) {
     document.getElementById('grm_title').textContent = `Revisions — ${groupName}`;
     const content = document.getElementById('grm_content');
-    content.innerHTML = '<p class="text-sm text-[#5b6375] text-center py-8">Loading…</p>';
+    content.innerHTML = window.skeletonCards(2);
 
     openModal('groupRevisionsModal');
+    showPageLoader('Loading revisions…');
 
     fetch(`/teacher/get-all-revisions/${groupId}`)
         .then(async r => {
@@ -3880,6 +4522,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         No panelist has submitted a revision for this group.
                     </div>
                 `;
+                hidePageLoader();
                 return;
             }
 
@@ -3970,11 +4613,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                 `;
             }).join('');
+            hidePageLoader();
         })
         .catch(err => {
             content.innerHTML = `<p class="text-sm text-red-500 text-center py-8">❌ ${err.message}</p>`;
+            hidePageLoader();
         });
 };
+
     window.openEvaluationModal = function (groupId, milestoneId = null) {
         document.getElementById('eval_group_id').value = groupId;
         revisionSheetDirty = false;
@@ -4004,6 +4650,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         openModal('evaluationModal');
+        showPageLoader('Preparing evaluation form…');
 
         // ── Fetch all needed data ──
         Promise.all([
@@ -4016,21 +4663,15 @@ document.addEventListener('DOMContentLoaded', function () {
             window.currentRevisionData = revisionData;
             window.currentEvaluationData = evalData;
 
-            
-
             // ── Check if evaluation already exists ──
             if (evalData && evalData.score !== undefined) {
                 setEvalModeReadOnly('This group has already been evaluated. All fields are read-only.');
                 displayEvaluation(evalData);
                 const readOnlyRevisionSheet = document.getElementById('eval_revision_sheet_content');
                 if (readOnlyRevisionSheet) renderRevisionSheet(readOnlyRevisionSheet, groupId, true);
+                hidePageLoader();
                 return;
             }
-
-                        // The existing modal remains unchanged structurally. The right-side
-            // revision sheet controls whether notes are editable or read-only.
-
-
 
             // ── Load group members for attendance checklist ──
             const checklist = document.getElementById('student_checklist');
@@ -4081,14 +4722,15 @@ document.addEventListener('DOMContentLoaded', function () {
             // ── Load revision sheet on the right ──
             const revisionSheetEl = document.getElementById('eval_revision_sheet_content');
             if (revisionSheetEl) renderRevisionSheet(revisionSheetEl, groupId);
+
+            hidePageLoader();
         })
         .catch(err => {
+            hidePageLoader();
             showToast('Failed to load data.', true);
             console.error(err);
         });
     };
-
-    
 
     // ── Dynamic row adders (global) ──
     window.addEvalRevChapterRow = function() {
@@ -4128,13 +4770,14 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Open Rubric Scores Modal ──
     window.openRubricScoresModal = function (groupId, groupName = null) {
         openModal('rubricScoresModal');
+        showPageLoader('Loading rubric scores…');
         const content = document.getElementById('rubricScoresContent');
         const titleEl = document.getElementById('rubricScoresTitle');
         const subtitleEl = document.getElementById('rubricScoresSubtitle');
 
         titleEl.textContent = groupName ? `Rubric Scores — ${groupName}` : 'Rubric Scores';
         subtitleEl.textContent = 'Panelist evaluation summary';
-        content.innerHTML = '<p class="text-sm text-[#5b6375] text-center py-8">Loading…</p>';
+        content.innerHTML = window.skeletonCards(3);
 
         fetch(`/teacher/get-group-progress/${groupId}`)
             .then(r => r.json())
@@ -4150,6 +4793,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             No panelist evaluations have been submitted for this group yet.
                         </div>
                     `;
+                    hidePageLoader();
                     return;
                 }
 
@@ -4210,6 +4854,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                     `;
                 }).join('');
+                hidePageLoader();
             })
             .catch(() => {
                 content.innerHTML = `
@@ -4218,6 +4863,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         Failed to load rubric scores. Please try again.
                     </div>
                 `;
+                hidePageLoader();
             });
     };
 
@@ -4293,8 +4939,6 @@ document.addEventListener('DOMContentLoaded', function () {
             form.requestSubmit ? form.requestSubmit() : form.submit();
         };
 
-        // The modal has one action: submit the evaluation. If the panelist
-        // created a revision sheet while grading, persist it first.
         if (revisionSheetDirty) {
             saveRevisionSheet({ silent: true })
                 .then(submitEvaluation)
@@ -4653,6 +5297,7 @@ document.addEventListener('DOMContentLoaded', function () {
         proponentsEl.innerHTML = '<span class="text-xs text-[#5b6375] italic">Loading...</span>';
 
         openModal('revisionCheckModal');
+        showPageLoader('Loading revision details…');
 
         Promise.all([
             fetch(`/teacher/get-group/${groupId}`).then(r => r.json()),
@@ -4787,10 +5432,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 });
             });
+            hidePageLoader();
         })
         .catch(error => {
             console.error(error);
             proponentsEl.innerHTML = `<span class="text-red-500">${error.message || 'Failed to load revision data.'}</span>`;
+            hidePageLoader();
         });
     };
 
@@ -4798,7 +5445,7 @@ document.addEventListener('DOMContentLoaded', function () {
     window.openMyEvaluationModal = function (groupId) {
         openModal('myEvaluationModal');
         const content = document.getElementById('myEvaluationContent');
-        content.innerHTML = '<p class="text-sm text-[#5b6375]">Loading…</p>';
+        content.innerHTML = window.skeletonBlock(3);
 
         fetch(`/teacher/get-my-evaluation/${groupId}`)
             .then(async response => {
@@ -5052,7 +5699,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const originalHtml = saveBtn?.innerHTML;
         if (saveBtn) {
             saveBtn.disabled = true;
-            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saving...';
+            saveBtn.classList.add('is-loading');
+            saveBtn.innerHTML = '<i class="fas fa-circle-notch"></i> Saving…';
         }
         if (status) status.textContent = 'Saving…';
 
@@ -5089,6 +5737,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .finally(() => {
                 if (saveBtn) {
                     saveBtn.disabled = false;
+                    saveBtn.classList.remove('is-loading');
                     saveBtn.innerHTML = originalHtml || '<i class="fa-solid fa-floppy-disk mr-1"></i> Save Revision Notes';
                 }
             });
@@ -5103,7 +5752,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function renderRevisionSheet(container, groupId, forceReadOnly = false) {
-        container.innerHTML = '<p class="text-sm text-[#5b6375]">Loading revision data…</p>';
+        container.innerHTML = window.skeletonBlock(4);
         fetch(`/teacher/get-revision-details/${groupId}`)
             .then(async response => {
                 const data = await response.json().catch(() => ({}));
@@ -5150,8 +5799,20 @@ document.addEventListener('DOMContentLoaded', function () {
         window.openEvaluationModal(groupId);
     };
 
-    
+    // ── Universal submit spinner ──
+    document.addEventListener('submit', function (e) {
+        const form = e.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        if (form.id === 'logout-form') return;
+        if (e.defaultPrevented) return; // forms that own their submit handler
+
+        // Skip forms we already handle manually
+        if (['revision_check_form', 'revision_form'].includes(form.id)) return;
+
+        showPageLoader('Saving changes…');
+    }, false);
+
 });
 </script>
- </body>
-    </html>
+</body>
+    </html> 

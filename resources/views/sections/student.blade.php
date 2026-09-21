@@ -344,7 +344,7 @@
             color: var(--navy);
         }
         .gold-accent-line {
-            width: 50px;
+            width: 100%;
             height: 3px;
             background: linear-gradient(90deg, var(--gold), var(--gold-dark));
             border-radius: 3px;
@@ -1073,158 +1073,1154 @@
                 display: none !important;
             }
         }
-       @media print {
-    body * { visibility: hidden; }
-    #revisionSheetModal,
-    #revisionSheetModal * { visibility: visible; }
-    #revisionSheetModal {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: auto;
-        background: white;
-        padding: 2rem;
-        display: block !important;
-    }
-    #revisionSheetModal .modal-box {
-        box-shadow: none;
-        border: none;
-        max-width: 100%;
-        max-height: none;      /* was 90vh — clipping the sheet */
-        overflow: visible;      /* was auto — clipping the sheet */
-        width: 100%;
-        padding: 0;
-    }
-    #revisionSheetModal .modal-accent { display: none; }
-    #revisionSheetModal .btn-outline,
-    #revisionSheetModal .btn-primary,
-    #revisionSheetModal .flex.justify-end.gap-3 { display: none !important; }
-}
+
         /* ── MODALS ── */
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(5,16,33,0.55);
-    backdrop-filter: blur(4px);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 50;
-    padding: 1rem;
-}
-.modal-overlay.active {
-    display: flex;
-}
-.modal-box {
-    background: var(--white);
-    border-radius: 1.25rem;
-    width: 100%;
-    max-width: 30rem;
-    max-height: 90vh;
-    overflow-y: auto;
-    padding: 1.75rem;
-    animation: fadeInUp 0.25s ease-out both;
-    box-shadow: 0 40px 60px -20px rgba(5,16,33,0.3);
-    border: 1px solid rgba(214,177,92,0.2);
-}
-.modal-box.wide {
-    max-width: 44rem;
-}
-.modal-box .modal-accent {
-    height: 3px;
-    background: linear-gradient(90deg, var(--gold), var(--gold-light));
-    border-radius: 3px;
-    margin-bottom: 1.25rem;
-}
-.modal-overlay.active {
-    display: flex !important;
-}
-@media print {
-    body * { visibility: hidden; }
-    #recommendationSheetModal,
-    #recommendationSheetModal * { visibility: visible; }
-    #recommendationSheetModal {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: auto;
-        background: white;
-        padding: 2rem;
-        display: block !important;
-    }
-    #recommendationSheetModal .modal-box {
-        box-shadow: none;
-        border: none;
-        max-width: 100%;
-        max-height: none;      /* was 90vh — clipping the sheet */
-        overflow: visible;      /* was auto — clipping the sheet */
-        width: 100%;
-        padding: 0;
-    }
-    #recommendationSheetModal .modal-accent { display: none; }
-    #recommendationSheetModal .btn-outline,
-    #recommendationSheetModal .btn-primary,
-    #recommendationSheetModal .flex.justify-end.gap-3 { display: none !important; }
-}
-@media print {
-    #recommendationSheetModal .modal-box {
-        padding: 0 !important;          /* remove all inner padding */
-        max-width: 100% !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-    #recommendationSheetContent {
-        padding: 0 !important;
-        border: none !important;
-        width: 100% !important;
-    }
-}
-/* ── RECOMMENDATION SHEET ── FULL HEIGHT MODAL ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(5,16,33,0.55);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            padding: 1rem;
+        }
+        .modal-overlay.active {
+            display: flex !important;
+        }
+        .modal-box {
+            background: var(--white);
+            border-radius: 1.25rem;
+            width: 100%;
+            max-width: 30rem;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 1.75rem;
+            animation: fadeInUp 0.25s ease-out both;
+            box-shadow: 0 40px 60px -20px rgba(5,16,33,0.3);
+            border: 1px solid rgba(214,177,92,0.2);
+        }
+        .modal-box.wide {
+            max-width: 44rem;
+        }
+        .modal-box .modal-accent {
+            height: 3px;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+            border-radius: 3px;
+            margin-bottom: 1.25rem;
+        }
+
+        /* ── RECOMMENDATION SHEET ── FORMAL DOCUMENT STYLE ── */
 .recommendation-sheet-modal {
     display: flex;
     flex-direction: column;
-    min-height: 85vh;          /* screen: takes most of the viewport */
-    max-height: 90vh;
+    min-height: 85vh;
+    max-height: 92vh;
+    background: var(--white);
+    padding: 1.5rem !important;
 }
 
-.recommendation-content {
-    flex: 1;                   /* fills the remaining vertical space */
+/* The paper-like document */
+.recommendation-document {
+    flex: 1;
+    background: #fffdf8;
+    border: 2px solid #0a1428;
+    border-radius: 4px;
+    padding: 2rem 2.75rem 1.5rem;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-}
-
-.recommendation-footer {
     text-align: center;
-    margin-top: auto;          /* pushes the adviser to the bottom */
+    position: relative;
+    overflow-y: auto;
+    box-shadow: inset 0 0 0 1px rgba(10, 20, 40, 0.05);
 }
 
-@media print {
-    #recommendationSheetModal .modal-box.recommendation-sheet-modal {
-        min-height: 100vh;      /* full printed page */
-        height: 100vh;
-        max-height: none;
-        overflow: visible;
-        padding: 1rem !important;
+/* Header image */
+.recommendation-document .rec-header-image {
+    text-align: center;
+    margin-bottom: 1.1rem;
+}
+.recommendation-document .rec-header-image img {
+    max-width: 55%;
+    height: auto;
+    display: inline-block;
+}
+
+/* Title with underline */
+.recommendation-document .rec-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #0a1428;
+    border-bottom: 2px solid #0a1428;
+    padding-bottom: 0.6rem;
+    margin: 0 auto 0.4rem;
+    max-width: 90%;
+}
+
+/* Serial line under the title */
+.recommendation-document .rec-serial {
+    font-family: 'Courier New', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    color: #8b6914;
+    margin-bottom: 1.5rem;
+    min-height: 1em;
+}
+
+/* Body block */
+.recommendation-document .rec-body {
+    flex: 1;
+    font-size: 1rem;
+    line-height: 1.75;
+    color: #171e2c;
+    max-width: 640px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.65rem;
+}
+
+.recommendation-document .rec-body p {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.75;
+    color: #171e2c;
+}
+
+/* Capstone title in italic serif */
+.recommendation-document .rec-capstone-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.45rem;
+    font-weight: 600;
+    font-style: italic;
+    line-height: 1.35;
+    color: #0a1428;
+    margin: 0.6rem auto 1.1rem;
+    max-width: 620px;
+    padding: 0 1rem;
+    position: relative;
+}
+.recommendation-document .rec-capstone-title::before,
+.recommendation-document .rec-capstone-title::after {
+    content: '';
+    display: block;
+    width: 55px;
+    height: 1px;
+    background: #d9cda6;
+    margin: 0.6rem auto;
+}
+.recommendation-document .rec-capstone-title::before { margin-top: 0; }
+.recommendation-document .rec-capstone-title::after  { margin-bottom: 0; }
+
+/* Members (inline) */
+.recommendation-document .rec-members {
+    font-weight: 600;
+    color: #0a1428;
+}
+
+/* Adviser signature block */
+.recommendation-document .rec-signature {
+    margin: 2.25rem auto 1rem;
+    text-align: center;
+    min-width: 320px;
+}
+.recommendation-document .rec-signature .rec-sig-name {
+    display: inline-block;
+    min-width: 260px;
+    padding: 0 0.5rem 0.3rem;
+    border-bottom: 1.5px solid #0a1428;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #0a1428;
+}
+.recommendation-document .rec-signature .rec-sig-label {
+    display: block;
+    margin-top: 0.4rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #5b6375;
+}
+
+/* Footer: date + group */
+.recommendation-document .rec-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 2rem;
+    margin-top: auto;
+    padding-top: 1.1rem;
+    border-top: 1px solid #e2dacf;
+}
+.recommendation-document .rec-footer-block {
+    text-align: center;
+    min-width: 150px;
+}
+.recommendation-document .rec-footer-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #171e2c;
+}
+.recommendation-document .rec-footer-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #9a9385;
+    margin-top: 0.15rem;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+    .recommendation-document {
+        padding: 1.25rem 1rem;
     }
-    #recommendationSheetContent {
-        height: 100% !important;
+    .recommendation-document .rec-title {
+        font-size: 1.35rem;
+        letter-spacing: 0.05em;
+    }
+    .recommendation-document .rec-capstone-title {
+        font-size: 1.15rem;
+    }
+    .recommendation-document .rec-header-image img {
+        max-width: 80%;
+    }
+    .recommendation-document .rec-footer {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+}
+
+        /* ── APPROVAL SHEET DOCUMENT (screen) ── */
+        .approval-sheet-doc {
+            color: #171e2c;
+            background: #fff;
+            font-family: 'Times New Roman', serif;
+            text-align: center;
+            line-height: 1.35;
+        }
+        .approval-sheet-doc .approval-intro { font-size: .9rem; margin: 0 0 .35rem; }
+        .approval-sheet-doc .approval-title {
+            font-size: 1.05rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .025em; margin: 0 auto 1rem; max-width: 42rem;
+        }
+        .approval-sheet-doc .approval-body {
+            font-size: .9rem; max-width: 42rem; margin: 0 auto 1.35rem;
+        }
+        .approval-sheet-doc .approval-body strong { font-weight: 700; }
+        .approval-signature { text-align: center; margin: 0 auto 1.15rem; }
+        .approval-signature .approval-sig-line {
+            display: inline-block; min-width: 2.45in; border-bottom: 1px solid #222;
+            font-weight: 700; text-transform: uppercase; font-size: .85rem;
+            padding-bottom: .18rem; margin-bottom: .2rem;
+        }
+        .approval-signature .approval-sig-role { font-size: .72rem; color: #444; }
+        .approval-panel-heading { font-weight: 700; font-size: .85rem; margin: 0 0 .85rem; }
+        .approval-panel-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem;
+            max-width: 34rem; margin: 0 auto 1rem;
+        }
+        .approval-panel-grid .approval-signature { margin: 0; }
+        .approval-panel-grid .approval-sig-line { width: 100%; min-width: 0; font-size: .78rem; }
+        .approval-accepted { max-width: 39rem; margin: 0 auto 1.1rem; font-size: .88rem; }
+        .approval-oral-results { display: flex; flex-direction: column; align-items: center; gap: .25rem; margin-bottom: 1rem; font-size: .86rem; }
+        .approval-oral-results .oral-label { margin-right: .35rem; }
+        .approval-oral-results .oral-value { border-bottom: 1px solid #222; font-weight: 700; padding-bottom: .05rem; }
+        .approval-approved-label { margin: 0 0 .25rem; font-size: .86rem; }
+
+        /* ══════════════════════════════════════════════════════════════
+           PROFESSIONAL LOADING SYSTEM (matches Teacher Dashboard)
+           ══════════════════════════════════════════════════════════════ */
+
+        /* ── Shared spinner ── */
+        .spinner {
+            width: 38px; height: 38px; border-radius: 50%;
+            border: 3px solid rgba(214, 177, 92, 0.18);
+            border-top-color: var(--gold);
+            animation: loader-spin .7s linear infinite;
+        }
+        @keyframes loader-spin { to { transform: rotate(360deg); } }
+
+        /* ── In-modal spinner (smaller, for modal bodies) ── */
+        .spinner-sm {
+            width: 30px; height: 30px; border-radius: 50%;
+            border: 2.5px solid rgba(214, 177, 92, 0.18);
+            border-top-color: var(--gold);
+            animation: loader-spin .7s linear infinite;
+        }
+
+        /* ── 1. First-paint splash screen ── */
+        #app-splash {
+            position: fixed; inset: 0; z-index: 10000;
+            display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(120% 120% at 50% 0%, #162c47 0%, #0a1428 45%, #051021 100%);
+            transition: opacity .5s cubic-bezier(.4, 0, .2, 1), visibility .5s;
+        }
+        #app-splash.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        #app-splash::after {
+            content: ''; position: absolute; inset: 0; pointer-events: none;
+            background: radial-gradient(60% 50% at 50% 45%, rgba(214, 177, 92, .12), transparent 70%);
+        }
+        .splash-inner {
+            position: relative; z-index: 1;
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            padding: 2rem;
+        }
+        .splash-logo { position: relative; width: 92px; height: 92px; display: grid; place-items: center; margin-bottom: 1.5rem; }
+        .splash-ring {
+            position: absolute; inset: 0; border-radius: 50%;
+            border: 2px solid rgba(214, 177, 92, .15);
+            border-top-color: var(--gold);
+            animation: splash-spin 1s linear infinite;
+        }
+        .splash-ring::after {
+            content: ''; position: absolute; inset: 9px; border-radius: 50%;
+            border: 2px solid transparent;
+            border-bottom-color: rgba(214, 177, 92, .5);
+            animation: splash-spin 1.5s linear infinite reverse;
+        }
+        .splash-mark {
+            width: 56px; height: 56px; border-radius: 18px;
+            display: grid; place-items: center;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+            color: var(--navy); font-size: 1.4rem;
+            box-shadow: 0 12px 30px -8px rgba(214, 177, 92, .55);
+            animation: splash-pulse 2.2s ease-in-out infinite;
+        }
+        @keyframes splash-spin { to { transform: rotate(360deg); } }
+        @keyframes splash-pulse {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.05); }
+        }
+        .splash-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.85rem; font-weight: 600; letter-spacing: .02em; color: #fff;
+        }
+        .splash-sub {
+            font-size: .68rem; letter-spacing: .24em; text-transform: uppercase;
+            color: var(--gold-light); opacity: .7; margin-top: .4rem;
+        }
+        .splash-bar {
+            width: 230px; height: 3px; border-radius: 999px;
+            background: rgba(255, 255, 255, .08);
+            overflow: hidden; margin-top: 1.75rem;
+        }
+        #splash_bar_fill {
+            display: block; height: 100%; width: 0%; border-radius: 999px;
+            background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
+            transition: width .35s ease;
+        }
+        .splash-status {
+            font-size: .7rem; color: rgba(255, 255, 255, .42);
+            margin-top: .9rem; letter-spacing: .05em;
+            min-height: 1em;
+        }
+
+        /* ── 2. Top route progress bar ── */
+        #route-progress {
+            position: fixed; top: 0; left: 0; right: 0; height: 3px;
+            z-index: 9997; pointer-events: none;
+            opacity: 0; transition: opacity .25s ease;
+        }
+        #route-progress.active { opacity: 1; }
+        #route-progress-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
+            box-shadow: 0 0 10px rgba(214, 177, 92, .7), 0 0 4px rgba(214, 177, 92, .5);
+            transition: width .25s ease;
+        }
+
+        /* ── 3. Overlay loader ── */
+        #page-loader {
+            position: fixed; inset: 0; z-index: 9998;
+            background: rgba(248, 246, 240, .68);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; pointer-events: none;
+            transition: opacity .22s ease, visibility .22s ease;
+        }
+        #page-loader.active { opacity: 1; visibility: visible; pointer-events: all; }
+        #page-loader .loader-box {
+            display: flex; flex-direction: column; align-items: center; gap: .9rem;
+            padding: 1.75rem 2.5rem;
+            border-radius: 1.25rem;
+            background: rgba(255, 255, 255, .94);
+            border: 1px solid rgba(214, 177, 92, .25);
+            box-shadow: 0 30px 60px -20px rgba(5, 16, 33, .35);
+            animation: fadeInUp .25s cubic-bezier(.22, 1, .36, 1) both;
+        }
+        #page-loader .loader-label {
+            font-size: .7rem; letter-spacing: .16em; text-transform: uppercase;
+            color: var(--text-muted); font-weight: 700;
+        }
+
+        /* ── 4. Skeleton shimmer ── */
+        .skeleton {
+            position: relative; overflow: hidden;
+            background: #ece5d8; border-radius: 8px;
+        }
+        .skeleton::after {
+            content: ''; position: absolute; inset: 0;
+            transform: translateX(-100%);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .75), transparent);
+            animation: skeleton-shimmer 1.25s infinite;
+        }
+        @keyframes skeleton-shimmer { 100% { transform: translateX(100%); } }
+
+        /* ── 5. Button loading state ── */
+        .btn-primary.is-loading,
+        .btn-outline.is-loading {
+            pointer-events: none; opacity: .78; cursor: progress;
+        }
+        .btn-primary.is-loading i,
+        .btn-outline.is-loading i { animation: loader-spin .7s linear infinite; }
+
+        /* ── 6. In-modal loading box (for sheet modals) ── */
+        .modal-loading-box {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: .75rem; padding: 3rem 1.5rem; min-height: 220px;
+        }
+        .modal-loading-box p {
+            font-size: .82rem; color: var(--text-muted); font-weight: 500;
+        }
+        .modal-loading-box .hint {
+            font-size: .7rem; color: #b8b0a0;
+        }
+
+        /* ── Reduced motion ── */
+        @media (prefers-reduced-motion: reduce) {
+            .splash-ring, .splash-ring::after, .splash-mark, .spinner, .spinner-sm,
+            .skeleton::after, .btn-primary.is-loading i { animation: none !important; }
+        }
+
+       /* ══════════════════════════════════════════════════════════════════
+   PRINT — SHARED SHELL
+   Only ONE document prints at a time. The body class set by
+   printModalContent() decides which modal is revealed.
+   ══════════════════════════════════════════════════════════════════ */
+@media print {
+    @page {
+        size: letter portrait;
+        margin: 0.55in 0.6in 0.7in 0.6in;
+    }
+     :root { --print-h: 9.5in; }
+    html, body {
+        width: auto !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        overflow: visible !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Hide absolutely everything … */
+    body * { visibility: hidden !important; }
+
+    /* … then reveal ONLY the modal that is being printed. */
+    body.print-revision #revisionSheetModal,
+    body.print-revision #revisionSheetModal *,
+    body.print-recommendation #recommendationSheetModal,
+    body.print-recommendation #recommendationSheetModal *,
+    body.print-approval #approvalSheetModal,
+    body.print-approval #approvalSheetModal * {
+        visibility: visible !important;
+    }
+
+    /* Pull the active modal into normal flow at the top-left. */
+    body.print-revision #revisionSheetModal,
+    body.print-recommendation #recommendationSheetModal,
+    body.print-approval #approvalSheetModal {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: auto !important;
+        bottom: auto !important;
+        width: 100% !important;
+        height: auto !important;
+        max-height: var(--print-h) !important; 
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        display: block !important;
+        overflow: hidden !important;  
+        z-index: 1 !important;
+    }
+
+    /* Make absolutely sure the two inactive modals never print. */
+    body.print-revision #recommendationSheetModal,
+    body.print-revision #approvalSheetModal,
+    body.print-recommendation #revisionSheetModal,
+    body.print-recommendation #approvalSheetModal,
+    body.print-approval #revisionSheetModal,
+    body.print-approval #recommendationSheetModal {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
+        .desktop-sidebar,
+    .mobile-bottom-nav,
+    #toast,
+    #app-splash,
+    #route-progress,
+    #page-loader,
+    main > .section-container {
+        display: none !important;   /* remove from layout, not just hide */
+    }
+    body { min-height: 0 !important; }
+    main {
+        margin: 0 !important;
+        padding: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    /* Never let a table row break across the page. */
+    tr, td, th, .approval-signature, .approval-panel-grid {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+    }
+
+    /* Print footer text supplied by the print-modal JS */
+    .print-footer {
+        display: block !important;
+        position: fixed;
+        bottom: 0.22in;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-family: 'Times New Roman', serif;
+        font-size: 8.5pt;
+        color: #7a6a4a;
+        letter-spacing: 0.04em;
+        padding-top: 0.08in;
+        border-top: 1px solid #d9cda6;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PRINT — REVISION SHEET  (1 page, letter)
+   ══════════════════════════════════════════════════════════════════ */
+@media print {
+    body.print-revision #revisionSheetModal .modal-box {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        animation: none !important;
+        background: #fff !important;
+        font-family: 'Times New Roman', serif !important;
+        color: #1a1a1a !important;
+    }
+
+    /* Header image */
+    body.print-revision #revisionSheetModal .text-center.mb-4 {
+        margin: 0 0 0.15in !important;
+        text-align: center !important;
+    }
+    body.print-revision #revisionSheetModal .text-center.mb-4 img {
+        display: block !important;
+        margin: 0 auto !important;
+        width: auto !important;
+        max-width: 6.2in !important;
+        max-height: 0.85in !important;
+        object-fit: contain !important;
+        filter: grayscale(0) !important;
+    }
+
+    /* Document title */
+    body.print-revision #revisionSheetModal h2 {
+        font-family: 'Times New Roman', serif !important;
+        font-size: 17pt !important;
+        font-weight: 700 !important;
+        line-height: 1 !important;
+        margin: 0.08in 0 0.02in !important;
+        letter-spacing: 0.22em !important;
+        text-align: center !important;
+        color: #0a1428 !important;
+    }
+    /* Under-title accent bar */
+    body.print-revision #revisionSheetModal h2::after {
+        content: '' !important;
+        display: block !important;
+        width: 1.6in !important;
+        height: 2px !important;
+        background: #b88d3a !important;
+        margin: 0.08in auto 0.16in !important;
+    }
+
+    /* Serial number pill under the title */
+    body.print-revision #revisionSheetModal .print-serial {
+        display: block !important;
+        text-align: center !important;
+        font-family: 'Courier New', monospace !important;
+        font-size: 9pt !important;
+        letter-spacing: 0.08em !important;
+        color: #8b6914 !important;
+        margin: 0 0 0.18in !important;
+    }
+
+    /* Main table */
+    body.print-revision #revisionSheetContent {
+        font-family: 'Times New Roman', serif !important;
+        font-size: 9.5pt !important;
+        line-height: 1.35 !important;
+        border: 1.5px solid #8b6914 !important;
+        border-radius: 0 !important;
+        overflow: visible !important;
+        background: #fff !important;
+    }
+    body.print-revision #revisionSheetContent > table,
+    body.print-revision #revisionSheetContent table {
+        font-size: 9.5pt !important;
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+    body.print-revision #revisionSheetContent td,
+    body.print-revision #revisionSheetContent th {
+        padding: 0.05in 0.09in !important;
+        line-height: 1.32 !important;
+        vertical-align: top !important;
+        border: 1px solid #8b6914 !important;
+    }
+    body.print-revision #revisionSheetContent thead th,
+    body.print-revision #revisionSheetContent tr.bg-\[\#faf8f4\] th {
+        background: #f3ead1 !important;
+        color: #0a1428 !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        font-size: 8pt !important;
+        letter-spacing: 0.06em !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    body.print-revision #revisionSheetContent .font-bold.text-xs.uppercase.tracking-wider {
+        font-size: 8pt !important;
+        font-weight: 700 !important;
+        color: #5b6375 !important;
+        letter-spacing: 0.07em !important;
+        text-transform: uppercase !important;
+    }
+    body.print-revision #revisionSheetContent .badge {
+        display: inline-block !important;
+        font-size: 7.5pt !important;
+        font-weight: 700 !important;
+        padding: 1px 7px !important;
+        border-radius: 999px !important;
+        border: 1px solid currentColor !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    body.print-revision #revisionSheetContent .badge-green {
+        background: #e6f4ea !important;
+        color: #1e6b3a !important;
+    }
+    body.print-revision #revisionSheetContent .badge-amber {
+        background: #fef7e6 !important;
+        color: #8a5d0b !important;
+    }
+    body.print-revision #revisionSheetContent p {
+        margin: 0 !important;
+    }
+    body.print-revision #revisionSheetContent .whitespace-pre-line {
+        white-space: pre-line !important;
+        font-size: 9.5pt !important;
+        line-height: 1.4 !important;
+    }
+
+    /* Hide interactive controls */
+    body.print-revision #revisionSheetModal .btn-outline,
+    body.print-revision #revisionSheetModal .btn-primary,
+    body.print-revision #revisionSheetModal .btn-ghost,
+    body.print-revision #revisionSheetModal .flex.justify-end {
+        display: none !important;
+    }
+
+    /* Approved-by signature line spans page nicely */
+    body.print-revision #sheetApprovedBy {
+        display: inline-block !important;
+        min-width: 2.6in !important;
+        border-bottom: 1px solid #333 !important;
+        font-weight: 700 !important;
+        color: #0a1428 !important;
+        padding: 0 0.06in 0.02in !important;
+    }
+
+    /* Force single-page if content is small */
+    body.print-revision #revisionSheetModal { page-break-after: avoid !important; }
+    body.print-revision #revisionSheetContent { page-break-inside: avoid !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PRINT — RECOMMENDATION SHEET  (1 page, letter)
+   ══════════════════════════════════════════════════════════════════ */
+@media print {
+    body.print-recommendation #recommendationSheetModal .modal-box {
+         box-sizing: border-box !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: var(--print-h) !important;
+        height: var(--print-h) !important;
+        max-height: var(--print-h) !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        animation: none !important;
+        background: #fff !important;
+        display: block !important;
+        font-family: 'Times New Roman', serif !important;
+        color: #1a1a1a !important;
+    }
+    body.print-recommendation #recommendationSheetModal br { display: none !important; }
+
+    /* Paper document becomes full page */
+    body.print-recommendation #recommendationSheetModal .recommendation-document {
+         box-sizing: border-box !important;
+        width: 100% !important;
+        min-height: var(--print-h) !important;
+        height: var(--print-h) !important;
+        max-height: var(--print-h) !important;
+        margin: 0 !important;
+        padding: 0.55in 0.65in 0.45in !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: #fff !important;
         display: flex !important;
         flex-direction: column !important;
-        justify-content: space-between !important;
+        overflow: hidden !important;
+        text-align: center !important;
     }
-    #recommendationSheetModal .modal-box {
+
+    /* Header image */
+    body.print-recommendation .recommendation-document .rec-header-image {
+        margin: 0 0 0.22in !important;
+        text-align: center !important;
+    }
+    body.print-recommendation .recommendation-document .rec-header-image img {
+        display: block !important;
+        margin: 0 auto !important;
+        width: auto !important;
+        max-width: 5.9in !important;
+        max-height: 0.85in !important;
+        object-fit: contain !important;
+    }
+
+    /* Title */
+    body.print-recommendation .recommendation-document .rec-title {
+        font-family: 'Times New Roman', serif !important;
+        font-size: 18pt !important;
+        font-weight: 700 !important;
+        line-height: 1 !important;
+        letter-spacing: 0.22em !important;
+        text-align: center !important;
+        color: #0a1428 !important;
+        border-bottom: 2px solid #0a1428 !important;
+        padding-bottom: 0.08in !important;
+        margin: 0 auto 0.06in !important;
+        max-width: 90% !important;
+    }
+
+    /* Serial */
+    body.print-recommendation .recommendation-document .rec-serial {
+        display: block !important;
+        text-align: center !important;
+        font-family: 'Courier New', monospace !important;
+        font-size: 9pt !important;
+        letter-spacing: 0.1em !important;
+        color: #8b6914 !important;
+        margin: 0 0 0.3in !important;
+    }
+
+    /* Body */
+    body.print-recommendation #recommendationSheetContent {
+        flex: 1 1 auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
         padding: 0 !important;
-        max-width: 100% !important;
-        border: none !important;
+        margin: 0 auto !important;
+        border: 0 !important;
+        max-width: 6.4in !important;
+        font-family: 'Times New Roman', serif !important;
+        overflow: visible !important;
+    }
+    body.print-recommendation #recommendationSheetContent p {
+        font-size: 12pt !important;
+        line-height: 1.75 !important;
+        margin: 0 0 0.16in !important;
+        text-align: center !important;
+        color: #1a1a1a !important;
+    }
+    body.print-recommendation #recommendationSheetContent p strong {
+        font-weight: 700 !important;
+    }
+
+    /* Capstone title — italic serif with dividing rules */
+    body.print-recommendation #recommendationTitle {
+        font-family: 'Times New Roman', serif !important;
+        font-size: 15.5pt !important;
+        font-weight: 700 !important;
+        font-style: italic !important;
+        line-height: 1.32 !important;
+        letter-spacing: 0.01em !important;
+        max-width: 6in !important;
+        margin: 0.14in auto 0.2in !important;
+        padding: 0.1in 0 !important;
+        color: #0a1428 !important;
+    }
+    body.print-recommendation #recommendationTitle::before,
+    body.print-recommendation #recommendationTitle::after {
+        content: '' !important;
+        display: block !important;
+        width: 0.75in !important;
+        height: 1px !important;
+        background: #d9cda6 !important;
+        margin: 0.1in auto !important;
+    }
+
+    /* Members */
+    body.print-recommendation #recommendationProponents {
+        font-size: 12pt !important;
+        line-height: 1.6 !important;
+        font-weight: 700 !important;
+        color: #0a1428 !important;
+    }
+
+    /* Adviser signature */
+    body.print-recommendation .recommendation-document .rec-signature {
+        margin-top: auto !important;
+        margin-bottom: 0.35in !important;
+        padding-top: 0.35in !important;
+        text-align: center !important;
+        min-width: 0 !important;
+    }
+    body.print-recommendation .recommendation-document .rec-sig-name {
+        display: inline-block !important;
+        min-width: 3in !important;
+        padding: 0 0.1in 0.04in !important;
+        border-bottom: 1px solid #222 !important;
+        font-size: 12pt !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.04em !important;
+        color: #0a1428 !important;
+    }
+    body.print-recommendation .recommendation-document .rec-sig-label {
+        display: block !important;
+        margin-top: 0.06in !important;
+        font-size: 9pt !important;
+        letter-spacing: 0.14em !important;
+        text-transform: uppercase !important;
+        color: #5b6375 !important;
+    }
+
+    /* Footer: date + group */
+    body.print-recommendation .recommendation-document .rec-footer {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: flex-end !important;
+        gap: 1in !important;
+        margin-top: 0 !important;
+        padding-top: 0.12in !important;
+        border-top: 1px solid #e2dacf !important;
+    }
+    body.print-recommendation .recommendation-document .rec-footer-block {
+        text-align: center !important;
+        min-width: 1.4in !important;
+    }
+    body.print-recommendation .recommendation-document .rec-footer-value {
+        font-size: 10pt !important;
+        font-weight: 700 !important;
+        color: #171e2c !important;
+    }
+    body.print-recommendation .recommendation-document .rec-footer-label {
+        font-size: 8.5pt !important;
+        letter-spacing: 0.12em !important;
+        text-transform: uppercase !important;
+        color: #9a9385 !important;
+        margin-top: 0.03in !important;
+    }
+
+    /* Hide interactive controls */
+    body.print-recommendation #recommendationSheetModal .btn-outline,
+    body.print-recommendation #recommendationSheetModal .btn-primary,
+    body.print-recommendation #recommendationSheetModal .btn-ghost,
+    body.print-recommendation #recommendationSheetModal .flex.justify-end {
+        display: none !important;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PRINT — APPROVAL SHEET  (1 page, letter)
+   ══════════════════════════════════════════════════════════════════ */
+@media print {
+        body.print-approval #approvalSheetModal .approval-sheet-modal-box {
+        display: block !important;
+        box-sizing: border-box !important;
+        width: 100% !important;
+        max-width: none !important;
+        height: auto !important;
+        max-height: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        border: 0 !important;
+        border-radius: 0 !important;
         box-shadow: none !important;
+        animation: none !important;
+        background: #fff !important;
+        font-family: 'Times New Roman', serif !important;
+        color: #1a1a1a !important;
+    }
+
+    /* Header image */
+    body.print-approval #approvalSheetModal .approval-header-image {
+        text-align: center !important;
+        margin: 0 0 0.05in !important;
+    }
+    body.print-approval #approvalSheetModal .approval-header-image img {
+        display: block !important;
+        margin: 0 auto !important;
+        width: auto !important;
+        max-width: 6.2in !important;
+        max-height: 0.85in !important;
+        object-fit: contain !important;
+    }
+
+    /* Title */
+    body.print-approval #approvalSheetHeading {
+        font-family: 'Times New Roman', serif !important;
+        font-size: 17pt !important;
+        line-height: 1 !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.24em !important;
+        margin: 0.08in 0 0.02in !important;
+        text-align: center !important;
+        color: #0a1428 !important;
+    }
+    body.print-approval #approvalSheetHeading::after {
+        content: '' !important;
+        display: block !important;
+        width: 1.8in !important;
+        height: 2px !important;
+        background: #b88d3a !important;
+        margin: 0.08in auto 0.14in !important;
+    }
+
+    /* Serial under the title */
+    body.print-approval #approvalSheetModal .print-serial {
+        display: block !important;
+        text-align: center !important;
+        font-family: 'Courier New', monospace !important;
+        font-size: 9pt !important;
+        letter-spacing: 0.08em !important;
+        color: #8b6914 !important;
+        margin: 0 0 0.14in !important;
+    }
+
+    /* Content */
+    body.print-approval #approvalSheetContent {
+        border: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow: visible !important;
+        flex: 1 1 auto !important;
+    }
+    body.print-approval .approval-sheet-doc {
+        font-family: 'Times New Roman', serif !important;
+        line-height: 1.28 !important;
+        font-size: 10pt !important;
+        color: #1a1a1a !important;
+    }
+    body.print-approval .approval-intro {
+        font-size: 10.5pt !important;
+        margin: 0 0 0.06in !important;
+        text-align: center !important;
+        color: #1a1a1a !important;
+    }
+    body.print-approval .approval-title {
+        font-size: 12.5pt !important;
+        font-weight: 700 !important;
+        line-height: 1.2 !important;
+        margin: 0 auto 0.14in !important;
+        max-width: 6.1in !important;
+        padding: 0.06in 0 !important;
+        border-top: 1px solid #d9cda6 !important;
+        border-bottom: 1px solid #d9cda6 !important;
+        text-align: center !important;
+        text-transform: uppercase !important;
+        color: #0a1428 !important;
+        letter-spacing: 0.02em !important;
+    }
+    body.print-approval .approval-body {
+        font-size: 10.5pt !important;
+        line-height: 1.5 !important;
+        max-width: 6.4in !important;
+        margin: 0 auto 0.2in !important;
+        text-align: center !important;
+        color: #1a1a1a !important;
+    }
+
+    /* Signature blocks */
+    body.print-approval .approval-signature {
+        margin: 0 auto 0.16in !important;
+        text-align: center !important;
+    }
+    body.print-approval .approval-signature .approval-sig-line {
+        display: inline-block !important;
+        min-width: 2.55in !important;
+        border-bottom: 1px solid #222 !important;
+        font-size: 10pt !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        line-height: 1.05 !important;
+        padding: 0 0.06in 0.03in !important;
+        margin-bottom: 0.04in !important;
+        color: #0a1428 !important;
+    }
+    body.print-approval .approval-signature .approval-sig-role {
+        font-size: 8.5pt !important;
+        line-height: 1 !important;
+        color: #5b6375 !important;
+        letter-spacing: 0.06em !important;
+        text-transform: uppercase !important;
+    }
+
+    /* Panel of examiners grid */
+    body.print-approval .approval-panel-heading {
+        font-size: 10.5pt !important;
+        line-height: 1 !important;
+        margin: 0.05in 0 0.13in !important;
+        text-align: center !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.06em !important;
+        text-transform: uppercase !important;
+        color: #0a1428 !important;
+    }
+    body.print-approval .approval-panel-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 0.22in 0.55in !important;
+        max-width: 6in !important;
+        margin: 0 auto 0.16in !important;
+    }
+    body.print-approval .approval-panel-grid .approval-signature { margin: 0 !important; }
+    body.print-approval .approval-panel-grid .approval-sig-line {
+        width: 100% !important;
+        min-width: 0 !important;
+        font-size: 9.5pt !important;
+    }
+
+    /* Accepted / Approved statement */
+    body.print-approval .approval-accepted {
+        font-size: 10pt !important;
+        line-height: 1.4 !important;
+        max-width: 6.2in !important;
+        margin: 0 auto 0.16in !important;
+        text-align: center !important;
+        color: #1a1a1a !important;
+    }
+    body.print-approval .approval-accepted strong { font-weight: 700 !important; }
+
+    /* Oral exam result line */
+    body.print-approval .approval-oral-results {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 0.06in !important;
+        font-size: 10pt !important;
+        line-height: 1.15 !important;
+        margin: 0 0 0.14in !important;
+    }
+    body.print-approval .approval-oral-results .oral-label {
+        margin-right: 0.35rem !important;
+        color: #1a1a1a !important;
+    }
+    body.print-approval .approval-oral-results .oral-value {
+        border-bottom: 1px solid #222 !important;
+        font-weight: 700 !important;
+        padding: 0 0.1in 0.02in !important;
+        min-width: 1.5in !important;
+        display: inline-block !important;
+        text-align: center !important;
+        color: #0a1428 !important;
+    }
+
+    /* Approved by line */
+    body.print-approval .approval-approved-label {
+        font-size: 10pt !important;
+        line-height: 1 !important;
+        margin: 0 0 0.05in !important;
+        text-align: center !important;
+        color: #1a1a1a !important;
+    }
+
+    /* President's name — final signature */
+    body.print-approval .approval-signature:last-of-type .approval-sig-line {
+        min-width: 2.9in !important;
+        font-size: 10.5pt !important;
+        letter-spacing: 0.03em !important;
+    }
+
+    /* Hide interactive controls */
+    body.print-approval #approvalSheetModal button,
+    body.print-approval #approvalSheetModal .btn-outline,
+    body.print-approval #approvalSheetModal .btn-primary,
+    body.print-approval #approvalSheetModal .btn-ghost,
+    body.print-approval #approvalSheetModal .flex.justify-end {
+        display: none !important;
     }
 }
     </style>
 </head>
 <body class="bg-[#f8f6f0] text-[#171e2c]">
+
+    <!-- ══════════════ FIRST-PAINT SPLASH ══════════════ -->
+    <div id="app-splash" role="status" aria-live="polite" aria-label="Loading Capstone Tracker">
+        <div class="splash-inner">
+            <div class="splash-logo">
+                <div class="splash-ring"></div>
+                <div class="splash-mark"><i class="fas fa-graduation-cap"></i></div>
+            </div>
+            <h1 class="splash-title">Capstone Tracker</h1>
+            <p class="splash-sub">Student Portal</p>
+            <div class="splash-bar"><span id="splash_bar_fill"></span></div>
+            <p class="splash-status" id="splash_status">Initializing workspace…</p>
+        </div>
+    </div>
+
+    <!-- ══════════════ TOP ROUTE PROGRESS BAR ══════════════ -->
+    <div id="route-progress" aria-hidden="true"><div id="route-progress-fill"></div></div>
+
+    <!-- ══════════════ OVERLAY LOADER ══════════════ -->
+    <div id="page-loader" role="status" aria-live="polite">
+        <div class="loader-box">
+            <div class="spinner"></div>
+            <span class="loader-label">Loading…</span>
+        </div>
+    </div>
 
     <!-- ═══════════════ TOAST ═══════════════ -->
     <div id="toast" class="toast-container">
@@ -1259,7 +2255,7 @@
                     <i class="fa-regular fa-file-lines w-4"></i> <span>Certificates</span>
                 </a>
                 <a href="#" data-section="revisions" class="nav-link flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[rgba(255,255,255,0.65)]">
-                    <i class="fas fa-sync-alt w-4"></i> <span>Revisions & Feedback</span>
+                    <i class="fas fa-sync-alt w-4"></i> <span>Revisions </span>
                 </a>
             </nav>
         </div>
@@ -1484,7 +2480,7 @@
                                             @if($remarks->deduction_points)
                                             <span class="remark-deduction">
                                                 <i class="fa-solid fa-minus"></i> {{ $remarks->deduction_points }} pts deduction
-                                            </span>
+                                            </span> 
                                             @endif
                                             <span class="remark-attendance">
                                                 <i class="fa-solid fa-user-group"></i>
@@ -2108,9 +3104,17 @@
         <h2 class="text-center text-2xl font-bold tracking-widest text-[#0a1428] mb-4" style="font-family:'Cormorant Garamond',serif;">
             REVISION SHEET
         </h2>
-
+        <p class="print-serial text-center text-xs tracking-widest mt-1" id="revisionSheetSerial"
+   style="font-family:'Courier New', monospace; color:#8b6914;">&nbsp;</p>
         <!-- Main Table (static placeholders, populated by JS) -->
-        <div id="revisionSheetContent" class="text-[#0a1428] text-sm border border-[#b88d3a] rounded-lg overflow-hidden">
+        <div id="revisionSheetContent" class="text-[#0a1428] text-sm border border-[#b88d3a] rounded-lg overflow-hidden relative">
+
+            <!-- In-modal loading overlay (only inside the modal) -->
+            <div id="revisionSheetLoading" class="modal-loading-box absolute inset-0 bg-white/90 backdrop-blur-sm z-10 rounded-lg">
+                <div class="spinner-sm"></div>
+                <p>Loading revision sheet…</p>
+                <span class="hint">Fetching panel feedback and group details</span>
+            </div>
 
             <table class="w-full border-collapse text-sm">
                 <!-- Proponents & Project -->
@@ -2220,121 +3224,149 @@
     </div>
 </div>
 
-<!-- ── RECOMMENDATION SHEET MODAL ── -->
+<!-- ── RECOMMENDATION SHEET MODAL (Formal Document Style) ── -->
 <div id="recommendationSheetModal" class="modal-overlay">
-    <div class="modal-box wide recommendation-sheet-modal" style="max-width: 52rem; padding: 1.5rem;">
-        <!-- Header Image -->
-        <div class="text-center mb-4">
-            <img src="{{ asset('pictures/mccheader.jpg') }}" alt="MCC Header" class="w-full max-h-24 object-contain">
-        </div>
-        <br>
-        <br>
-        <br>
-        <!-- Title -->
-        <h2 class="text-center text-2xl font-bold tracking-widest text-[#0a1428] mb-4" style="font-family:'Cormorant Garamond',serif;">
-            <b>RECOMMENDATION SHEET</b>
-        </h2>
-    
-        <br>
-        <br>
-        <br>
+    <div class="modal-box wide recommendation-sheet-modal" style="max-width: 52rem;">
 
-        <!-- Main Content - full height, no box -->
-        <div id="recommendationSheetContent" class="recommendation-content">
-            <!-- This Capstone Project 1 hereto entitled -->
-            <p class="text-center text-sm">This Capstone Project hereto entitled:</p>
-            <p class="text-center text-xl font-bold mt-1" id="recommendationTitle" style="font-family:'Cormorant Garamond',serif;">—</p>
-        <br>
-        <br>
-        <br>
-        <br>
-        <br>
+        <!-- Paper document -->
+        <div class="recommendation-document">
 
-            <p class="text-center text-sm mt-3">prepared and submitted by</p>
-            <p class="text-center text-sm mt-3" id="recommendationProponents">—</p>
-            <p class="text-center text-sm mt-3">
-                in partial fulfillment of the requirements for the degree of
-                <strong>Bachelor of Science in Information Technology</strong>
-                has been examined, accepted, and recommended for Oral Presentation.
-            </p>
-
-            <!-- Adviser (pushed to bottom) -->
-            <div class="recommendation-footer">
-                <span class="font-bold text-sm uppercase tracking-wide" id="recommendationAdviser">—</span>
-                <span class="text-xs text-[#5b6375] mt-0.5">Capstone Adviser</span>
+            <!-- Header image -->
+            <div class="rec-header-image">
+                <img src="{{ asset('pictures/mccheader.jpg') }}" alt="MCC Header">
             </div>
-        </div>
+
+            <!-- Title -->
+            <h2 class="rec-title">Recommendation Sheet</h2>
+
+            <!-- Serial number -->
+            <p class="rec-serial" id="recommendationSerial">&nbsp;</p>
+
+            <!-- Body -->
+            <div class="rec-body" id="recommendationSheetContent">
+
+                <!-- In-modal loading overlay -->
+                <div id="recommendationSheetLoading"
+                     class="modal-loading-box absolute inset-0 bg-white/90 backdrop-blur-sm z-10 rounded-lg">
+                    <div class="spinner-sm"></div>
+                    <p>Loading recommendation sheet…</p>
+                    <span class="hint">Fetching project details and proponents</span>
+                </div>
+
+                <p>This <strong>Capstone Project</strong> hereto entitled:</p>
+
+                <p class="rec-capstone-title" id="recommendationTitle">—</p>
+
+                <p>
+                    prepared and submitted by
+                    <span class="rec-members" id="recommendationProponents">—</span>
+                </p>
+
+                <p>
+                    in partial fulfillment of the requirements for the degree of
+                    <strong>Bachelor of Science in Information Technology</strong>
+                    has been examined, accepted, and recommended for Oral Presentation.
+                </p>
+
+                <!-- Adviser signature -->
+                <div class="rec-signature">
+                    <span class="rec-sig-name" id="recommendationAdviser">—</span>
+                    <span class="rec-sig-label">Capstone Adviser</span>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="rec-footer">
+                <div class="rec-footer-block">
+                    <div class="rec-footer-value" id="recommendationDate">
+                        {{ now()->format('F d, Y') }}
+                    </div>
+                    <div class="rec-footer-label">Date Issued</div>
+                </div>
+                <div class="rec-footer-block">
+                    <div class="rec-footer-value" id="recommendationGroup">
+                        {{ $groups->group_name ?? '—' }}
+                    </div>
+                    <div class="rec-footer-label">Group</div>
+                </div>
+            </div>
+
+        </div><!-- /.recommendation-document -->
 
         <!-- Buttons -->
         <div class="flex justify-end gap-2 pt-4 border-t border-[#e2dacf] mt-4">
             <button type="button" onclick="printModalContent('recommendationSheetModal')" class="btn-outline text-xs py-2 px-4">
                 <i class="fas fa-print mr-1"></i> Print
             </button>
-            <button type="button" onclick="closeModal('recommendationSheetModal')" class="btn-primary text-xs py-2 px-4">Close</button>
+            <button type="button" onclick="closeModal('recommendationSheetModal')" class="btn-primary text-xs py-2 px-4">
+                Close
+            </button>
         </div>
+
     </div>
 </div>
 <!-- ═══════════════ APPROVAL SHEET MODAL ═══════════════ -->
 <div id="approvalSheetModal" class="modal-overlay">
-    <div class="modal-box wide" style="max-width: 52rem; padding: 1.5rem;">
+    <div class="modal-box wide approval-sheet-modal-box" style="max-width: 52rem; padding: 1.5rem;">
 
         <!-- Header Image -->
-        <div class="text-center mb-4">
+        <div class="text-center mb-4 approval-header-image">
             <img src="{{ asset('pictures/mccheader.jpg') }}" alt="MCC Header" class="w-full max-h-24 object-contain">
         </div>
 
-        <!-- Title -->
-        <h2 id="approvalSheetHeading" class="text-center text-2xl font-bold tracking-widest text-[#0a1428] mb-4" style="font-family:'Cormorant Garamond',serif;">
-            APPROVAL SHEET
-        </h2>
+        <h2 id="approvalSheetHeading" class="text-center text-2xl font-bold tracking-widest text-[#0a1428] mb-4" style="font-family:'Cormorant Garamond',serif;">APPROVAL SHEET</h2>
+        <p class="print-serial text-center text-xs tracking-widest mt-1" id="approvalSerial"
+   style="font-family:'Courier New', monospace; color:#8b6914;">&nbsp;</p>
 
-        <!-- Main Content -->
-        <div id="approvalSheetContent" class="text-[#0a1428] text-sm border border-[#b88d3a] rounded-lg overflow-hidden">
-    <table class="w-full border-collapse text-sm">
-        <tr>
-            <td class="border border-[#b88d3a] p-2 align-top" style="width:50%;">
-                <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Name of Proponents</p>
-                <ol id="approvalProponents" class="list-decimal list-inside space-y-0.5">
-                    <li class="text-[#5b6375] italic">Loading...</li>
-                </ol>
-            </td>
-            <td class="border border-[#b88d3a] p-2 align-top" style="width:50%;">
-                <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Name of Capstone Project</p>
-                <p id="approvalTitle" class="font-medium">—</p>
-            </td>
-        </tr>
-        <tr>
-            <td colspan="2" class="border border-[#b88d3a] p-2">
-                <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Adviser</p>
-                <p id="approvalAdviser" class="font-medium">—</p>
-            </td>
-        </tr>
-        <tr>
-            <td colspan="2" class="border border-[#b88d3a] p-2">
-                <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Panel of Examiners</p>
-                <ul id="approvalPanelists" class="list-disc list-inside space-y-0.5">
-                    <li class="text-[#5b6375] italic">Loading...</li>
-                </ul>
-            </td>
-        </tr>
-        <tr>
-            <td class="border border-[#b88d3a] p-2 align-top" style="width:50%;">
-                <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Oral Examination Result</p>
-                <p id="approvalOralResult" class="font-semibold text-green-700">—</p>
-            </td>
-            <td class="border border-[#b88d3a] p-2 align-top" style="width:50%;">
-                <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Date of Oral Examination</p>
-                <p id="approvalOralDate" class="font-semibold">—</p>
-            </td>
-        </tr>
-        <tr>
-            <td colspan="2" class="border border-[#b88d3a] p-2">
-                <p class="font-bold text-xs uppercase tracking-wider text-[#5b6375] mb-1">Approved by</p>
-                <p id="approvalPresident" class="text-sm font-semibold mt-1 border-b-2 border-[#b88d3a] inline-block min-w-[200px]">_________________________</p>
-            </td>
-        </tr>
-    </table>
-</div>
+        <div id="approvalSheetContent" class="approval-sheet-doc relative">
+            <!-- In-modal loading overlay -->
+            <div id="approvalSheetLoading" class="modal-loading-box absolute inset-0 bg-white/90 backdrop-blur-sm z-10 rounded-lg">
+                <div class="spinner-sm"></div>
+                <p>Loading approval sheet…</p>
+                <span class="hint">Fetching panel, adviser, and oral exam results</span>
+            </div>
+
+            <p class="approval-intro">This Capstone Project 2 hereto entitled:</p>
+            <p id="approvalTitle" class="approval-title">—</p>
+
+            <p class="approval-body">
+                prepared and submitted by <span id="approvalProponents">—</span>
+                in partial fulfillment of the requirements for the degree of
+                <strong>Bachelor of Science in Information Technology</strong>
+                has been examined, accepted and recommended for Oral Presentation.
+            </p>
+
+            <div class="approval-signature">
+                <span id="approvalAdviser" class="approval-sig-line">—</span>
+                <div class="approval-sig-role">Adviser</div>
+            </div>
+
+            <p class="approval-panel-heading">Panel of Examiners</p>
+            <div id="approvalPanelists" class="approval-panel-grid">
+                <div class="approval-signature"><span class="approval-sig-line">Loading...</span><div class="approval-sig-role">Member</div></div>
+            </div>
+
+            <div id="approvalChairmanBlock" class="approval-signature" style="display:none;">
+                <span id="approvalChairman" class="approval-sig-line">—</span>
+                <div class="approval-sig-role">Chairman, Board of Panels</div>
+            </div>
+
+            <p class="approval-accepted">
+                <strong>ACCEPTED AND APPROVED</strong> in partial fulfillment of the requirements for the degree of
+                <strong>BACHELOR OF SCIENCE IN INFORMATION TECHNOLOGY</strong>.
+            </p>
+
+            <div class="approval-oral-results">
+                <span><span class="oral-label">Oral Examination:</span><span id="approvalOralResult" class="oral-value">—</span></span>
+                <span><span class="oral-label">Date of Oral Examination:</span><span id="approvalOralDate" class="oral-value">—</span></span>
+            </div>
+
+            <p class="approval-approved-label">Approved:</p>
+            <div class="approval-signature">
+                <span id="approvalPresident" class="approval-sig-line">DR. FLORIPIS A. MONTECILLO, Ed.D.</span>
+                <div class="approval-sig-role">School President</div>
+            </div>
+        </div>
 
         <!-- Buttons -->
         <div class="flex justify-end gap-2 pt-4 border-t border-[#e2dacf] mt-4">
@@ -2348,40 +3380,275 @@
 </div>
 
     </main>
+    <div class="print-footer" style="display:none;">
+    Madridejos Community College &nbsp;·&nbsp; Capstone Tracker &nbsp;·&nbsp; Official Document
+</div>
 
     <script>
-        // ── MODAL HELPERS ──
-function openModal(id) {
-    console.log('openModal called with id:', id);
-    const modal = document.getElementById(id);  
-    if (modal) modal.classList.add('active');
-}
-function closeModal(id) {
-    const modal = document.getElementById(id);
-    if (modal) modal.classList.remove('active');
-}
+        // ══════════════════════════════════════════════════════════════
+        // PROFESSIONAL LOADING SYSTEM  — splash · top bar · overlay · skeleton
+        // (matches Teacher Dashboard)
+        // ══════════════════════════════════════════════════════════════
+        (function () {
+            'use strict';
 
-// ── Print Modal Content ──
-function printModalContent(modalId) {
+            /* ---------------- Configuration ---------------- */
+            const SPLASH_MIN_MS  = 750;
+            const SPLASH_MAX_MS  = 4000;
+            const OVERLAY_MIN_MS = 350;
+            const WATCHDOG_MS    = 25000;
+
+            /* ---------------- 1. Splash ---------------- */
+            const splashEl     = document.getElementById('app-splash');
+            const splashFill   = document.getElementById('splash_bar_fill');
+            const splashStatus = document.getElementById('splash_status');
+            const splashStart  = performance.now();
+            const SPLASH_MSGS  = [
+                'Initializing workspace…',
+                'Loading your capstone progress…',
+                'Syncing evaluation records…',
+                'Preparing your dashboard…'
+            ];
+            let splashMsgIdx = 0, splashPct = 6, splashTimer = null, splashDone = false;
+
+            if (splashEl) {
+                if (splashFill) splashFill.style.width = splashPct + '%';
+                splashTimer = setInterval(function () {
+                    splashPct = Math.min(splashPct + Math.random() * 14 + 5, 88);
+                    if (splashFill) splashFill.style.width = splashPct + '%';
+                    splashMsgIdx = (splashMsgIdx + 1) % SPLASH_MSGS.length;
+                    if (splashStatus) splashStatus.textContent = SPLASH_MSGS[splashMsgIdx];
+                }, 450);
+            }
+
+            function hideSplash() {
+                if (!splashEl || splashDone) return;
+                splashDone = true;
+                clearInterval(splashTimer);
+                if (splashFill)   splashFill.style.width = '100%';
+                if (splashStatus) splashStatus.textContent = 'Ready';
+
+                const wait = Math.max(0, SPLASH_MIN_MS - (performance.now() - splashStart));
+                setTimeout(function () {
+                    splashEl.classList.add('is-hidden');
+                    setTimeout(function () { if (splashEl.parentNode) splashEl.remove(); }, 620);
+                }, wait + 100);
+            }
+            window.hideSplash = hideSplash;
+
+            if (document.readyState === 'complete') hideSplash();
+            else window.addEventListener('load', hideSplash);
+            setTimeout(hideSplash, SPLASH_MAX_MS);
+
+            /* ---------------- 2. Top route progress bar ---------------- */
+            const barEl   = document.getElementById('route-progress');
+            const barFill = document.getElementById('route-progress-fill');
+            let barValue = 0, barTimer = null, barActive = false, barRefs = 0;
+
+            function barStart() {
+                if (!barEl || !barFill) return;
+                barRefs++;
+                if (barActive) return;
+                barActive = true;
+                barValue = 10;
+                barEl.classList.add('active');
+                barFill.style.width = '10%';
+                clearInterval(barTimer);
+                barTimer = setInterval(function () {
+                    if (barValue < 92) {
+                        barValue += (92 - barValue) * 0.09;
+                        barFill.style.width = barValue + '%';
+                    }
+                }, 180);
+            }
+
+            function barFinish() {
+                if (!barEl || !barFill) return;
+                barRefs = Math.max(0, barRefs - 1);
+                if (barRefs > 0 || !barActive) return;
+                clearInterval(barTimer);
+                barFill.style.width = '100%';
+                setTimeout(function () {
+                    barEl.classList.remove('active');
+                    barActive = false;
+                    setTimeout(function () { barFill.style.width = '0%'; }, 320);
+                }, 230);
+            }
+
+            /* ---------------- 3. Overlay loader ---------------- */
+            const overlayEl = document.getElementById('page-loader');
+            const overlayLabel = overlayEl ? overlayEl.querySelector('.loader-label') : null;
+            let overlayRefs = 0, overlayTimer = null, overlayShownAt = 0, watchdogTimer = null;
+
+            window.showPageLoader = function (label) {
+                if (!overlayEl) return;
+                overlayRefs++;
+
+                if (label && overlayLabel) overlayLabel.textContent = label;
+                else if (overlayLabel && overlayRefs === 1) overlayLabel.textContent = 'Loading…';
+
+                clearTimeout(overlayTimer);
+                clearTimeout(watchdogTimer);
+
+                if (overlayRefs === 1) {
+                    overlayShownAt = performance.now();
+                    overlayEl.classList.add('active');
+                }
+
+                watchdogTimer = setTimeout(function () {
+                    overlayRefs = 0;
+                    overlayEl.classList.remove('active');
+                }, WATCHDOG_MS);
+
+                barStart();
+            };
+
+            window.hidePageLoader = function (force) {
+                if (!overlayEl) return;
+                overlayRefs = force ? 0 : Math.max(0, overlayRefs - 1);
+                if (overlayRefs > 0) return;
+
+                clearTimeout(watchdogTimer);
+
+                const elapsed = performance.now() - overlayShownAt;
+                const wait = Math.max(0, OVERLAY_MIN_MS - elapsed);
+
+                clearTimeout(overlayTimer);
+                overlayTimer = setTimeout(function () {
+                    if (overlayRefs === 0) overlayEl.classList.remove('active');
+                }, wait);
+
+                barFinish();
+            };
+
+            window.softReload = function (delay) {
+                window.showPageLoader('Refreshing…');
+                setTimeout(function () { window.location.reload(); }, delay || 200);
+            };
+
+            /* ---------------- 4. Fetch instrumentation ---------------- */
+            const nativeFetch = window.fetch ? window.fetch.bind(window) : null;
+            if (nativeFetch) {
+                window.fetch = function (input, init) {
+                    const opts = init || {};
+                    const silent = opts.__silent === true;
+
+                    if (silent) return nativeFetch(input, init);
+
+                    barStart();
+                    return nativeFetch(input, init).then(
+                        function (res) { barFinish(); return res; },
+                        function (err) { barFinish(); throw err; }
+                    );
+                };
+            }
+
+            /* ---------------- 5. Helpers ---------------- */
+            window.setButtonLoading = function (btn, label) {
+                if (!btn) return function () {};
+                if (!btn.dataset.originalHtml) btn.dataset.originalHtml = btn.innerHTML;
+
+                btn.disabled = true;
+                btn.classList.add('is-loading');
+                btn.innerHTML = '<i class="fas fa-circle-notch"></i> ' + (label || 'Processing…');
+
+                return function restore() {
+                    btn.disabled = false;
+                    btn.classList.remove('is-loading');
+                    btn.innerHTML = btn.dataset.originalHtml;
+                };
+            };
+
+            window.skeletonBlock = function (rows) {
+                let html = '<div class="space-y-3">';
+                for (let i = 0; i < (rows || 3); i++) {
+                    html += ''
+                      + '<div class="skeleton" style="height:14px;width:100%;"></div>'
+                      + '<div class="skeleton" style="height:14px;width:' + (60 + (i % 3) * 12) + '%;"></div>';
+                }
+                return html + '</div>';
+            };
+
+            /* ---------------- 6. bfcache restore ---------------- */
+            window.addEventListener('pageshow', function (e) {
+                if (e.persisted) {
+                    hideSplash();
+                    window.hidePageLoader(true);
+                }
+            });
+        })();
+
+        // ── MODAL HELPERS ──
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.add('active');
+        }
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.remove('active');
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        //  PRINT — one document at a time, always a single page.
+        // ══════════════════════════════════════════════════════════════
+        const PRINT_CLASS_MAP = {
+            revisionSheetModal: 'print-revision',
+            recommendationSheetModal: 'print-recommendation',
+            approvalSheetModal: 'print-approval'
+        };
+
+        const PRINTABLE_PX = 9.5 * 96 * 0.9;   // 9.5in minus 10% safety for print-font differences
+const PRINT_WIDTH_PX = 7.5 * 96;       // letter width minus 0.5in margins
+
+window.printModalContent = function (modalId) {
     const modal = document.getElementById(modalId);
     if (!modal) return;
-    // Temporarily remove overlay background for clean print
-    modal.style.background = 'white';
-    modal.style.backdropFilter = 'none';
-    window.print();
-    // Restore after print
-    setTimeout(() => {
-        modal.style.background = '';
-        modal.style.backdropFilter = '';
-    }, 500);
-}
 
-// Click outside to close
-document.addEventListener('click', function (e) {
-    if (e.target.classList.contains('modal-overlay') && e.target.classList.contains('active')) {
-        e.target.classList.remove('active');
+    const printClass = PRINT_CLASS_MAP[modalId];
+    const box = modal.querySelector('.modal-box');
+
+    let previousZoom = '';
+    if (box && printClass !== 'print-recommendation') {
+        previousZoom = box.style.zoom || '';
+        const previousWidth = box.style.width || '';
+
+        // Measure at the width the page will actually print at
+        box.style.zoom = '1';
+        box.style.width = PRINT_WIDTH_PX + 'px';
+        const naturalHeight = box.scrollHeight;
+        box.style.width = previousWidth;
+
+        if (naturalHeight > PRINTABLE_PX) {
+            const scale = Math.max(0.45, PRINTABLE_PX / naturalHeight);
+            box.style.zoom = String(Math.floor(scale * 100) / 100);
+        }
     }
-}); 
+
+    Object.values(PRINT_CLASS_MAP).forEach(c => document.body.classList.remove(c));
+    if (printClass) document.body.classList.add(printClass);
+
+    const cleanup = () => {
+        if (printClass) document.body.classList.remove(printClass);
+        if (box) box.style.zoom = previousZoom;
+        window.removeEventListener('afterprint', cleanup);
+    };
+
+    window.addEventListener('afterprint', cleanup);
+    window.print();
+    setTimeout(cleanup, 2000);
+};
+
+        window.printRevisionSheet = function () {
+            window.printModalContent('revisionSheetModal');
+        };
+
+        // Click outside to close
+        document.addEventListener('click', function (e) {
+            if (e.target.classList.contains('modal-overlay') && e.target.classList.contains('active')) {
+                e.target.classList.remove('active');
+            }
+        });
+
         // ── TOGGLE RUBRIC DETAILS ──
         window.toggleRubricDetails = function(evalId) {
             const container = document.getElementById('rubric-details-' + evalId);
@@ -2498,7 +3765,22 @@ document.addEventListener('click', function (e) {
             showToast('{{ $errors->first() }}', true);
             @endif
 
-            
+            // ── PROFILE FORM SUBMISSION WITH LOADER ──
+            const profileForm = document.getElementById('profileForm');
+            if (profileForm) {
+                profileForm.addEventListener('submit', function () {
+                    window.showPageLoader('Saving profile…');
+                });
+            }
+
+            // ── PASSWORD FORM SUBMISSION WITH LOADER ──
+            const passwordForm = document.getElementById('passwordForm');
+            if (passwordForm) {
+                passwordForm.addEventListener('submit', function () {
+                    window.showPageLoader('Updating password…');
+                });
+            }
+
             // ── PASSWORD TOGGLE ──
             document.querySelectorAll('.password-toggle').forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -2547,280 +3829,274 @@ document.addEventListener('click', function (e) {
         });
 
 
-// ── Print Modal Content ──
-window.printModalContent = function(modalId) {
-    const modal = document.getElementById(modalId);
-    if (!modal) return;
-    // Temporarily remove the modal overlay background for print
-    modal.style.background = 'white';
-    modal.style.backdropFilter = 'none';
-    window.print();
-    // Restore after print
-    setTimeout(() => {
-        modal.style.background = '';
-        modal.style.backdropFilter = '';
-    }, 500);
-};
-window.printRevisionSheet = function() {
-    const content = document.getElementById('revisionSheetContent');
-    if (!content) return;
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <html><head><title>Revision Sheet</title>
-        <style>
-            body { font-family: 'DM Sans', sans-serif; padding: 2rem; background: white; }
-            table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
-            th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
-            th { background: #f5f0e8; }
-            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-            .mt-4 { margin-top: 1rem; }
-            .mb-2 { margin-bottom: 0.5rem; }
-            .text-xs { font-size: 0.7rem; }
-            .text-sm { font-size: 0.85rem; }
-            .font-bold { font-weight: 700; }
-            .uppercase { text-transform: uppercase; }
-            .border-b-2 { border-bottom: 2px solid #b88d3a; }
-            .inline-block { display: inline-block; }
-            .min-w-\[200px\] { min-width: 200px; }
-            .list-decimal { list-style: decimal; padding-left: 1.5rem; }
-            .list-inside { list-style-position: inside; }
-            .space-y-1 > * + * { margin-top: 0.25rem; }
-            .p-2 { padding: 0.5rem; }
-            .p-3 { padding: 0.75rem; }
-            .p-6 { padding: 1.5rem; }
-            .space-y-6 > * + * { margin-top: 1.5rem; }
-            .border { border: 1px solid #e2dacf; }
-            .rounded-lg { border-radius: 0.5rem; }
-            .overflow-hidden { overflow: hidden; }
-            .bg-\[#faf8f4\] { background: #faf8f4; }
-            .bg-\[#faf8f4\] { background: #faf8f4; }
-            .divide-y > * + * { border-top: 1px solid #faf1e0; }
-        </style>
-        </head><body>
-        ${content.innerHTML}
-        </body></html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-};
-// ── Open Approval Sheet Modal ──
-// ── Open Approval Sheet Modal ──
-window.openApprovalSheet = function(groupId, documentType = 'approval') {
-    const modal = document.getElementById('approvalSheetModal');
-    const heading = document.getElementById('approvalSheetHeading');
-    const statement = document.getElementById('approvalSheetStatement');
-    const isRecommendation = documentType === 'recommendation';
-    const title = document.getElementById('approvalTitle');
-    const proponents = document.getElementById('approvalProponents');
-    const adviser = document.getElementById('approvalAdviser');
-    const panelists = document.getElementById('approvalPanelists');
-    const oralResult = document.getElementById('approvalOralResult');
-    const oralDate = document.getElementById('approvalOralDate');
-    const president = document.getElementById('approvalPresident');
+        // ── Open Approval Sheet Modal ──
+        // Loading is scoped INSIDE the modal — no global overlay.
+        window.openApprovalSheet = function(groupId) {
+            const serialEl = document.getElementById('approvalSerial');
+            const modal = document.getElementById('approvalSheetModal');
+            const heading = document.getElementById('approvalSheetHeading');
+            const title = document.getElementById('approvalTitle');
+            const proponents = document.getElementById('approvalProponents');
+            const adviser = document.getElementById('approvalAdviser');
+            const panelists = document.getElementById('approvalPanelists');
+            const chairmanBlock = document.getElementById('approvalChairmanBlock');
+            const chairman = document.getElementById('approvalChairman');
+            const oralResult = document.getElementById('approvalOralResult');
+            const oralDate = document.getElementById('approvalOralDate');
+            const president = document.getElementById('approvalPresident');
+            const loadingBox = document.getElementById('approvalSheetLoading');
+            if (!modal || !heading || !title || !proponents || !adviser || !panelists) return;
 
-    // Reset loading states
-    heading.textContent = isRecommendation ? 'RECOMMENDATION SHEET' : 'APPROVAL SHEET';
-    statement.innerHTML = isRecommendation
-        ? 'has been examined, accepted and recommended for the next capstone stage.'
-        : 'in partial fulfillment of the requirements for the degree of <strong>Bachelor of Science in Information Technology</strong> has been examined, accepted and recommended for Oral Presentation.';
-    title.textContent = '—';
-    proponents.innerHTML = '<li class="text-[#5b6375] italic">Loading...</li>';
-    adviser.textContent = '—';
-    panelists.innerHTML = '<li class="text-[#5b6375] italic">Loading...</li>';
-    oralResult.textContent = '—';
-    oralDate.textContent = '—';
-    president.textContent = '_________________________';
+            const escapeHtml = value => String(value ?? '')
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+            const personName = person => typeof person === 'string' ? person : (person?.name || 'Panelist');
+            const joinNames = names => {
+                const list = (names || []).map(personName).filter(Boolean);
+                if (!list.length) return '—';
+                if (list.length === 1) return list[0];
+                if (list.length === 2) return `${list[0]} and ${list[1]}`;
+                return `${list.slice(0, -1).join(', ')}, and ${list[list.length - 1]}`;
+            };
 
-    openModal('approvalSheetModal');
-
-    fetch(`/student/get-approval-sheet/${groupId}`)
-        .then(async response => {
-            if (!response.ok) {
-                const text = await response.text();
-                throw new Error(`Server returned ${response.status}: ${text.slice(0,100)}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            title.textContent = data.capstone_title || '—';
-
-            if (data.members && data.members.length) {
-                proponents.innerHTML = data.members.map(m => `<li>${m}</li>`).join('');
-            } else {
-                proponents.innerHTML = '<li class="text-[#5b6375] italic">No members</li>';
-            }
-
-            adviser.textContent = data.adviser || '—';
-
-            // ✅ Panelists: show only name (no role/date)
-            if (data.panelists && data.panelists.length) {
-                panelists.innerHTML = data.panelists.map(p => `<li>${p.name}</li>`).join('');
-            } else {
-                panelists.innerHTML = '<li class="text-[#5b6375] italic">No panelists assigned</li>';
-            }
-
-            oralResult.textContent = data.oral_exam_result || '—';
-            oralDate.textContent = data.oral_exam_date || '—';
-            president.textContent = data.school_president || 'DR. FLORIPIS A. MONTECILLO, Ed.D.';
-        })
-        .catch(err => {
-            console.error('Approval sheet error:', err);
-            proponents.innerHTML = `<li class="text-red-500">${err.message}</li>`;
+            heading.textContent = 'APPROVAL SHEET';
+            title.textContent = '—';
+            proponents.textContent = 'Loading...';
+            adviser.textContent = '—';
+            panelists.innerHTML = '<div class="approval-signature"><span class="approval-sig-line">Loading...</span><div class="approval-sig-role">Member</div></div>';
+            if (chairmanBlock) chairmanBlock.style.display = 'none';
+            if (chairman) chairman.textContent = '—';
+            oralResult.textContent = '—';
+            oralDate.textContent = '—';
             president.textContent = 'DR. FLORIPIS A. MONTECILLO, Ed.D.';
-        });
-};
+            if (serialEl) serialEl.textContent = ' ';
 
-// ── Open Recommendation Sheet Modal ──
-window.openRecommendationSheet = function(groupId) {
-    const modal = document.getElementById('recommendationSheetModal');
-    const title = document.getElementById('recommendationTitle');
-    const proponents = document.getElementById('recommendationProponents');
-    const adviser = document.getElementById('recommendationAdviser');
+            // Show in-modal loading spinner
+            if (loadingBox) loadingBox.style.display = 'flex';
 
-    // Reset loading states
-    title.textContent = '—';
-    proponents.textContent = 'Loading...';
-    adviser.textContent = '—';
+            closeModal('recommendationSheetModal');
+            openModal('approvalSheetModal');
 
-    openModal('recommendationSheetModal');
+            fetch(`/student/get-approval-sheet/${groupId}`, { __silent: true })
+                .then(async response => {
+                    if (!response.ok) {
+                        const text = await response.text();
+                        throw new Error(`Server returned ${response.status}: ${text.slice(0, 100)}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    title.textContent = data.capstone_title || '—';
+                    proponents.textContent = joinNames(data.members);
+                    adviser.textContent = data.adviser || '—';
 
-    fetch(`/student/get-recommendation-sheet/${groupId}`)
-        .then(response => response.json())
-        .then(data => {
-            title.textContent = data.capstone_title || '—';
+                    const allPanelists = Array.isArray(data.panelists) ? data.panelists : [];
+                    const chairmanEntry = allPanelists.find(p => /chair/i.test(String(p?.role || p?.type || ''))) ||
+                        (data.chairman ? { name: data.chairman } : null);
+                    const memberPanelists = chairmanEntry
+                        ? allPanelists.filter(p => p !== chairmanEntry)
+                        : allPanelists;
 
-            // Format members as comma-separated: "Name1, Name2, and Name3"
-            if (data.members && data.members.length) {
-                if (data.members.length === 1) {
-                    proponents.textContent = data.members[0];
-                } else if (data.members.length === 2) {
-                    proponents.textContent = `${data.members[0]} and ${data.members[1]}`;
-                } else {
-                    const names = data.members.slice(0, -1).join(', ');
-                    proponents.textContent = `${names}, and ${data.members[data.members.length - 1]}`;
-                }
-            } else {
-                proponents.textContent = '—';
+                    panelists.innerHTML = memberPanelists.length
+                        ? memberPanelists.map(p => `<div class="approval-signature"><span class="approval-sig-line">${escapeHtml(personName(p))}</span><div class="approval-sig-role">Member</div></div>`).join('')
+                        : '<div class="approval-signature"><span class="approval-sig-line">No panelists assigned</span><div class="approval-sig-role">Member</div></div>';
+
+                    if (chairmanEntry && chairmanBlock && chairman) {
+                        chairmanBlock.style.display = 'block';
+                        chairman.textContent = personName(chairmanEntry);
+                    }
+                    oralResult.textContent = data.oral_exam_result || '—';
+                    oralDate.textContent = data.oral_exam_date || '—';
+                    president.textContent = data.school_president || 'DR. FLORIPIS A. MONTECILLO, Ed.D.';
+                    if (serialEl) {
+                        serialEl.textContent = data.serial_number
+                            ? 'Serial No. ' + data.serial_number
+                            : ' ';
+                    }
+                })
+                .catch(err => {
+                    console.error('Approval sheet error:', err);
+                    proponents.textContent = 'Unable to load approval data';
+                    panelists.innerHTML = `<div class="approval-signature"><span class="approval-sig-line">Error loading panel</span><div class="approval-sig-role">${escapeHtml(err.message)}</div></div>`;
+                })
+                .finally(() => {
+                    if (loadingBox) loadingBox.style.display = 'none';
+                });
+        };
+
+        // ── Open Recommendation Sheet Modal ──
+        window.openRecommendationSheet = function(groupId) {
+                const dateEl  = document.getElementById('recommendationDate');
+                const modal        = document.getElementById('recommendationSheetModal');
+                const title        = document.getElementById('recommendationTitle');
+                const proponents   = document.getElementById('recommendationProponents');
+                const adviser      = document.getElementById('recommendationAdviser');
+                const serialEl     = document.getElementById('recommendationSerial');
+                const loadingBox   = document.getElementById('recommendationSheetLoading');
+
+                title.textContent      = '—';
+                proponents.textContent = 'Loading...';
+                adviser.textContent    = '—';
+                if (serialEl) serialEl.textContent = ' ';
+
+                if (loadingBox) loadingBox.style.display = 'flex';
+
+                closeModal('approvalSheetModal');
+                openModal('recommendationSheetModal');
+
+                fetch(`/student/get-recommendation-sheet/${groupId}`, { __silent: true })
+                    .then(response => response.json())
+                    .then(data => {
+                        title.textContent = data.capstone_title || '—';
+
+                        if (data.members && data.members.length) {
+                            if (data.members.length === 1) {
+                                proponents.textContent = data.members[0];
+                            } else if (data.members.length === 2) {
+                                proponents.textContent = `${data.members[0]} and ${data.members[1]}`;
+                            } else {
+                                const names = data.members.slice(0, -1).join(', ');
+                                proponents.textContent = `${names}, and ${data.members[data.members.length - 1]}`;
+                            }
+                        } else {
+                            proponents.textContent = '—';
+                        }
+
+                        adviser.textContent = data.adviser || '—';
+                        if (dateEl && data.issued_date) {
+    const d = new Date(data.issued_date);
+    dateEl.textContent = d.toLocaleDateString('en-US', {
+        month: 'long',
+        day:   'numeric',
+        year:  'numeric'
+    });
+}
+
+                        if (serialEl) {
+                            serialEl.textContent = data.serial_number
+                                ? 'Serial No. ' + data.serial_number
+                                : ' ';
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Recommendation sheet error:', err);
+                        proponents.textContent = 'Error loading data';
+                        adviser.textContent    = 'Error loading data';
+                    })
+                    .finally(() => {
+                        if (loadingBox) loadingBox.style.display = 'none';
+                    });
+        };
+
+        // ── Open Revision Sheet Modal ──
+        // Loading is scoped INSIDE the modal — no global overlay.
+        window.openRevisionSheet = function(groupId, revisionId, panelistName) {
+            const serialEl = document.getElementById('revisionSheetSerial');
+            const proponents = document.getElementById('sheetProponents');
+            const title = document.getElementById('sheetProjectTitle');
+            const chapterRows = document.getElementById('sheetChapterRows');
+            const iotRows = document.getElementById('sheetIotRows');
+            const objectiveRows = document.getElementById('sheetObjectivesList');
+            const overallRemarks = document.getElementById('sheetOverallRemarks');
+            const approvedBy = document.getElementById('sheetApprovedBy');
+            const loadingBox = document.getElementById('revisionSheetLoading');
+
+            if (!proponents || !title || !chapterRows || !iotRows || !objectiveRows || !approvedBy) {
+                console.error('Revision Sheet modal elements are missing.');
+                return;
             }
 
-            adviser.textContent = data.adviser || '—';
-        })
-        .catch(err => {
-            console.error('Recommendation sheet error:', err);
-            proponents.textContent = 'Error loading data';
-            adviser.textContent = 'Error loading data';
-        });
-};
-// ── Open Revision Sheet Modal ──
-window.openRevisionSheet = function(groupId, revisionId, panelistName) {
-    // panelistName is passed from the button (the teacher who requested the revision)
+            // Show in-modal loading spinner
+            if (loadingBox) loadingBox.style.display = 'flex';
 
-    const proponents = document.getElementById('sheetProponents');
-    const title = document.getElementById('sheetProjectTitle');
-    const chapterRows = document.getElementById('sheetChapterRows');
-    const iotRows = document.getElementById('sheetIotRows');
-    const objectiveRows = document.getElementById('sheetObjectivesList');
-    const overallRemarks = document.getElementById('sheetOverallRemarks');
-    const approvedBy = document.getElementById('sheetApprovedBy');
+            openModal('revisionSheetModal');
 
-    // Guard against missing elements
-    if (!proponents || !title || !chapterRows || !iotRows || !objectiveRows || !approvedBy) {
-        console.error('Revision Sheet modal elements are missing.');
-        return;
-    }
+            // Loading states
+            proponents.innerHTML = `<li class="text-[#5b6375] italic">Loading...</li>`;
+            title.textContent = '—';
+            chapterRows.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-[#5b6375] italic">Loading...</td></tr>`;
+            iotRows.innerHTML = `<tr><td colspan="2" class="p-3 text-center text-[#5b6375] italic">Loading...</td></tr>`;
+            objectiveRows.innerHTML = `<tr><td colspan="2" class="p-3 text-center text-[#5b6375] italic">Loading...</td></tr>`;
+            overallRemarks.textContent = '—';
 
-    openModal('revisionSheetModal');
+            approvedBy.textContent = panelistName || '_________________________';
 
-    // Loading states
-    proponents.innerHTML = `<li class="text-[#5b6375] italic">Loading...</li>`;
-    title.textContent = '—';
-    chapterRows.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-[#5b6375] italic">Loading...</td></tr>`;
-    iotRows.innerHTML = `<tr><td colspan="2" class="p-3 text-center text-[#5b6375] italic">Loading...</td></tr>`;
-    objectiveRows.innerHTML = `<tr><td colspan="2" class="p-3 text-center text-[#5b6375] italic">Loading...</td></tr>`;
-    overallRemarks.textContent = '—';
+            Promise.all([
+                fetch(`/student/get-group/${groupId}`, { __silent: true }).then(r => r.json()),
+                fetch(`/student/get-revision/${groupId}/${revisionId}`, { __silent: true }).then(r => r.json())
+            ])
+            .then(([groupData, revData]) => {
+                if (groupData.members && groupData.members.length) {
+                    proponents.innerHTML = groupData.members.map(m => `<li>${m.name}</li>`).join('');
+                } else {
+                    proponents.innerHTML = `<li class="text-[#5b6375] italic">No members.</li>`;
+                }
 
-    // ✅ Set Approved by using the panelist name passed from the button
-    approvedBy.textContent = panelistName || '_________________________';
+                title.textContent = groupData.capstone_title || '—';
 
-    Promise.all([
-        fetch(`/student/get-group/${groupId}`).then(r => r.json()),
-        fetch(`/student/get-revision/${groupId}/${revisionId}`).then(r => r.json())
-    ])
-    .then(([groupData, revData]) => {
-        // Proponents
-        if (groupData.members && groupData.members.length) {
-            proponents.innerHTML = groupData.members.map(m => `<li>${m.name}</li>`).join('');
-        } else {
-            proponents.innerHTML = `<li class="text-[#5b6375] italic">No members.</li>`;
-        }
+                if (revData.chapters && revData.chapters.length) {
+                    chapterRows.innerHTML = revData.chapters.map(ch => {
+                        const completed = String(ch.remarks || 'Pending').toLowerCase() === 'completed';
+                        return `<tr>
+                            <td class="border border-[#b88d3a] p-2 font-semibold">${ch.chapter || ''}</td>
+                            <td class="border border-[#b88d3a] p-2">${ch.findings || ''}</td>
+                            <td class="border border-[#b88d3a] p-2 text-center">
+                                <span class="badge ${completed ? 'badge-green' : 'badge-amber'}">
+                                    ${completed ? 'Completed' : 'Pending'}
+                                </span>
+                            </td>
+                        </tr>`;
+                    }).join('');
+                } else {
+                    chapterRows.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-[#5b6375] italic">No chapter findings.</td></tr>`;
+                }
 
-        title.textContent = groupData.capstone_title || '—';
+                if (revData.iot_findings && revData.iot_findings.length) {
+                    iotRows.innerHTML = revData.iot_findings.map(iot => {
+                        const completed = String(iot.remarks || 'Pending').toLowerCase() === 'completed';
+                        return `<tr>
+                            <td class="border border-[#b88d3a] p-2">${iot.finding || ''}</td>
+                            <td class="border border-[#b88d3a] p-2 text-center">
+                                <span class="badge ${completed ? 'badge-green' : 'badge-amber'}">
+                                    ${completed ? 'Completed' : 'Pending'}
+                                </span>
+                            </td>
+                        </tr>`;
+                    }).join('');
+                } else {
+                    iotRows.innerHTML = `<tr><td colspan="2" class="p-3 text-center text-[#5b6375] italic">No System / IoT findings.</td></tr>`;
+                }
 
-        // Chapters
-        if (revData.chapters && revData.chapters.length) {
-            chapterRows.innerHTML = revData.chapters.map(ch => {
-                const completed = String(ch.remarks || 'Pending').toLowerCase() === 'completed';
-                return `<tr>
-                    <td class="border border-[#b88d3a] p-2 font-semibold">${ch.chapter || ''}</td>
-                    <td class="border border-[#b88d3a] p-2">${ch.findings || ''}</td>
-                    <td class="border border-[#b88d3a] p-2 text-center">
-                        <span class="badge ${completed ? 'badge-green' : 'badge-amber'}">
-                            ${completed ? 'Completed' : 'Pending'}
-                        </span>
-                    </td>
-                </tr>`;
-            }).join('');
-        } else {
-            chapterRows.innerHTML = `<tr><td colspan="3" class="p-3 text-center text-[#5b6375] italic">No chapter findings.</td></tr>`;
-        }
-
-        // IoT
-        if (revData.iot_findings && revData.iot_findings.length) {
-            iotRows.innerHTML = revData.iot_findings.map(iot => {
-                const completed = String(iot.remarks || 'Pending').toLowerCase() === 'completed';
-                return `<tr>
-                    <td class="border border-[#b88d3a] p-2">${iot.finding || ''}</td>
-                    <td class="border border-[#b88d3a] p-2 text-center">
-                        <span class="badge ${completed ? 'badge-green' : 'badge-amber'}">
-                            ${completed ? 'Completed' : 'Pending'}
-                        </span>
-                    </td>
-                </tr>`;
-            }).join('');
-        } else {
-            iotRows.innerHTML = `<tr><td colspan="2" class="p-3 text-center text-[#5b6375] italic">No System / IoT findings.</td></tr>`;
-        }
-
-        // Objectives
-        if (revData.additional_objectives && revData.additional_objectives.length) {
-            objectiveRows.innerHTML = revData.additional_objectives.map(obj => {
-                const completed = String(obj.remarks || 'Pending').toLowerCase() === 'completed';
-                return `<tr>
-                    <td class="border border-[#b88d3a] p-2">${obj.objective || ''}</td>
-                    <td class="border border-[#b88d3a] p-2 text-center">
-                        <span class="badge ${completed ? 'badge-green' : 'badge-amber'}">
-                            ${completed ? 'Completed' : 'Pending'}
-                        </span>
-                    </td>
-                </tr>`;
-            }).join('');
-        } else {
-            objectiveRows.innerHTML = `<tr><td colspan="2" class="p-3 text-center text-[#5b6375] italic">No additional objectives.</td></tr>`;
-        }
-
-        overallRemarks.textContent = revData.overall_remarks || 'No overall remarks.';
-        // approvedBy is already set above – keep it as panelistName (the one who requested)
-    })
-    .catch(error => {
-        console.error('Revision loading error:', error);
-        proponents.innerHTML = `<li class="text-red-500">${error.message}</li>`;
-    });
-};
+                if (revData.additional_objectives && revData.additional_objectives.length) {
+                    objectiveRows.innerHTML = revData.additional_objectives.map(obj => {
+                        const completed = String(obj.remarks || 'Pending').toLowerCase() === 'completed';
+                        return `<tr>
+                            <td class="border border-[#b88d3a] p-2">${obj.objective || ''}</td>
+                            <td class="border border-[#b88d3a] p-2 text-center">
+                                <span class="badge ${completed ? 'badge-green' : 'badge-amber'}">
+                                    ${completed ? 'Completed' : 'Pending'}
+                                </span>
+                            </td>
+                        </tr>`;
+                    }).join('');
+                } else {
+                    objectiveRows.innerHTML = `<tr><td colspan="2" class="p-3 text-center text-[#5b6375] italic">No additional objectives.</td></tr>`;
+                }
+                if (serialEl) {
+                    const sn = revData.serial_number || groupData.serial_number;
+                    serialEl.textContent = sn ? 'Serial No. ' + sn : ' ';
+                }
+                overallRemarks.textContent = revData.overall_remarks || 'No overall remarks.';
+            })
+            .catch(error => {
+                console.error('Revision loading error:', error);
+                proponents.innerHTML = `<li class="text-red-500">${error.message}</li>`;
+            })
+            .finally(() => {
+                if (loadingBox) loadingBox.style.display = 'none';
+            });
+        };
     </script>
 
 </body>
 </html>
-            {{-- <div class="header-image">
-            <img src="{{ asset('pictures/mccheader.jpg') }}" alt="MCC Header">
-            </div> --}}

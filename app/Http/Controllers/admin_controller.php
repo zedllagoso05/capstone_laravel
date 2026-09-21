@@ -44,7 +44,7 @@ use Illuminate\Support\Facades\Log;
         $validatedData = $request->validate([
             'teacher_id' => 'required|unique:users,user_id',
             'teacher_first_name' => 'required|string|max:255',
-            'teacher_middle_name' => 'required|string|max:255',
+           'teacher_middle_name' => 'nullable|string|max:255',
             'teacher_last_name' => 'required|string|max:255',
         ]);
 
@@ -451,7 +451,7 @@ use Illuminate\Support\Facades\Log;
         $milestone = Milestone::findOrFail($id);
 
         $validated = $request->validate([
-            'milestone_title'          => 'required|string|max:255',
+            'milestone_title'          => 'required|string|max:255',    
             'capstone_stage'           => 'required|integer|exists:capstone_stages,id',
             'order'                    => [
                 'required',
@@ -1680,7 +1680,7 @@ use Illuminate\Support\Facades\Log;
 
         $stage->delete();
 
-        return back()->with('success', 'Capstone stage deleted suc  cessfully.');
+        return back()->with('success', 'Capstone stage deleted successfully.');
     }
         /**
      * Update an existing capstone year configurations.

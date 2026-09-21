@@ -8,6 +8,7 @@ class Certificate extends Model
 {
       protected $fillable = [
         'certificate_title',
+                'document_type',
         'certificate_description',
         'milestone_id',
     ];

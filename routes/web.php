@@ -151,6 +151,15 @@ Route::middleware('auth')->group(function () {
     */
     Route::prefix('teacher')->middleware(['role:teacher'])->group(function () {
 
+        Route::post('/issue-recommendation-sheet', [user_controller::class, 'issueRecommendationSheet'])->name('teacher.issue_recommendation');
+        Route::get('/get-recommendation-status/{groupId}', [user_controller::class, 'getRecommendationStatus'])->name('teacher.recommendation_status');
+
+
+Route::post('/issue-sheet',
+    [user_controller::class, 'issueSheet'])->name('teacher.issue_sheet');
+
+Route::get('/get-sheet-status/{groupId}',
+    [user_controller::class, 'getSheetStatus'])->name('teacher.sheet_status');
         // Profile
         Route::post('/profile_update',    [user_controller::class, 'profileUpdate'])->name('teacher.profile_update');
         Route::post('/update-password',   [user_controller::class, 'updatePassword'])->name('teacher.update_password');
@@ -167,6 +176,9 @@ Route::middleware('auth')->group(function () {
 
         // Remark evaluation (adviser or panelist)
         Route::post('/evaluate-remark', [user_controller::class, 'evaluateMilestoneRemark'])->name('teacher.evaluate_remark');
+        Route::post('/update-remark', [user_controller::class, 'updateMilestoneRemark'])
+        ->middleware('auth')
+        ->name('teacher.update_remark');
 
         // Milestone evaluation status
         Route::get('/get-evaluated-milestones/{group}', [user_controller::class, 'getEvaluatedMilestones'])->name('teacher.evaluated_milestones');
