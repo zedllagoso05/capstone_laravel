@@ -150,6 +150,8 @@ Route::middleware('auth')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('teacher')->middleware(['role:teacher'])->group(function () {
+    Route::get('/get-recommendation-sheet/{groupId}', [user_controller::class, 'teacherGetRecommendationSheet']);
+    Route::get('/get-approval-sheet/{groupId}',       [user_controller::class, 'teacherGetApprovalSheet']);
 
         Route::post('/issue-recommendation-sheet', [user_controller::class, 'issueRecommendationSheet'])->name('teacher.issue_recommendation');
         Route::get('/get-recommendation-status/{groupId}', [user_controller::class, 'getRecommendationStatus'])->name('teacher.recommendation_status');

@@ -1633,40 +1633,169 @@ public function updateMilestoneRemark(Request $request)
      * AUTHORIZATION: Adviser OR panelist.
      */
     public function getGroupDetails($groupId)
-    {
-        $teacher = Teacher::where('user_id', Auth::user()->user_id)->firstOrFail();
-        $group = Group::with('team_members.student.user', 'students')->findOrFail($groupId);
+{
+    $teacher = Teacher::where('user_id', Auth::user()->user_id)->firstOrFail();
+    $group = Group::with('team_members.student.user', 'students', 'room.requiredMilestone')
+        ->findOrFail($groupId);
 
-        $isAdviser = $group->adviser_id === $teacher->id;
-        $assignedRoomIds = $teacher->evaluationRooms()->pluck('evaluation_rooms.id')->toArray();
-        $isPanelist = in_array($group->room_id, $assignedRoomIds);
+    $isAdviser = $group->adviser_id === $teacher->id;
+    $assignedRoomIds = $teacher->evaluationRooms()->pluck('evaluation_rooms.id')->toArray();
+    $isPanelist = in_array($group->room_id, $assignedRoomIds);
 
-        $isSectionTeacher = false;
-        if ($group->section_id) {
-            $isSectionTeacher = \App\Models\Section::where('id', $group->section_id)
-                ->where('user_id', $teacher->user_id)
-                ->exists();
-        }
-
-        if (!$isAdviser && !$isPanelist && !$isSectionTeacher) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-
-        return response()->json([
-            'id'             => $group->id,
-            'group_name'     => $group->group_name,
-            'capstone_title' => $group->capstone_title,
-            'section'        => $group->students->first()?->section ?? null,
-            'members'        => $group->team_members->map(fn($tm) => [
-                'user_id' => $tm->user_id,
-                'name'    => trim(
-                    (optional($tm->student)->student_first_name ?? '') . ' ' .
-                    (optional($tm->student)->student_last_name ?? '')
-                ),
-                'role'    => $tm->role,
-            ]),
-        ]);
+    $isSectionTeacher = false;
+    if ($group->section_id) {
+        $isSectionTeacher = \App\Models\Section::where('id', $group->section_id)
+            ->where('user_id', $teacher->user_id)
+            ->exists();
     }
+
+    if (!$isAdviser && !$isPanelist && !$isSectionTeacher) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+
+    // ✅ Compute ONCE at the top level
+    $requiredMilestoneId = $group->room->required_milestone_id ?? null;
+    $requiredMilestoneTitle = $group->room->activity_name
+        ?? ($group->room->requiredMilestone->milestone_title ?? null);
+
+    return response()->json([
+        'id'             => $group->id,
+        'group_name'     => $group->group_name,
+        'capstone_title' => $group->capstone_title,
+        'section'        => $group->students->first()?->section ?? null,
+
+        // ✅ Now visible to the JS at the root of the response
+        'required_milestone_id'    => $requiredMilestoneId,
+        'required_milestone_title' => $requiredMilestoneTitle,
+
+        'members'        => $group->team_members->map(fn($tm) => [
+            'user_id' => $tm->user_id,
+            'name'    => trim(
+                (optional($tm->student)->student_first_name ?? '') . ' ' .
+                (optional($tm->student)->student_last_name ?? '')
+            ),
+            'role'    => $tm->role,
+        ]),
+    ]);
+}// ── TEACHER: recommendation sheet payload ──
+public function teacherGetRecommendationSheet($groupId)
+{
+    $user = Auth::user();
+    if (!$user || $user->role !== 'teacher') {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+
+    $teacher = Teacher::where('user_id', $user->user_id)->firstOrFail();
+    $group   = Group::with(['team_members.student', 'adviser'])->findOrFail($groupId);
+
+    $isAdviser = (int) $group->adviser_id === (int) $teacher->id;
+    $assignedRoomIds = $teacher->evaluationRooms()->pluck('evaluation_rooms.id')->toArray();
+    $isPanelist = $group->room_id && in_array($group->room_id, $assignedRoomIds);
+    $isSectionTeacher = $group->section_id && \App\Models\Section::where('id', $group->section_id)
+        ->where('user_id', $teacher->user_id)->exists();
+
+    if (!$isAdviser && !$isPanelist && !$isSectionTeacher) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+
+    $members = $group->team_members->map(function ($tm) {
+        $s = $tm->student;
+        return trim(($s->student_first_name ?? '') . ' ' . ($s->student_last_name ?? ''));
+    })->filter()->values()->all();
+
+    $adviser = $group->adviser
+        ? trim($group->adviser->teacher_first_name . ' ' . $group->adviser->teacher_last_name)
+        : null;
+
+    // Look up the issued GroupCertificate so we can surface the serial + date
+    $record = GroupCertificate::where('group_id', $groupId)
+        ->whereHas('certificate', fn($q) =>
+            $q->where('document_type', 'recommendation')
+              ->orWhere('certificate_title', 'like', '%Recommendation%'))
+        ->latest('issued_date')
+        ->first();
+
+    return response()->json([
+        'capstone_title' => $group->capstone_title,
+        'members'        => $members,
+        'adviser'        => $adviser,
+        'date_issued'    => $record?->issued_date,
+        'serial_number'  => $record?->serial_number,
+        'group_name'     => $group->group_name,
+    ]);
+}
+
+// ── TEACHER: approval sheet payload ──
+public function teacherGetApprovalSheet($groupId)
+{
+    $user = Auth::user();
+    if (!$user || $user->role !== 'teacher') {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+
+    $teacher = Teacher::where('user_id', $user->user_id)->firstOrFail();
+    $group   = Group::with(['team_members.student', 'adviser', 'room.panelists'])->findOrFail($groupId);
+
+    $isAdviser = (int) $group->adviser_id === (int) $teacher->id;
+    $assignedRoomIds = $teacher->evaluationRooms()->pluck('evaluation_rooms.id')->toArray();
+    $isPanelist = $group->room_id && in_array($group->room_id, $assignedRoomIds);
+    $isSectionTeacher = $group->section_id && \App\Models\Section::where('id', $group->section_id)
+        ->where('user_id', $teacher->user_id)->exists();
+
+    if (!$isAdviser && !$isPanelist && !$isSectionTeacher) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+
+    $members = $group->team_members->map(function ($tm) {
+        $s = $tm->student;
+        return trim(($s->student_first_name ?? '') . ' ' . ($s->student_last_name ?? ''));
+    })->filter()->values()->all();
+
+    $adviser = $group->adviser
+        ? trim($group->adviser->teacher_first_name . ' ' . $group->adviser->teacher_last_name)
+        : null;
+
+    $panelists = [];
+    if ($group->room) {
+        foreach ($group->room->panelists as $p) {
+            $panelists[] = [
+                'name' => trim($p->teacher_first_name . ' ' . $p->teacher_last_name),
+                'role' => $p->pivot->role ?? 'Member',
+            ];
+        }
+    }
+
+    // Oral exam result
+    $oralExamResult = '—';
+    $oralExamDate   = null;
+    $oralMilestone = \App\Models\Milestone::where('milestone_title', 'like', '%Oral Presentation%')->first();
+    if ($oralMilestone) {
+        $eval = Evaluation::where('group_id', $groupId)
+            ->where('milestone_id', $oralMilestone->id)
+            ->latest('evaluation_date')->first();
+        if ($eval) {
+            $oralExamResult = $eval->score >= ($eval->max_score * 0.6) ? 'PASSED' : 'FAILED';
+            $oralExamDate = $eval->evaluation_date
+                ? \Carbon\Carbon::parse($eval->evaluation_date)->format('F d, Y') : null;
+        }
+    }
+
+    $record = GroupCertificate::where('group_id', $groupId)
+        ->whereHas('certificate', fn($q) => $q->where('document_type', 'approval'))
+        ->latest('issued_date')
+        ->first();
+
+    return response()->json([
+        'capstone_title'   => $group->capstone_title,
+        'members'          => $members,
+        'adviser'          => $adviser,
+        'panelists'        => $panelists,
+        'oral_exam_result' => $oralExamResult,
+        'oral_exam_date'   => $oralExamDate,
+        'school_president' => 'DR. FLORIPIS A. MONTECILLO, Ed.D.',
+        'serial_number'    => $record?->serial_number,
+    ]);
+}
 
     /**
      * Edit team members for a group (teacher side).

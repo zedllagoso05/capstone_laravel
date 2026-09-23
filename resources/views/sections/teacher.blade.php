@@ -1023,6 +1023,113 @@
     .splash-ring, .splash-ring::after, .splash-mark, .spinner, .spinner-sm,
     .skeleton::after, .btn-primary.is-loading i { animation: none !important; }
 }
+/* ── RECOMMENDATION SHEET DOCUMENT ── */
+.recommendation-sheet-modal {
+    display: flex; flex-direction: column;
+    min-height: 85vh; max-height: 92vh;
+    background: var(--white); padding: 1.5rem !important;
+}
+.recommendation-document {
+    flex: 1; background: #fffdf8;
+    border: 2px solid #0a1428; border-radius: 4px;
+    padding: 2rem 2.75rem 1.5rem;
+    display: flex; flex-direction: column; text-align: center;
+    position: relative; overflow-y: auto;
+    box-shadow: inset 0 0 0 1px rgba(10, 20, 40, 0.05);
+}
+.recommendation-document .rec-header-image { text-align: center; margin-bottom: 1.1rem; }
+.recommendation-document .rec-header-image img { max-width: 55%; height: auto; display: inline-block; }
+.recommendation-document .rec-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.75rem; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #0a1428;
+    border-bottom: 2px solid #0a1428; padding-bottom: 0.6rem;
+    margin: 0 auto 0.4rem; max-width: 90%;
+}
+.recommendation-document .rec-serial {
+    font-family: 'Courier New', monospace; font-size: 0.78rem;
+    letter-spacing: 0.12em; color: #8b6914; margin-bottom: 1.5rem; min-height: 1em;
+}
+.recommendation-document .rec-body {
+    flex: 1; font-size: 1rem; line-height: 1.75;
+    color: #171e2c; max-width: 640px; margin: 0 auto;
+    display: flex; flex-direction: column; justify-content: center; gap: 0.65rem;
+}
+.recommendation-document .rec-body p { margin: 0; font-size: 1rem; line-height: 1.75; color: #171e2c; }
+.recommendation-document .rec-capstone-title {
+    font-family: 'Cormorant Garamond', serif; font-size: 1.45rem;
+    font-weight: 600; font-style: italic; line-height: 1.35;
+    color: #0a1428; margin: 0.6rem auto 1.1rem; max-width: 620px; padding: 0 1rem;
+}
+.recommendation-document .rec-capstone-title::before,
+.recommendation-document .rec-capstone-title::after {
+    content: ''; display: block; width: 55px; height: 1px;
+    background: #d9cda6; margin: 0.6rem auto;
+}
+.recommendation-document .rec-capstone-title::before { margin-top: 0; }
+.recommendation-document .rec-capstone-title::after  { margin-bottom: 0; }
+.recommendation-document .rec-members { font-weight: 600; color: #0a1428; }
+.recommendation-document .rec-signature { margin: 2.25rem auto 1rem; text-align: center; min-width: 320px; }
+.recommendation-document .rec-signature .rec-sig-name {
+    display: inline-block; min-width: 260px; padding: 0 0.5rem 0.3rem;
+    border-bottom: 1.5px solid #0a1428; font-size: 1.05rem;
+    font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #0a1428;
+}
+.recommendation-document .rec-signature .rec-sig-label {
+    display: block; margin-top: 0.4rem; font-size: 0.72rem;
+    letter-spacing: 0.14em; text-transform: uppercase; color: #5b6375;
+}
+.recommendation-document .rec-footer {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 2rem; margin-top: auto; padding-top: 1.1rem; border-top: 1px solid #e2dacf;
+}
+.recommendation-document .rec-footer-block { text-align: center; min-width: 150px; }
+.recommendation-document .rec-footer-value { font-size: 0.9rem; font-weight: 600; color: #171e2c; }
+.recommendation-document .rec-footer-label {
+    font-size: 0.65rem; text-transform: uppercase;
+    letter-spacing: 0.12em; color: #9a9385; margin-top: 0.15rem;
+}
+@media (max-width: 640px) {
+    .recommendation-document { padding: 1.25rem 1rem; }
+    .recommendation-document .rec-title { font-size: 1.35rem; letter-spacing: 0.05em; }
+    .recommendation-document .rec-capstone-title { font-size: 1.15rem; }
+    .recommendation-document .rec-header-image img { max-width: 80%; }
+    .recommendation-document .rec-footer { flex-direction: column; align-items: center; gap: 1rem; }
+}
+
+/* ── APPROVAL SHEET DOCUMENT ── */
+.approval-sheet-doc {
+    color: #171e2c; background: #fff; font-family: 'Times New Roman', serif;
+    text-align: center; line-height: 1.35;
+}
+.approval-sheet-doc .approval-intro { font-size: .9rem; margin: 0 0 .35rem; }
+.approval-sheet-doc .approval-title {
+    font-size: 1.05rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .025em; margin: 0 auto 1rem; max-width: 42rem;
+}
+.approval-sheet-doc .approval-body { font-size: .9rem; max-width: 42rem; margin: 0 auto 1.35rem; }
+.approval-signature { text-align: center; margin: 0 auto 1.15rem; }
+.approval-signature .approval-sig-line {
+    display: inline-block; min-width: 2.45in; border-bottom: 1px solid #222;
+    font-weight: 700; text-transform: uppercase; font-size: .85rem;
+    padding-bottom: .18rem; margin-bottom: .2rem;
+}
+.approval-signature .approval-sig-role { font-size: .72rem; color: #444; }
+.approval-panel-heading { font-weight: 700; font-size: .85rem; margin: 0 0 .85rem; }
+.approval-panel-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem;
+    max-width: 34rem; margin: 0 auto 1rem;
+}
+.approval-panel-grid .approval-signature { margin: 0; }
+.approval-panel-grid .approval-sig-line { width: 100%; min-width: 0; font-size: .78rem; }
+.approval-accepted { max-width: 39rem; margin: 0 auto 1.1rem; font-size: .88rem; }
+.approval-oral-results {
+    display: flex; flex-direction: column; align-items: center;
+    gap: .25rem; margin-bottom: 1rem; font-size: .86rem;
+}
+.approval-oral-results .oral-label { margin-right: .35rem; }
+.approval-oral-results .oral-value { border-bottom: 1px solid #222; font-weight: 700; padding-bottom: .05rem; }
+.approval-approved-label { margin: 0 0 .25rem; font-size: .86rem; }
 </style>
 </head>
 <body class="bg-[#f8f6f0] text-[#171e2c]">
@@ -2321,6 +2428,111 @@
 </main>
 
 <!-- ==================== MODALS ==================== -->
+<!-- ═══════════ TEACHER: RECOMMENDATION SHEET MODAL ═══════════ -->
+<div id="teacherRecommendationSheetModal" class="modal-overlay">
+    <div class="modal-box wide recommendation-sheet-modal" style="max-width: 52rem;">
+        <div class="recommendation-document">
+            <div class="rec-header-image">
+                <img src="{{ asset('pictures/mccheader.jpg') }}" alt="MCC Header">
+            </div>
+            <h2 class="rec-title">Recommendation Sheet</h2>
+            <p class="rec-serial" id="tchRecommendationSerial">&nbsp;</p>
+
+            <div class="rec-body" id="tchRecommendationContent">
+                <div id="tchRecommendationLoading"
+                     class="modal-loading-box absolute inset-0 bg-white/90 backdrop-blur-sm z-10 rounded-lg"
+                     style="display:flex;">
+                    <div class="spinner-sm"></div>
+                    <p>Loading recommendation sheet…</p>
+                </div>
+                <p>This <strong>Capstone Project</strong> hereto entitled:</p>
+                <p class="rec-capstone-title" id="tchRecommendationTitle">—</p>
+                <p>prepared and submitted by
+                    <span class="rec-members" id="tchRecommendationProponents">—</span>
+                </p>
+                <p>in partial fulfillment of the requirements for the degree of
+                    <strong>Bachelor of Science in Information Technology</strong>
+                    has been examined, accepted, and recommended for Oral Presentation.
+                </p>
+                <div class="rec-signature">
+                    <span class="rec-sig-name" id="tchRecommendationAdviser">—</span>
+                    <span class="rec-sig-label">Capstone Adviser</span>
+                </div>
+            </div>
+
+            <div class="rec-footer">
+                <div class="rec-footer-block">
+                    <div class="rec-footer-value" id="tchRecommendationDate">—</div>
+                    <div class="rec-footer-label">Date Issued</div>
+                </div>
+                <div class="rec-footer-block">
+                    <div class="rec-footer-value" id="tchRecommendationGroup">—</div>
+                    <div class="rec-footer-label">Group</div>
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-4 border-t border-[#e2dacf] mt-4">
+            <button type="button" onclick="closeModal('teacherRecommendationSheetModal')" class="btn-primary text-xs py-2 px-4">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════ TEACHER: APPROVAL SHEET MODAL ═══════════ -->
+<div id="teacherApprovalSheetModal" class="modal-overlay">
+    <div class="modal-box wide" style="max-width: 52rem; padding: 1.5rem;">
+        <div class="text-center mb-4">
+            <img src="{{ asset('pictures/mccheader.jpg') }}" alt="MCC Header" class="w-full max-h-24 object-contain">
+        </div>
+        <h2 id="tchApprovalHeading" class="text-center text-2xl font-bold tracking-widest text-[#0a1428] mb-4" style="font-family:'Cormorant Garamond',serif;">APPROVAL SHEET</h2>
+        <p class="text-center text-xs tracking-widest mt-1" id="tchApprovalSerial"
+           style="font-family:'Courier New', monospace; color:#8b6914;">&nbsp;</p>
+
+        <div id="tchApprovalContent" class="approval-sheet-doc relative">
+            <div id="tchApprovalLoading"
+                 class="modal-loading-box absolute inset-0 bg-white/90 backdrop-blur-sm z-10 rounded-lg"
+                 style="display:flex;">
+                <div class="spinner-sm"></div>
+                <p>Loading approval sheet…</p>
+            </div>
+            <p class="approval-intro">This Capstone Project 2 hereto entitled:</p>
+            <p id="tchApprovalTitle" class="approval-title">—</p>
+            <p class="approval-body">
+                prepared and submitted by <span id="tchApprovalProponents">—</span>
+                in partial fulfillment of the requirements for the degree of
+                <strong>Bachelor of Science in Information Technology</strong>
+                has been examined, accepted and recommended for Oral Presentation.
+            </p>
+            <div class="approval-signature">
+                <span id="tchApprovalAdviser" class="approval-sig-line">—</span>
+                <div class="approval-sig-role">Adviser</div>
+            </div>
+            <p class="approval-panel-heading">Panel of Examiners</p>
+            <div id="tchApprovalPanelists" class="approval-panel-grid">
+                <div class="approval-signature"><span class="approval-sig-line">Loading...</span><div class="approval-sig-role">Member</div></div>
+            </div>
+            <div id="tchApprovalChairmanBlock" class="approval-signature" style="display:none;">
+                <span id="tchApprovalChairman" class="approval-sig-line">—</span>
+                <div class="approval-sig-role">Chairman, Board of Panels</div>
+            </div>
+            <p class="approval-accepted">
+                <strong>ACCEPTED AND APPROVED</strong> in partial fulfillment of the requirements for the degree of
+                <strong>BACHELOR OF SCIENCE IN INFORMATION TECHNOLOGY</strong>.
+            </p>
+            <div class="approval-oral-results">
+                <span><span class="oral-label">Oral Examination:</span><span id="tchApprovalOralResult" class="oral-value">—</span></span>
+                <span><span class="oral-label">Date of Oral Examination:</span><span id="tchApprovalOralDate" class="oral-value">—</span></span>
+            </div>
+            <p class="approval-approved-label">Approved:</p>
+            <div class="approval-signature">
+                <span id="tchApprovalPresident" class="approval-sig-line">DR. FLORIPIS A. MONTECILLO, Ed.D.</span>
+                <div class="approval-sig-role">School President</div>
+            </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-4 border-t border-[#e2dacf] mt-4">
+            <button type="button" onclick="closeModal('teacherApprovalSheetModal')" class="btn-primary text-xs py-2 px-4">Close</button>
+        </div>
+    </div>
+</div>
 <!-- VIEW-ONLY REVISION SHEET MODAL -->
 <div id="viewRevisionModal" class="modal-overlay">
     <div class="modal-box wide">
@@ -2481,12 +2693,80 @@
                     </table>
                 </div>
 
-                <div id="view_certificates_container" class="mt-6 pt-4 border-t border-[#e2dacf] hidden">
-                    <h4 class="text-sm font-bold text-[#0a1428] mb-3 flex items-center gap-2">
-                        <i class="fas fa-award text-[#d6b15c]"></i> Earned Certificates
-                    </h4>
-                    <div id="view_certificates_list" class="space-y-2"></div>
+                <div id="view_documents_container" class="mt-6 pt-4 border-t border-[#e2dacf]">
+    <h4 class="text-sm font-bold text-[#0a1428] mb-3 flex items-center gap-2">
+        <i class="fas fa-folder-open text-[#d6b15c]"></i> Group Documents
+    </h4>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+
+        <!-- Recommendation Sheet -->
+        <div class="content-card">
+            <div class="card-accent"></div>
+            <div class="p-4 flex flex-col h-full">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                         style="background:linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);">
+                        <i class="fas fa-file-signature text-white text-xs"></i>
+                    </div>
+                    <h5 class="font-bold text-sm text-[#0a1428]">Recommendation Sheet</h5>
                 </div>
+                <p class="text-[11px] text-[#5b6375] mb-3 flex-1" id="view_rec_status">
+                    View the recommendation sheet issued to this group.
+                </p>
+                <button type="button" id="view_rec_btn"
+                        onclick="openTeacherRecommendationSheet(window.__viewModalGroupId)"
+                        class="btn-outline text-xs py-1.5 px-3" disabled>
+                    <i class="fas fa-eye mr-1"></i> View
+                </button>
+            </div>
+        </div>
+
+        <!-- Revision Sheet -->
+        <div class="content-card">
+            <div class="card-accent"></div>
+            <div class="p-4 flex flex-col h-full">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                         style="background:linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);">
+                        <i class="fas fa-file-alt text-white text-xs"></i>
+                    </div>
+                    <h5 class="font-bold text-sm text-[#0a1428]">Revision Sheet</h5>
+                </div>
+                <p class="text-[11px] text-[#5b6375] mb-3 flex-1" id="view_rev_status">
+                    View the revision sheet submitted for this group.
+                </p>
+                <button type="button" id="view_rev_btn"
+                        onclick="openTeacherRevisionSheet(window.__viewModalGroupId)"
+                        class="btn-outline text-xs py-1.5 px-3" disabled>
+                    <i class="fas fa-eye mr-1"></i> View
+                </button>
+            </div>
+        </div>
+
+        <!-- Approval Sheet -->
+        <div class="content-card">
+            <div class="card-accent"></div>
+            <div class="p-4 flex flex-col h-full">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                         style="background:linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);">
+                        <i class="fas fa-file-contract text-white text-xs"></i>
+                    </div>
+                    <h5 class="font-bold text-sm text-[#0a1428]">Approval Sheet</h5>
+                </div>
+                <p class="text-[11px] text-[#5b6375] mb-3 flex-1" id="view_apr_status">
+                    View the approval sheet issued to this group.
+                </p>
+                <button type="button" id="view_apr_btn"
+                        onclick="openTeacherApprovalSheet(window.__viewModalGroupId)"
+                        class="btn-outline text-xs py-1.5 px-3" disabled>
+                    <i class="fas fa-eye mr-1"></i> View
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
             </div>
         </div>
     </div>
@@ -2537,12 +2817,10 @@
             <div><label class="form-label">Group</label><input type="text" id="eval_group_name" class="form-input" readonly></div>
             <div>
                 <label class="form-label">Milestone</label>
-                <select id="milestone_select" class="form-select">
-                    <option value="">-- Select Milestone --</option>
-                    @foreach($allRooms as $milestone)
-                        <option value="{{ $milestone->required_milestone_id }}">{{ $milestone->activity_name }}</option>
-                    @endforeach
+                <select id="milestone_select" class="form-select" disabled>
+                    <option value="">Loading milestone…</option>
                 </select>
+                <p class="text-[10px] text-[#9a9385] mt-1">Set automatically by this group's evaluation room.</p>
             </div>
         </div>
 
@@ -3455,7 +3733,7 @@ function openViewModal(groupId) {
     const modal = document.getElementById('viewModal');
     const loading = document.getElementById('view_loading');
     const dataDiv = document.getElementById('view_data');
-
+     window.__viewModalGroupId = groupId;
     modal.classList.add('active');
     loading.classList.remove('hidden');
     dataDiv.classList.add('hidden');
@@ -3501,234 +3779,161 @@ function openViewModal(groupId) {
                 ${statusBadge}
             `;
 
-            const evaluations = data.evaluations || [];
-            const milestoneEvals = evaluations.filter(e => e.milestone_id == m.id);
-            let remarksHtml = '';
+        let remarksHtml = '';
 
-            if (m.has_rubric) {
-                if (milestoneEvals.length > 0) {
-                    remarksHtml = '';
-                } else if (data.is_adviser || data.is_panelist) {
-                    remarksHtml = `
-                        <div class="flex flex-col gap-1.5 items-start">
-                            <span class="task-status next" style="background-color: rgba(10,20,40,0.08); color: var(--navy); border: 1px solid rgba(10,20,40,0.15);"><i class="fa-solid fa-circle-info mr-1"></i> Panelist Evaluation Only</span>
+            if (m.remarks) {
+                const r = m.remarks;
+                const statusText = r.remarks_status || (r.compiled ? 'On Time Compliance' : 'Late Submission');
+
+                let statusClass = 'on-time', statusIcon = 'fa-circle-check';
+                if (/late/i.test(statusText)) { statusClass = 'late'; statusIcon = 'fa-triangle-exclamation'; }
+                else if (/early/i.test(statusText)) { statusClass = 'early'; statusIcon = 'fa-clock'; }
+                else if (/considered/i.test(statusText)) { statusClass = 'on-time'; statusIcon = 'fa-circle-check'; }
+
+                const absentNames = (m.absent_students && m.absent_students.length) ? m.absent_students : [];
+
+                const absenceTableHtml = (!r.all_present && absentNames.length)
+                    ? `<table class="absence-table">
+                        <thead><tr><th>#</th><th>Absent Student</th></tr></thead>
+                        <tbody>
+                            ${absentNames.map((name, i) => `<tr><td>${i + 1}</td><td>${name}</td></tr>`).join('')}
+                        </tbody>
+                    </table>`
+                    : '';
+
+                const feedbackHtml = r.feedback ? `<div class="remark-feedback">"${r.feedback}"</div>` : '';
+
+                // ── Detect issuance milestones ──
+                const isRecommendationMilestone =
+                    /issuance of recommendation/i.test(m.title || '')
+                    || m.id === 5
+                    || m.id === 17;
+
+                const isApprovalMilestone =
+                    /issuance of approval/i.test(m.title || '')
+                    || m.id === 19;
+
+                const issueButtonHtml = (isRecommendationMilestone && data.is_adviser)
+                    ? `<button type="button"
+                            class="issue-rec-btn text-[#b88d3a] hover:text-[#8b6914] text-[10px]
+                                    font-semibold mt-2 ml-3 focus:outline-none inline-flex items-center"
+                            data-milestone-id="${m.id}"
+                            data-doc-type="recommendation">
+                            <i class="fas fa-award mr-1"></i> Issue Recommendation Sheet
+                    </button>`
+                    : '';
+
+                const issueApprovalButtonHtml = (isApprovalMilestone && data.is_adviser)
+                    ? `<button type="button"
+                            class="issue-rec-btn text-[#b88d3a] hover:text-[#8b6914] text-[10px]
+                                    font-semibold mt-2 ml-3 focus:outline-none inline-flex items-center"
+                            data-milestone-id="${m.id}"
+                            data-doc-type="approval">
+                            <i class="fas fa-award mr-1"></i> Issue Approval Sheet
+                    </button>`
+                    : '';
+
+                const editButtonHtml = data.is_adviser
+                    ? `<button type="button"
+                            class="edit-remark-btn text-[#b88d3a] hover:text-[#8b6914] text-[10px]
+                                    font-semibold mt-2 focus:outline-none block"
+                            data-milestone-id="${m.id}">
+                            <i class="fas fa-edit mr-1"></i>Edit Remark
+                    </button>`
+                    : '';
+
+                const isLate     = /late/i.test(statusText);
+                const isEarly    = /early/i.test(statusText);
+                const isOnTime   = /on time/i.test(statusText);
+                const isConsidered = /considered/i.test(statusText);
+
+                remarksHtml = `
+                    <div class="remark-summary" data-milestone-id="${m.id}">
+                        <div class="remark-view-mode">
+                            <span class="remark-status-badge ${statusClass}">
+                                <i class="fa-solid ${statusIcon}"></i> ${statusText}
+                            </span>
+                            ${r.deduction_points ? `<span class="remark-deduction"><i class="fa-solid fa-minus"></i> ${r.deduction_points} pts deduction</span>` : ''}
+                            <span class="remark-attendance"><i class="fa-solid fa-user-group"></i> ${r.all_present ? 'All members present' : `${absentNames.length} member(s) absent`}</span>
+                            ${absenceTableHtml}
+                            ${feedbackHtml}
+                            ${editButtonHtml}
+                             ${issueButtonHtml}
+                             ${issueApprovalButtonHtml}
                         </div>
-                    `;
-                } else {
-                    remarksHtml = `<span class="task-status pending"><i class="fa-solid fa-clock mr-1"></i> Awaiting Panelist Evaluation</span>`;
-                }
-            } else {
-                if (m.remarks) {
-                    const r = m.remarks;
-                    const statusText = r.remarks_status || (r.compiled ? 'On Time Compliance' : 'Late Submission');
 
-                    let statusClass = 'on-time', statusIcon = 'fa-circle-check';
-                    if (/late/i.test(statusText)) { statusClass = 'late'; statusIcon = 'fa-triangle-exclamation'; }
-                    else if (/early/i.test(statusText)) { statusClass = 'early'; statusIcon = 'fa-clock'; }
-                    else if (/considered/i.test(statusText)) { statusClass = 'on-time'; statusIcon = 'fa-circle-check'; }
-
-                    const absentNames = (m.absent_students && m.absent_students.length) ? m.absent_students : [];
-
-                    const absenceTableHtml = (!r.all_present && absentNames.length)
-                        ? `<table class="absence-table">
-                            <thead><tr><th>#</th><th>Absent Student</th></tr></thead>
-                            <tbody>
-                                ${absentNames.map((name, i) => `<tr><td>${i + 1}</td><td>${name}</td></tr>`).join('')}
-                            </tbody>
-                        </table>`
-                        : '';
-
-                    const feedbackHtml = r.feedback ? `<div class="remark-feedback">"${r.feedback}"</div>` : '';
-
-                    // ── Detect issuance milestones ──
-                    const isRecommendationMilestone =
-                        /issuance of recommendation/i.test(m.title || '')
-                        || m.id === 5   // Capstone 1 Recommendation
-                        || m.id === 17; // Capstone 2 Recommendation
-
-                    const isApprovalMilestone =
-                        /issuance of approval/i.test(m.title || '')
-                        || m.id === 19; // Capstone 2 Approval
-
-                    // Adviser-only: Issue Recommendation Sheet button
-                    const issueButtonHtml = (isRecommendationMilestone && data.is_adviser)
-                        ? `<button type="button"
-                                class="issue-rec-btn text-[#b88d3a] hover:text-[#8b6914] text-[10px]
-                                        font-semibold mt-2 ml-3 focus:outline-none inline-flex items-center"
-                                data-milestone-id="${m.id}"
-                                data-doc-type="recommendation">
-                                <i class="fas fa-award mr-1"></i> Issue Recommendation Sheet
-                        </button>`
-                        : '';
-
-                    // Adviser-only: Issue Approval Sheet button
-                    const issueApprovalButtonHtml = (isApprovalMilestone && data.is_adviser)
-                        ? `<button type="button"
-                                class="issue-rec-btn text-[#b88d3a] hover:text-[#8b6914] text-[10px]
-                                        font-semibold mt-2 ml-3 focus:outline-none inline-flex items-center"
-                                data-milestone-id="${m.id}"
-                                data-doc-type="approval">
-                                <i class="fas fa-award mr-1"></i> Issue Approval Sheet
-                        </button>`
-                        : '';
-
-                    // Existing edit-remark button
-                    const editButtonHtml = data.is_adviser
-                        ? `<button type="button"
-                                class="edit-remark-btn text-[#b88d3a] hover:text-[#8b6914] text-[10px]
-                                        font-semibold mt-2 focus:outline-none block"
-                                data-milestone-id="${m.id}">
-                                <i class="fas fa-edit mr-1"></i>Edit Remark
-                        </button>`
-                        : '';
-
-                    const isLate     = /late/i.test(statusText);
-                    const isEarly    = /early/i.test(statusText);
-                    const isOnTime   = /on time/i.test(statusText);
-                    const isConsidered = /considered/i.test(statusText);
-
-                    remarksHtml = `
-                        <div class="remark-summary" data-milestone-id="${m.id}">
-                            <div class="remark-view-mode">
-                                <span class="remark-status-badge ${statusClass}">
-                                    <i class="fa-solid ${statusIcon}"></i> ${statusText}
-                                </span>
-                                ${r.deduction_points ? `<span class="remark-deduction"><i class="fa-solid fa-minus"></i> ${r.deduction_points} pts deduction</span>` : ''}
-                                <span class="remark-attendance"><i class="fa-solid fa-user-group"></i> ${r.all_present ? 'All members present' : `${absentNames.length} member(s) absent`}</span>
-                                ${absenceTableHtml}
-                                ${feedbackHtml}
-                                ${editButtonHtml}
-                                 ${issueButtonHtml}
-                                 ${issueApprovalButtonHtml}
+                        <div class="remark-edit-mode hidden mt-2 p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg space-y-2">
+                            <div>
+                                <label class="form-label text-[10px]">Remarks Status</label>
+                                <select class="form-select text-xs remark-edit-status">
+                                    <option value="On Time Compliance" ${isOnTime ? 'selected' : ''}>On Time Compliance</option>
+                                    <option value="Early Submission"  ${isEarly ? 'selected' : ''}>Early Submission</option>
+                                    <option value="Late Submission"   ${isLate ? 'selected' : ''}>Late Submission</option>
+                                    <option value="Considered"        ${isConsidered ? 'selected' : ''}>Considered</option>
+                                </select>
                             </div>
 
-                            <div class="remark-edit-mode hidden mt-2 p-3 bg-[#faf8f4] border border-[#e2dacf] rounded-lg space-y-2">
-                                <div>
-                                    <label class="form-label text-[10px]">Remarks Status</label>
-                                    <select class="form-select text-xs remark-edit-status">
-                                        <option value="On Time Compliance" ${isOnTime ? 'selected' : ''}>On Time Compliance</option>
-                                        <option value="Early Submission"  ${isEarly ? 'selected' : ''}>Early Submission</option>
-                                        <option value="Late Submission"   ${isLate ? 'selected' : ''}>Late Submission</option>
-                                        <option value="Considered"        ${isConsidered ? 'selected' : ''}>Considered</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label class="form-label text-[10px]">Deduction Points</label>
-                                    <input type="number" min="0" step="1"
-                                        class="form-input text-xs remark-edit-deduction"
-                                        value="${r.deduction_points || 0}">
-                                </div>
-
-                                <div>
-                                    <label class="form-label text-[10px]">Compiled</label>
-                                    <select class="form-select text-xs remark-edit-compiled">
-                                        <option value="1" ${r.compiled ? 'selected' : ''}>Yes — Compiled</option>
-                                        <option value="0" ${!r.compiled ? 'selected' : ''}>No — Not Compiled</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label class="form-label text-[10px]">Feedback (optional)</label>
-                                    <textarea rows="2" class="form-input text-xs remark-edit-feedback">${r.feedback || ''}</textarea>
-                                </div>
-
-                                <div class="flex justify-end gap-2 pt-1">
-                                    <button type="button" class="btn-ghost text-xs remark-edit-cancel">Cancel</button>
-                                    <button type="button" class="btn-primary text-xs remark-edit-save">
-                                        <i class="fas fa-save mr-1"></i> Save Override
-                                    </button>
-                                </div>
+                            <div>
+                                <label class="form-label text-[10px]">Deduction Points</label>
+                                <input type="number" min="0" step="1"
+                                    class="form-input text-xs remark-edit-deduction"
+                                    value="${r.deduction_points || 0}">
                             </div>
-                        </div>
-                    `;
-                }
-                else if (m.is_next && data.is_adviser) {
-                    remarksHtml = `
-                        <div class="mb-2">
-                            <label class="form-label text-[10px]">Attendance</label>
-                            <div class="flex flex-col gap-1 mt-1">
-                                <label class="flex items-center gap-2 text-xs cursor-pointer">
-                                    <input type="radio" name="attendance_${m.id}" value="present" class="attendance-radio" checked> All present
-                                </label>
-                                <label class="flex items-center gap-2 text-xs cursor-pointer">
-                                    <input type="radio" name="attendance_${m.id}" value="absent" class="attendance-radio"> Some absent
-                                </label>
-                            </div>
-                        </div>
-                        <div id="absent_container_${m.id}" class="mb-2 hidden">
-                            <label class="form-label text-[10px]">Absent Students</label>
-                            <div id="absent_list_${m.id}" class="grid grid-cols-1 gap-1 mt-1 p-2 border border-[#e2dacf] rounded-lg bg-[#faf8f4] max-h-28 overflow-y-auto text-xs"></div>
-                        </div>
-                        <div class="mb-2">
-                            <input type="text" class="form-input text-xs remark-feedback-input" placeholder="Optional remarks...">
-                        </div>
-                        <button type="button" class="btn-primary text-xs submit-remark-btn" data-milestone-id="${m.id}">
-                            <i class="fas fa-check mr-1"></i> Evaluate
-                        </button>
-                    `;
-                } else if (m.is_next && !data.is_adviser) {
-                    remarksHtml = `<span class="task-status next">Next Step — awaiting adviser evaluation</span>`;
-                } else {
-                    remarksHtml = `<span class="remark-empty">Not yet available</span>`;
-                }
-            }
 
-            let evaluationHtml = '';
-            if (milestoneEvals.length > 0) {
-                evaluationHtml = milestoneEvals.map((evaluation, idx) => {
-                    let criteriaRowsHtml = '';
-                    if (evaluation.criteria && evaluation.criteria.length > 0) {
-                        criteriaRowsHtml = `
-                            <div id="eval_rubric_details_${m.id}_${idx}" class="hidden mt-2 p-2 bg-[#faf8f4] border border-[#e2dacf] rounded-lg">
-                                <table class="w-full text-[11px]">
-                                    <thead>
-                                        <tr class="border-b border-[#e2dacf] text-left text-[#5b6375]">
-                                            <th class="py-1 text-left">Criterion</th>
-                                            <th class="py-1 text-center font-normal">Max</th>
-                                            <th class="py-1 text-center font-normal">Score</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${evaluation.criteria.map(c => `
-                                            <tr class="border-b border-[#faf1e0]">
-                                                <td class="py-1 text-left text-[#171e2c] font-medium">${c.criteria_name}</td>
-                                                <td class="py-1 text-center text-[#5b6375]">${c.max_score}</td>
-                                                <td class="py-1 text-center font-bold text-[#1e6b3a]">${c.given_score}</td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>
+                            <div>
+                                <label class="form-label text-[10px]">Compiled</label>
+                                <select class="form-select text-xs remark-edit-compiled">
+                                    <option value="1" ${r.compiled ? 'selected' : ''}>Yes — Compiled</option>
+                                    <option value="0" ${!r.compiled ? 'selected' : ''}>No — Not Compiled</option>
+                                </select>
                             </div>
-                        `;
-                    }
 
-                    return `
-                        <div class="mt-3 pt-3 border-t border-[#e2dacf] text-xs">
-                            <div class="flex justify-between items-center">
-                                <span class="font-semibold text-[#0a1428]"><i class="fa-solid fa-square-poll-vertical text-[#d6b15c] mr-1"></i> Panelist Evaluation</span>
-                                <span class="font-bold text-[#1e6b3a]">${evaluation.score} / ${evaluation.max_score}</span>
+                            <div>
+                                <label class="form-label text-[10px]">Feedback (optional)</label>
+                                <textarea rows="2" class="form-input text-xs remark-edit-feedback">${r.feedback || ''}</textarea>
                             </div>
-                            <p class="text-[10px] text-[#5b6375] mt-0.5">By ${evaluation.teacher_name} on ${fmtDate(evaluation.evaluation_date)}</p>
-                            ${evaluation.feedback ? `<p class="italic text-[#5b6375] mt-1 bg-[#fbfaf7] p-1.5 border-l-2 border-[#d6b15c]">${evaluation.feedback}</p>` : ''}
-                            ${criteriaRowsHtml ? `
-                                <button onclick="document.getElementById('eval_rubric_details_${m.id}_${idx}').classList.toggle('hidden'); event.stopPropagation();" class="text-[#b88d3a] hover:text-[#8b6914] text-[11px] font-medium mt-1.5 block focus:outline-none">
-                                    <i class="fas fa-list mr-1"></i> Toggle Rubric Criteria Scores
+
+                            <div class="flex justify-end gap-2 pt-1">
+                                <button type="button" class="btn-ghost text-xs remark-edit-cancel">Cancel</button>
+                                <button type="button" class="btn-primary text-xs remark-edit-save">
+                                    <i class="fas fa-save mr-1"></i> Save Override
                                 </button>
-                                ${criteriaRowsHtml}
-                            ` : ''}
+                            </div>
                         </div>
-                    `;
-                }).join('');
-            } else if (m.has_rubric) {
-                evaluationHtml = `
-                    <div class="mt-3 text-xs text-[#5b6375] italic bg-[#faf8f4] p-2 border border-[#e2dacf] rounded-lg">
-                        <i class="fa-solid fa-triangle-exclamation text-amber-500 mr-1.5"></i> This group has not been evaluated yet for this milestone.
                     </div>
                 `;
             }
+            else if (m.is_next && data.is_adviser) {
+                remarksHtml = `
+                    <div class="mb-2">
+                        <label class="form-label text-[10px]">Attendance</label>
+                        <div class="flex flex-col gap-1 mt-1">
+                            <label class="flex items-center gap-2 text-xs cursor-pointer">
+                                <input type="radio" name="attendance_${m.id}" value="present" class="attendance-radio" checked> All present
+                            </label>
+                            <label class="flex items-center gap-2 text-xs cursor-pointer">
+                                <input type="radio" name="attendance_${m.id}" value="absent" class="attendance-radio"> Some absent
+                            </label>
+                        </div>
+                    </div>
+                    <div id="absent_container_${m.id}" class="mb-2 hidden">
+                        <label class="form-label text-[10px]">Absent Students</label>
+                        <div id="absent_list_${m.id}" class="grid grid-cols-1 gap-1 mt-1 p-2 border border-[#e2dacf] rounded-lg bg-[#faf8f4] max-h-28 overflow-y-auto text-xs"></div>
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-input text-xs remark-feedback-input" placeholder="Optional remarks...">
+                    </div>
+                    <button type="button" class="btn-primary text-xs submit-remark-btn" data-milestone-id="${m.id}">
+                        <i class="fas fa-check mr-1"></i> Evaluate
+                    </button>
+                `;
+            } else if (m.is_next && !data.is_adviser) {
+                remarksHtml = `<span class="task-status next">Next Step — awaiting adviser evaluation</span>`;
+            } else {
+                remarksHtml = `<span class="remark-empty">Not yet available</span>`;
+            }
 
-            row.innerHTML = `<td>${dateHtml}</td><td>${taskHtml}</td><td>${remarksHtml}${evaluationHtml}</td>`;
+            row.innerHTML = `<td>${dateHtml}</td><td>${taskHtml}</td><td>${remarksHtml}</td>`;
             tbody.appendChild(row);
 
             // ── Adviser-only remark override wiring ──
@@ -3859,38 +4064,66 @@ function openViewModal(groupId) {
             });
         }); // ← end of forEach(m => { ... })
 
-        // ── Load and render earned certificates for this group ──
-        fetch(`/group/${groupId}/certificates`, { __silent: true })
+               // ── Document cards: Recommendation / Revision / Approval ──
+        const recBtn = document.getElementById('view_rec_btn');
+        const revBtn = document.getElementById('view_rev_btn');
+        const aprBtn = document.getElementById('view_apr_btn');
+        const recStatus = document.getElementById('view_rec_status');
+        const revStatus = document.getElementById('view_rev_status');
+        const aprStatus = document.getElementById('view_apr_status');
+
+        // Reset to default disabled state
+        [recBtn, revBtn, aprBtn].forEach(b => { if (b) b.disabled = true; });
+        if (recStatus) recStatus.textContent = 'View the recommendation sheet issued to this group.';
+        if (revStatus) revStatus.textContent = 'View the revision sheet submitted for this group.';
+        if (aprStatus) aprStatus.textContent = 'View the approval sheet issued to this group.';
+
+        // Recommendation
+        fetch(`/teacher/get-sheet-status/${groupId}?type=recommendation`, { __silent: true })
             .then(r => r.json())
-            .then(certs => {
-                const certContainer = document.getElementById('view_certificates_container');
-                const certList = document.getElementById('view_certificates_list');
-                certList.innerHTML = '';
-
-                if (!Array.isArray(certs) || certs.length === 0) {
-                    certContainer.classList.add('hidden');
-                    return;
+            .then(s => {
+                if (s.issued) {
+                    if (recBtn) recBtn.disabled = false;
+                    if (recStatus) recStatus.innerHTML =
+                        '<span style="color:#1e6b3a;"><i class="fas fa-check-circle mr-1"></i>Issued ' +
+                        fmtDate(s.issued_date) + '</span>';
+                } else if (recStatus) {
+                    recStatus.innerHTML =
+                        '<span style="color:#8a5d0b;"><i class="fas fa-hourglass-half mr-1"></i>Not yet issued</span>';
                 }
-
-                certContainer.classList.remove('hidden');
-                certs.forEach(c => {
-                    const row = document.createElement('div');
-                    row.className = 'cert-row';
-                    row.innerHTML = `
-                        <div>
-                            <p class="cert-title">${c.certificate_title}</p>
-                            <p class="cert-date">Issued ${fmtDate(c.issued_date)}</p>
-                        </div>
-                        <a href="/certificate/${groupId}/${c.certificate_id}" target="_blank" class="btn-outline text-xs py-1.5 px-3">
-                            <i class="fas fa-print mr-1"></i> Print / Download
-                        </a>
-                    `;
-                    certList.appendChild(row);
-                });
             })
-            .catch(() => {
-                document.getElementById('view_certificates_container').classList.add('hidden');
-            });
+            .catch(() => {});
+
+        // Revision
+        fetch(`/teacher/get-revision-details/${groupId}`, { __silent: true })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data && (data.chapters?.length || data.iot_findings?.length || data.objectives?.length)) {
+                    if (revBtn) revBtn.disabled = false;
+                    if (revStatus) revStatus.innerHTML =
+                        '<span style="color:#1e6b3a;"><i class="fas fa-check-circle mr-1"></i>Revision available</span>';
+                } else if (revStatus) {
+                    revStatus.innerHTML =
+                        '<span style="color:#8a5d0b;"><i class="fas fa-hourglass-half mr-1"></i>No revision submitted yet</span>';
+                }
+            })
+            .catch(() => {});
+
+        // Approval
+        fetch(`/teacher/get-sheet-status/${groupId}?type=approval`, { __silent: true })
+            .then(r => r.json())
+            .then(s => {
+                if (s.issued) {
+                    if (aprBtn) aprBtn.disabled = false;
+                    if (aprStatus) aprStatus.innerHTML =
+                        '<span style="color:#1e6b3a;"><i class="fas fa-check-circle mr-1"></i>Issued ' +
+                        fmtDate(s.issued_date) + '</span>';
+                } else if (aprStatus) {
+                    aprStatus.innerHTML =
+                        '<span style="color:#8a5d0b;"><i class="fas fa-hourglass-half mr-1"></i>Not yet issued</span>';
+                }
+            })
+            .catch(() => {});
     })
     .catch(() => {
         loading.classList.add('hidden');
@@ -4638,16 +4871,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const milestoneSelect = document.getElementById('milestone_select');
-        milestoneSelect.value = milestoneId || '';
-        if (milestoneId) {
-            document.getElementById('eval_milestone_id').value = milestoneId;
-            setTimeout(() => milestoneSelect.dispatchEvent(new Event('change')), 100);
-        } else {
-            document.getElementById('rubric_container').classList.add('hidden');
-            document.getElementById('criteria_tbody').innerHTML = '';
-            document.getElementById('eval_total_score').value = '';
-            document.getElementById('eval_max_score').value = '';
-        }
+        milestoneSelect.innerHTML = '<option value="">Loading milestone…</option>';
+        milestoneSelect.disabled = true;
+        document.getElementById('rubric_container').classList.add('hidden');
+        document.getElementById('criteria_tbody').innerHTML = '';
+        document.getElementById('eval_total_score').value = '';
+        document.getElementById('eval_max_score').value = '';
 
         openModal('evaluationModal');
         showPageLoader('Preparing evaluation form…');
@@ -4662,6 +4891,15 @@ document.addEventListener('DOMContentLoaded', function () {
             window.currentGroupData = groupData;
             window.currentRevisionData = revisionData;
             window.currentEvaluationData = evalData;
+            // ── Lock the milestone select to this group's room's required milestone ──
+            const requiredMilestoneId = groupData.required_milestone_id;
+            const requiredMilestoneTitle = groupData.required_milestone_title || 'Milestone';
+            milestoneSelect.innerHTML = requiredMilestoneId
+                ? `<option value="${requiredMilestoneId}" selected>${escHtml(requiredMilestoneTitle)}</option>`
+                : `<option value="">No milestone assigned to this room</option>`;
+            milestoneSelect.value = requiredMilestoneId ? String(requiredMilestoneId) : '';
+            milestoneSelect.disabled = true;
+            document.getElementById('eval_milestone_id').value = requiredMilestoneId || '';
 
             // ── Check if evaluation already exists ──
             if (evalData && evalData.score !== undefined) {
@@ -4712,7 +4950,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 })
                 .catch(() => {});
-
+            // Load the rubric for the locked milestone (not-yet-evaluated path)
+            if (requiredMilestoneId) {
+                milestoneSelect.dispatchEvent(new Event('change'));
+            }
             // Reset attendance radio
             const presentRadio = document.querySelector('input[name="attendance"][value="present"]');
             if (presentRadio) presentRadio.checked = true;
@@ -4784,7 +5025,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(data => {
                 if (!groupName) titleEl.textContent = `Rubric Scores — ${data.group_name}`;
 
-                const evaluations = data.evaluations || [];
+            const evaluations = data.evaluations || [];
 
                 if (evaluations.length === 0) {
                     content.innerHTML = `
@@ -5790,6 +6031,142 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.classList.add('active');
         renderRevisionSheet(content, groupId, true);
     };
+    // ── TEACHER: open Revision Sheet (uses existing viewRevisionModal) ──
+window.openTeacherRevisionSheet = function (groupId) {
+    if (!groupId) return;
+    // Reuse the existing read-only revision modal
+    window.openViewRevisionModal(groupId);
+};
+
+// ── TEACHER: open Recommendation Sheet ──
+window.openTeacherRecommendationSheet = function (groupId) {
+    if (!groupId) return;
+
+    const loading = document.getElementById('tchRecommendationLoading');
+    const title   = document.getElementById('tchRecommendationTitle');
+    const props   = document.getElementById('tchRecommendationProponents');
+    const adviser = document.getElementById('tchRecommendationAdviser');
+    const dateEl  = document.getElementById('tchRecommendationDate');
+    const grpEl   = document.getElementById('tchRecommendationGroup');
+    const serial  = document.getElementById('tchRecommendationSerial');
+
+    if (loading) loading.style.display = 'flex';
+    title.textContent   = '—';
+    props.textContent   = 'Loading...';
+    adviser.textContent = '—';
+    dateEl.textContent  = '—';
+    grpEl.textContent   = '—';
+    serial.textContent  = ' ';
+
+    openModal('teacherRecommendationSheetModal');
+
+    fetch(`/teacher/get-recommendation-sheet/${groupId}`, { __silent: true })
+        .then(r => r.json())
+        .then(data => {
+            title.textContent = data.capstone_title || '—';
+
+            const members = data.members || [];
+            if (members.length === 0) {
+                props.textContent = '—';
+            } else if (members.length === 1) {
+                props.textContent = members[0];
+            } else if (members.length === 2) {
+                props.textContent = `${members[0]} and ${members[1]}`;
+            } else {
+                props.textContent =
+                    `${members.slice(0, -1).join(', ')}, and ${members[members.length - 1]}`;
+            }
+
+            adviser.textContent = data.adviser || '—';
+            grpEl.textContent   = data.group_name || '—';
+
+            if (data.date_issued) {
+                const d = new Date(data.date_issued);
+                dateEl.textContent = d.toLocaleDateString('en-US',
+                    { month: 'long', day: 'numeric', year: 'numeric' });
+            }
+
+            serial.textContent = data.serial_number ? 'Serial No. ' + data.serial_number : ' ';
+        })
+        .catch(() => {
+            props.textContent = 'Unable to load data.';
+            adviser.textContent = '—';
+        })
+        .finally(() => { if (loading) loading.style.display = 'none'; });
+};
+
+// ── TEACHER: open Approval Sheet ──
+window.openTeacherApprovalSheet = function (groupId) {
+    if (!groupId) return;
+
+    const loading      = document.getElementById('tchApprovalLoading');
+    const title        = document.getElementById('tchApprovalTitle');
+    const proponents   = document.getElementById('tchApprovalProponents');
+    const adviser      = document.getElementById('tchApprovalAdviser');
+    const panelists    = document.getElementById('tchApprovalPanelists');
+    const chairmanBlk  = document.getElementById('tchApprovalChairmanBlock');
+    const chairman     = document.getElementById('tchApprovalChairman');
+    const oralResult   = document.getElementById('tchApprovalOralResult');
+    const oralDate     = document.getElementById('tchApprovalOralDate');
+    const president    = document.getElementById('tchApprovalPresident');
+    const serial       = document.getElementById('tchApprovalSerial');
+
+    const esc = v => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                                    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const personName = p => typeof p === 'string' ? p : (p?.name || 'Panelist');
+    const joinNames = names => {
+        const list = (names || []).map(personName).filter(Boolean);
+        if (!list.length) return '—';
+        if (list.length === 1) return list[0];
+        if (list.length === 2) return `${list[0]} and ${list[1]}`;
+        return `${list.slice(0, -1).join(', ')}, and ${list[list.length - 1]}`;
+    };
+
+    title.textContent      = '—';
+    proponents.textContent = 'Loading...';
+    adviser.textContent    = '—';
+    panelists.innerHTML    = '<div class="approval-signature"><span class="approval-sig-line">Loading...</span><div class="approval-sig-role">Member</div></div>';
+    if (chairmanBlk) chairmanBlk.style.display = 'none';
+    if (chairman) chairman.textContent = '—';
+    oralResult.textContent = '—';
+    oralDate.textContent   = '—';
+    president.textContent  = 'DR. FLORIPIS A. MONTECILLO, Ed.D.';
+    serial.textContent     = ' ';
+
+    if (loading) loading.style.display = 'flex';
+    openModal('teacherApprovalSheetModal');
+
+    fetch(`/teacher/get-approval-sheet/${groupId}`, { __silent: true })
+        .then(r => r.json())
+        .then(data => {
+            title.textContent      = data.capstone_title || '—';
+            proponents.textContent = joinNames(data.members);
+            adviser.textContent    = data.adviser || '—';
+
+            const all = Array.isArray(data.panelists) ? data.panelists : [];
+            const chairmanEntry = all.find(p => /chair/i.test(String(p?.role || p?.type || '')))
+                || (data.chairman ? { name: data.chairman } : null);
+            const membersOnly = chairmanEntry ? all.filter(p => p !== chairmanEntry) : all;
+
+            panelists.innerHTML = membersOnly.length
+                ? membersOnly.map(p => `<div class="approval-signature"><span class="approval-sig-line">${esc(personName(p))}</span><div class="approval-sig-role">Member</div></div>`).join('')
+                : '<div class="approval-signature"><span class="approval-sig-line">No panelists assigned</span><div class="approval-sig-role">Member</div></div>';
+
+            if (chairmanEntry && chairmanBlk && chairman) {
+                chairmanBlk.style.display = 'block';
+                chairman.textContent = personName(chairmanEntry);
+            }
+            oralResult.textContent = data.oral_exam_result || '—';
+            oralDate.textContent   = data.oral_exam_date || '—';
+            president.textContent  = data.school_president || 'DR. FLORIPIS A. MONTECILLO, Ed.D.';
+            serial.textContent     = data.serial_number ? 'Serial No. ' + data.serial_number : ' ';
+        })
+        .catch(err => {
+            console.error('Teacher approval sheet error:', err);
+            proponents.textContent = 'Unable to load approval data.';
+        })
+        .finally(() => { if (loading) loading.style.display = 'none'; });
+};
 
     window.openViewEvaluationModal = function (groupId) {
         window.openEvaluationModal(groupId);
